@@ -1,0 +1,45 @@
+.onlineStatus {
+        display: block;
+        border-radius: 1000px;
+        width: 8px;
+        height: 8px;
+        background-color: #44C69F;
+}
+
+.whenRefreshed {
+    width: 122px;
+    color: #8C9EB8;
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.statusOnline {
+    gap: 14px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.separator {
+    display: block;
+    width: 1px;
+    height: 52px;
+    background: #1F2E40;
+}
+
+.userIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #09111B;
+    border-radius: 1000px;
+    border: 1px solid #1F2E40;
+    width: 46px;
+    height: 46px;
+}
+
+.refreshedBadgeContainer {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    justify-content: end;
+}
