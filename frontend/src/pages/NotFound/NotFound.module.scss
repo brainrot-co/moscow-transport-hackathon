@@ -1,0 +1,13 @@
+.containerNotFound {
+    background: url('../../assets/404-bg.png') no-repeat center top / cover;
+}
+
+.leftBarShrunk {
+    width: 5.563vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    height: 100vh;
+    background: red;
+}
