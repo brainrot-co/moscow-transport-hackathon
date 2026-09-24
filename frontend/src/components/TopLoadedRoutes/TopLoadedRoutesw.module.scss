@@ -1,0 +1,26 @@
+.topLoadedRoutes {
+    width: fit-content;
+    background: #09111B;
+    border-radius: 14px;
+    border: 1px solid #1F2E40;
+    padding: 25px 18px 24px 20px;
+}
+
+.topLoadedTop {
+    h5 {
+        font-weight: 700;
+        font-size: 0.766vw;
+        color: #F0F5FC;
+    }
+
+    a {
+        color: #FF0F29;
+        font-weight: 500;
+        font-size: 0.602vw;
+    }
+
+    display: flex;
+    gap: 1.791vw;
+    align-items: center;
+    justify-content: space-between;
+}

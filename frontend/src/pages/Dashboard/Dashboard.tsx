@@ -7,6 +7,8 @@ import tram from '../../assets/menu-bottom-pic.svg'
 import calendar from '../../assets/calendar.svg'
 import calendarBig from '../../assets/calendar1.svg'
 
+import LoadGraph from '../../components/LoadGraph/LoadGraph'
+import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
 import { Link } from 'react-router-dom'
 
 export default function Dashboard() {
@@ -78,6 +80,18 @@ export default function Dashboard() {
                                 <span className={styles.chevron}>⌄</span>
                             </div>
                         </div> 
+                    </div>
+
+                    <div className={styles.dashboardContentContainer}>
+                        <div className={styles.dashboardColumnLeft}>
+                            <div className={styles.mapContainer}>
+                                
+                            </div>
+                            <div className={styles.columnLeftBottom}>
+                                <LoadGraph />
+                                <TopLoadedRoutes />
+                            </div>
+                        </div>
                     </div>
                                  
                 </section>

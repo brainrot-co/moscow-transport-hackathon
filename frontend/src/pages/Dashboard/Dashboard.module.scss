@@ -5,7 +5,7 @@
 }
 
 .sideMenuBar {
-    height: 100vh;
+    height: -webkit-fill-available;
     width: fit-content;
     background: #09111E;
     padding: 30px;
@@ -224,3 +224,26 @@
     align-items: center;
     justify-content: space-between;
 }
+
+.mapContainer {
+    width:49.891vw;
+    height: 30.306vw;
+    background: #717171;
+    border-radius: 8px;
+}
+
+.dashboardContentContainer {
+    margin-top: 17px;
+}
+
+.columnLeftBottom {
+    margin-top: 42px;
+    display: flex;
+    align-items: center;
+    gap: 0.518vw;
+}
+
+.dashboardColumnLeft {
+    width: 100%;
+}
+

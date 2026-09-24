@@ -26,6 +26,7 @@ p {
 
 a {
   text-decoration: none;
+  font-family: "Montserrat", sans-serif;
 }
 
 ul {
@@ -42,4 +43,5 @@ li {
 button {
   border: none;
   outline: none;
+  font-family: "Montserrat", sans-serif;
 }

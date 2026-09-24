@@ -1,0 +1,76 @@
+.loadGraph {
+    width: fit-content;
+    background: #09111B;
+    border-radius: 14px;
+    border: 1px solid #1F2E40;
+    padding: 22px 22px 10px 22px;
+}
+
+.graphTitle {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    h6 {
+        font-weight: 700;
+        font-size: 0.766vw;
+        color: #F0F5FC;
+    }
+}
+
+.timeRangePicker {
+    position: relative;
+
+    background: #0F1828;
+    border: 1px solid #1F2E40;
+    border-radius: 1000px;
+    width: fit-content;
+
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.selectedBackground {
+    position: absolute;
+    left: 0;
+    top: 0;
+
+    width: 33.333%;
+    height: 100%;
+
+    background: #F10624;
+    border-radius: 1000px;
+
+    transition: transform 0.3s ease;
+}
+
+.timeRangeItem {
+    position: relative;
+    z-index: 1;
+
+    padding: 8px 12px;
+
+    font-weight: 400;
+    font-size: 0.547vw;
+    color: #8C9EB8;
+
+    border: none;
+    background: transparent;
+    border-radius: 1000px;
+    cursor: pointer;
+
+    transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.selected {
+    font-weight: 600;
+    color: #fff;
+}
+
+.graphTop {
+    gap: 1.632vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
