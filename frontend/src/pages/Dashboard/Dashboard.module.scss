@@ -5,7 +5,7 @@
 }
 
 .sideMenuBar {
-    height: 100vh;
+    height: stretch;
     width: fit-content;
     background: #09111E;
     padding: 30px;
@@ -99,7 +99,7 @@
     padding: 30px 30px 30px 35px;
     background: linear-gradient(180deg, #0A121E 0%, #030913 100%);
     width: -webkit-fill-available;
-    height: 100vh;
+    height: stretch;
 }
 
 .topGreeting {

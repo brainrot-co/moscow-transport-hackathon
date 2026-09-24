@@ -1,24 +1,48 @@
-import styles from './LoadedRoute.module.scss'
+import styles from './LoadedRoute.module.scss';
 
-import clsx from 'clsx';
+type Color = 'red' | 'green' | 'orange';
 
-export default function LoadedRoute() {
+interface LoadedRouteProps {
+    routeNum: string;
+    routeName: string;
+    loadPercentage: number;
+    progressColor: Color;
+}
+
+export default function LoadedRoute({
+    routeNum,
+    routeName,
+    loadPercentage,
+    progressColor,
+}: LoadedRouteProps) {
     return (
-        <>
-            <div className={styles.loadedRoute}>
-                <span className={clsx(styles.routeNum, styles.routeRed)}>
-                    17
-                </span>
+        <div className={styles.loadedRoute}>
+            <span
+                className={`${styles.routeNum} ${styles[progressColor]}`}
+            >
+                {routeNum}
+            </span>
 
-                <div className={styles.routeStatsBlock}>
-                    <div className={styles.routeStatsTop}>
-                        <p className={styles.routeName}>Калужская – Новокосино</p>
-                        <p className={styles.loadPercentage}>82%</p>
-                    </div>
+            <div className={styles.routeStatsBlock}>
+                <div className={styles.routeStatsTop}>
+                    <p className={styles.routeName}>
+                        {routeName}
+                    </p>
 
-                    <div className={styles.progressBar}></div>
+                    <p className={styles.loadPercentage}>
+                        {loadPercentage}%
+                    </p>
+                </div>
+
+                <div className={styles.progressBar}>
+                    <div
+                        className={`${styles.progressFill} ${styles[progressColor]}`}
+                        style={{
+                            width: `${loadPercentage}%`,
+                        }}
+                    />
                 </div>
             </div>
-        </>
+        </div>
     );
 }

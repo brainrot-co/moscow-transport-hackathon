@@ -39,6 +39,13 @@
     width: 100%;
     height: 0.283vw;
     border-radius: 3px;
+
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    border-radius: 3px;
 }
 
 .routeStatsBlock {
@@ -52,4 +59,16 @@
     display: flex;
     align-items: center;
     gap: 0.794vw;
+}
+
+.red {
+    background: #E30514;
+}
+
+.green {
+    background: #38D1A3;
+}
+
+.orange {
+    background: #FF9E38;
 }

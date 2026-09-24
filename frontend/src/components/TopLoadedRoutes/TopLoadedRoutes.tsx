@@ -17,7 +17,18 @@ export default function TopLoadedRoutes() {
 
                 {/* делать на 1764px!! */}
                 <div className={styles.loadedRoutes}>
-                    <LoadedRoute />
+                    <LoadedRoute
+                        routeNum="17"
+                        routeName="Калужская – Новокосино"
+                        loadPercentage={82}
+                        progressColor="red"
+                    />
+                    <LoadedRoute
+                        routeNum="12"
+                        routeName="Теплый Стан – Медведково"
+                        loadPercentage={64}
+                        progressColor="green"
+                    />
                 </div>
             </div>
         </>
