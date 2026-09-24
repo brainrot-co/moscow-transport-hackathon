@@ -1,6 +1,8 @@
-import styles from './TopLoadedRoutesw.module.scss'
+import styles from './TopLoadedRoutes.module.scss'
 
 import { Link } from 'react-router-dom'
+
+import LoadedRoute from '../LoadedRoute/LoadedRoute'
 
 export default function TopLoadedRoutes() {
     return (
@@ -13,7 +15,10 @@ export default function TopLoadedRoutes() {
                     </Link>
                 </div>
 
-                {/* делать на 1828px!! */}
+                {/* делать на 1764px!! */}
+                <div className={styles.loadedRoutes}>
+                    <LoadedRoute />
+                </div>
             </div>
         </>
     );

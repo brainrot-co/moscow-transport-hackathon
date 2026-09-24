@@ -9,18 +9,22 @@
 .topLoadedTop {
     h5 {
         font-weight: 700;
-        font-size: 0.766vw;
+        font-size: 0.794vw;
         color: #F0F5FC;
     }
 
     a {
         color: #FF0F29;
         font-weight: 500;
-        font-size: 0.602vw;
+        font-size: 0.624vw;
     }
 
     display: flex;
     gap: 1.791vw;
     align-items: center;
     justify-content: space-between;
+}
+
+.loadedRoutes {
+    margin-top: 16px;
 }
