@@ -5,11 +5,10 @@
 }
 
 .sideMenuBar {
-    height: -webkit-fill-available;
+    height: 100vh;
     width: fit-content;
     background: #09111E;
     padding: 30px;
-    padding-bottom: 0;
 }
 
 .logo {
@@ -97,7 +96,7 @@
 }
 
 .dashboardContent {
-    padding: 30px 30px 24px 35px;
+    padding: 30px 30px 30px 35px;
     background: linear-gradient(180deg, #0A121E 0%, #030913 100%);
     width: -webkit-fill-available;
     height: 100vh;

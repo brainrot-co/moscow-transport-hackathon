@@ -12,6 +12,8 @@ export default function TopLoadedRoutes() {
                         Все маршруты →
                     </Link>
                 </div>
+
+                {/* делать на 1828px!! */}
             </div>
         </>
     );
