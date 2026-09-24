@@ -1,0 +1,249 @@
+.dashboardWrapper {
+    display: flex;
+    align-items: center;
+    align-items: flex-start;
+}
+
+.sideMenuBar {
+    height: 100vh;
+    width: fit-content;
+    background: #09111E;
+    padding: 30px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    p {
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+        width: 108px;
+    }
+}
+
+.sideMenu {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 35px;
+    padding-bottom: 30px;
+
+    li a {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        font-weight: 600;
+        font-size: 13px;
+        color: #fff;
+        width: -webkit-fill-available;
+        padding: 14px 78.5px 14px 17.5px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #D2092A 0%, #09111E 100%);
+        background-size: 200% 200%;
+        background-position: 0% 0%;
+        transition: background-position 0.4s ease;
+
+        &:hover {
+            background-position: 30% 30%;
+        }
+    }
+}
+
+.onlineStatus {
+        display: block;
+        border-radius: 1000px;
+        width: 8px;
+        height: 8px;
+        background-color: #44C69F;
+}
+
+.whenRefreshed {
+    width: 122px;
+    color: #8C9EB8;
+    font-weight: 500;
+    font-size: 11px;
+}
+
+.statusOnline {
+    gap: 14px;
+    display: flex;
+    align-items: flex-start;
+}
+
+.menuBottomInfo {
+    border: 1px solid #1F2E40;
+    border-radius: 12px;
+    padding: 20px 43px 22px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.tram {
+    pointer-events: none;
+}
+
+.menuBottomBlock {
+    position: absolute;
+    bottom: 0;
+    left: 1vw;
+}
+
+.dashboardContent {
+    padding: 30px 30px 30px 35px;
+    background: linear-gradient(180deg, #0A121E 0%, #030913 100%);
+    width: -webkit-fill-available;
+    height: 100vh;
+}
+
+.topGreeting {
+    p {
+        font-weight: 400;
+        font-size: 13px;
+        color: #99A8BA;
+    }
+
+    h4 {
+        font-weight: 700;
+        font-size: 27px;
+        color: #F0F5FC;
+        margin-top: 7px;
+        margin-bottom: 1px;
+    }
+
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.topControls {
+    gap: 25px;
+    display: flex;
+    align-items: center;
+}
+
+.topTimestamp {
+    gap: 5px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+
+    p {
+        font-weight: 400;
+        font-size: 11px;
+        color: #8C9EB8;
+    }
+
+    h6 {
+        font-weight: 700;
+        font-size: 15px;
+        color: #F0F5FC;
+        width: 72px;
+        margin-left: 11px;
+    }
+
+    .topOnline {
+        span {
+            background-color: #44C69F;
+            display: block;
+            width: 8px;
+            height: 8px;
+            border-radius: 1000px;
+        }
+
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+}
+
+.topTime {
+    display: flex;
+    align-items: center;
+}
+
+.separator {
+    display: block;
+    height: 52px;
+    width: 1px;
+    background: #1F2E40;
+}
+
+.forecastRangeSelector {
+    background: #09111B;
+    border: 1px solid #1F2E40;
+    border-radius: 12px;
+    padding: 9px 16px 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 79px;
+}
+
+.horizon {
+    font-weight: 400;
+    font-size: 11px;
+    color: #8C9EB8;
+}
+
+.selectedRange {
+    font-weight: 500;
+    font-size: 13px;
+    color: #F0F5FC;
+}
+
+.rangeDisplay {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+}
+
+.rangeContainer {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+.chevron {
+    font-weight: 700;
+    font-size: 16px;
+    color: #8C9EB8;
+    display: flex;
+    align-self: baseline;
+    cursor: pointer;
+}
+
+.dashboardTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mapContainer {
+    width:49.891vw;
+    height: 30.306vw;
+    background: #717171;
+    border-radius: 8px;
+}
+
+.dashboardContentContainer {
+    margin-top: 17px;
+}
+
+.columnLeftBottom {
+    margin-top: 42px;
+    display: flex;
+    align-items: center;
+    gap: 0.518vw;
+}
+
+.dashboardColumnLeft {
+    width: 100%;
+}
+

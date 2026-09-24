@@ -1,0 +1,96 @@
+@mixin centering() {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@mixin align() {
+    display: flex;
+    align-items: center;
+}
+
+.containerNotFound {
+    background: url('../../assets/404-bg.png') no-repeat center top / cover;
+    padding-top: 30px;
+    padding-right: 22px;
+    padding-bottom: 282px;
+}
+
+.leftBarCollapsed {
+    width: fit-content;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 5;
+    height: 100vh;
+    background: #080E18;
+    padding: 30px 22px;
+}
+
+.menu {
+    margin-top: 35px;
+    flex-direction: column;
+    @include align;
+    gap: 20px;
+}
+
+.menuBtn {
+    padding: 14px 17.5px;
+    background: #D2092A;
+    border-radius: 8px;
+    @include centering;
+    transition: 0.3s ease;
+
+    &:hover {
+        background: #aa0d27;
+    }
+}
+
+.notFoundContent {
+    margin-top: 130px;
+    margin-left: 116px;
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
+.badge404 {
+    pointer-events: none;
+}
+
+.notFoundContent h2 {
+    margin-top: 38px;
+    color: #fff;
+    font-weight: 500;
+    font-size: 48px;
+    margin-left: 60px;
+}
+
+.notFoundDesc {
+    font-weight: 400;
+    font-size: 18px;
+    color: #99A3BB;
+    width: 552px;
+    margin-left: 60px;
+    margin-top: 15px;
+    line-height: 165%;
+    margin-bottom: 48px;
+}
+
+.gotoDashboard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 500px;
+    width: fit-content;
+    background: #F10624;
+    padding: 17px 22.5px;
+    color: #fff;
+    transition: 0.3s ease;
+    margin-left: 60px;
+
+    &:hover {
+        background: #aa0d27;
+    }
+}
