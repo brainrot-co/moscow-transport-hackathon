@@ -1,76 +1,216 @@
 .loadGraph {
-    width: fit-content;
-    background: #09111B;
+    width: 31vw;
+    min-width: 0;
+    padding: 20px 20px 12px;
+    box-sizing: border-box;
+    overflow: hidden;
+    border: 1px solid #1f2e40;
     border-radius: 14px;
-    border: 1px solid #1F2E40;
-    padding: 22px 22px 10px 22px;
+    background: #09111b;
+}
+
+.graphTop {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
 }
 
 .graphTitle {
+    min-width: 0;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 13px;
+
+    img {
+        width: 20px;
+        height: 20px;
+        flex: 0 0 auto;
+    }
 
     h6 {
+        color: #f0f5fc;
+        font-size: clamp(10px, 0.794vw, 14px);
         font-weight: 700;
-        font-size: 0.794vw;
-        color: #F0F5FC;
+        white-space: nowrap;
     }
 }
 
 .timeRangePicker {
     position: relative;
-
-    background: #0F1828;
-    border: 1px solid #1F2E40;
-    border-radius: 1000px;
-    width: fit-content;
-
-    display: flex;
-    align-items: center;
+    min-width: 206px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     overflow: hidden;
+    border: 1px solid #1f2e40;
+    border-radius: 1000px;
+    background: #0f1828;
 }
 
 .selectedBackground {
     position: absolute;
-    left: 0;
+    z-index: 0;
     top: 0;
-
+    left: 0;
     width: 33.333%;
     height: 100%;
-
-    background: #F10624;
     border-radius: 1000px;
-
-    transition: transform 0.3s ease;
+    background: #f10624;
+    transition: transform 260ms ease;
 }
 
 .timeRangeItem {
     position: relative;
     z-index: 1;
-
-    padding: 8px 12px;
-
-    font-weight: 400;
-    font-size: 0.567vw;
-    color: #8C9EB8;
-
-    border: none;
-    background: transparent;
+    padding: 8px 10px;
     border-radius: 1000px;
+    background: transparent;
+    color: #8c9eb8;
+    font-size: clamp(8px, 0.567vw, 10px);
+    font-weight: 400;
+    white-space: nowrap;
     cursor: pointer;
+    transition: color 180ms ease, font-weight 180ms ease;
 
-    transition: color 0.2s ease, font-weight 0.2s ease;
+    &:focus-visible {
+        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.72);
+    }
 }
 
 .selected {
+    color: #ffffff;
     font-weight: 600;
-    color: #fff;
 }
 
-.graphTop {
-    gap: 1.632vw;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+.chart {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin-top: 8px;
+    overflow: visible;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.horizontalGrid,
+.verticalGrid {
+    vector-effect: non-scaling-stroke;
+    stroke: #16253a;
+    stroke-width: 1;
+}
+
+.horizontalGrid {
+    opacity: 0.9;
+}
+
+.verticalGrid {
+    opacity: 0.62;
+}
+
+.axisLabel {
+    fill: #8c9eb8;
+    font-family: "Montserrat", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    pointer-events: none;
+    user-select: none;
+}
+
+.lineGlow,
+.linePath {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.lineGlow {
+    stroke: #f10624;
+    stroke-width: 8;
+    opacity: 0.5;
+}
+
+.linePath {
+    stroke: #f10624;
+    stroke-width: 2.5;
+}
+
+.activeGuide {
+    vector-effect: non-scaling-stroke;
+    stroke: rgba(241, 6, 36, 0.42);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+}
+
+.pointGlow {
+    fill: #f10624;
+    opacity: 0.72;
+}
+
+.activePoint {
+    vector-effect: non-scaling-stroke;
+    fill: #ffffff;
+    stroke: #f10624;
+    stroke-width: 4;
+}
+
+.activePointCenter {
+    fill: #ffffff;
+}
+
+.tooltip {
+    pointer-events: none;
+
+    rect {
+        fill: #142137;
+        stroke: #20324b;
+        stroke-width: 1;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
+    }
+
+    circle {
+        fill: #f10624;
+    }
+}
+
+.tooltipTitle,
+.tooltipValue {
+    fill: #f0f5fc;
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+}
+
+.tooltipTitle {
+    font-size: 11px;
+}
+
+.tooltipValue {
+    font-size: 12px;
+}
+
+@media (max-width: 1280px) {
+    .loadGraph {
+        padding: 15px 14px 9px;
+    }
+
+    .graphTop {
+        gap: 10px;
+    }
+
+    .graphTitle {
+        gap: 8px;
+
+        img {
+            width: 17px;
+            height: 17px;
+        }
+    }
+
+    .timeRangePicker {
+        min-width: 170px;
+    }
+
+    .timeRangeItem {
+        padding: 7px;
+    }
 }
