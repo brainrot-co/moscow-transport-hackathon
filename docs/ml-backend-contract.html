@@ -1,0 +1,747 @@
+<title>Контракт прогнозного контура</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --ground: #f5f6f4;
+  --surface: #ffffff;
+  --sunken: #eceeeb;
+  --ink: #1b2124;
+  --muted: #5b6569;
+  --line: #d8dddb;
+  --accent: #b3302a;
+  --accent-soft: #f6e3e1;
+  --data: #2c6a6e;
+  --data-soft: #e0eeee;
+  --warn: #9a6a00;
+  --warn-soft: #f7eed6;
+  --ok: #2f7a3d;
+  --ok-soft: #e2f1e4;
+  --shadow: 0 1px 2px rgba(27, 33, 36, .06);
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --sans: "Golos Text", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground: #121617;
+    --surface: #1a2022;
+    --sunken: #151a1c;
+    --ink: #e5e9e7;
+    --muted: #9aa5a8;
+    --line: #2d3538;
+    --accent: #e3645a;
+    --accent-soft: #3a2220;
+    --data: #6fb5b8;
+    --data-soft: #1c3133;
+    --warn: #e0b04a;
+    --warn-soft: #362d17;
+    --ok: #74c283;
+    --ok-soft: #1d3322;
+    --shadow: none;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground: #121617;
+  --surface: #1a2022;
+  --sunken: #151a1c;
+  --ink: #e5e9e7;
+  --muted: #9aa5a8;
+  --line: #2d3538;
+  --accent: #e3645a;
+  --accent-soft: #3a2220;
+  --data: #6fb5b8;
+  --data-soft: #1c3133;
+  --warn: #e0b04a;
+  --warn-soft: #362d17;
+  --ok: #74c283;
+  --ok-soft: #1d3322;
+  --shadow: none;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15.5px;
+  line-height: 1.6;
+  padding-inline: 16px;
+  padding-block: 0 64px;
+}
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 48px;
+}
+@media (max-width: 900px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  nav.toc { display: none; }
+}
+
+nav.toc {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  align-self: start;
+  padding-block: 40px 24px;
+  font-size: 13.5px;
+}
+nav.toc .label {
+  font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 10px;
+}
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; counter-reset: toc; }
+nav.toc li { counter-increment: toc; }
+nav.toc a {
+  display: grid; grid-template-columns: 22px 1fr; color: var(--muted);
+  text-decoration: none; padding: 3px 0;
+}
+nav.toc a::before { content: counter(toc); font-family: var(--mono); font-size: 11.5px; padding-top: 2px; }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+
+main { min-width: 0; padding-block: 40px 0; }
+header.doc { display: grid; gap: 14px; padding-bottom: 28px; border-bottom: 1px solid var(--line); margin-bottom: 8px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0; font-weight: 700; text-wrap: balance; letter-spacing: -.01em; }
+.lede { max-width: 68ch; color: var(--muted); margin: 0; font-size: 16.5px; }
+.meta-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font-size: 12.5px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--muted); white-space: nowrap;
+}
+.chip.draft { border-color: var(--warn); color: var(--warn); background: var(--warn-soft); }
+
+section { padding-top: 36px; }
+h2 {
+  font-size: 23px; line-height: 1.25; margin: 0 0 14px; font-weight: 650; text-wrap: balance;
+  display: flex; gap: 12px; align-items: baseline;
+}
+h2 .num { font-family: var(--mono); font-size: 14px; color: var(--accent); font-weight: 500; }
+h3 { font-size: 17px; margin: 26px 0 8px; font-weight: 600; }
+p, li { max-width: 72ch; }
+p { margin: 0 0 12px; }
+ul, ol { padding-left: 20px; margin: 0 0 12px; }
+li { margin-bottom: 4px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+p code, li code, td code {
+  background: var(--sunken); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px;
+}
+a { color: var(--data); }
+
+.decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 14px 0 4px; }
+.decision {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+  display: grid; gap: 4px; align-content: start; box-shadow: var(--shadow);
+}
+.decision b { font-weight: 600; }
+.decision span { color: var(--muted); font-size: 14px; }
+
+.figure {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px; margin: 16px 0; overflow-x: auto;
+}
+.figure .cap { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.figure svg { display: block; min-width: 820px; width: 100%; height: auto; }
+
+.table-wrap { overflow-x: auto; margin: 10px 0 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th { font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--sunken); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+td.col { font-family: var(--mono); font-size: 13px; white-space: nowrap; }
+td.type { font-family: var(--mono); font-size: 12.5px; color: var(--data); white-space: nowrap; }
+.key { font-size: 11px; font-family: var(--mono); color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 4px; margin-left: 6px; }
+
+.file {
+  display: grid; gap: 4px; margin: 26px 0 6px;
+}
+.file .path { font-family: var(--mono); font-size: 14.5px; font-weight: 500; color: var(--ink); }
+.file .who { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 11.5px; padding: 1px 8px; border-radius: 999px; font-weight: 500; }
+.tag.w { background: var(--accent-soft); color: var(--accent); }
+.tag.r { background: var(--data-soft); color: var(--data); }
+.tag.n { background: var(--sunken); color: var(--muted); border: 1px solid var(--line); }
+
+pre.code {
+  font-family: var(--mono); font-size: 13px; line-height: 1.55; background: var(--sunken);
+  border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 10px 0 16px;
+}
+.note {
+  border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 10px 14px; border-radius: 0 6px 6px 0;
+  margin: 12px 0; max-width: 78ch; font-size: 14.5px;
+}
+.note b { color: var(--warn); }
+
+.formula {
+  font-family: var(--mono); font-size: 14px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 8px; padding: 12px 16px; margin: 10px 0 14px; overflow-x: auto; white-space: pre;
+}
+.pill { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+.pill.ok { background: var(--ok-soft); color: var(--ok); }
+.pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--accent-soft); color: var(--accent); }
+.qs { counter-reset: q; list-style: none; padding: 0; display: grid; gap: 10px; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 34px 1fr; max-width: 80ch; }
+.qs li::before { content: "В" counter(q); font-family: var(--mono); color: var(--accent); font-size: 13px; padding-top: 2px; }
+
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: st; }
+.steps li { counter-increment: st; display: grid; grid-template-columns: 34px 200px minmax(0, 1fr); gap: 12px;
+  align-items: baseline; padding: 9px 0; border-bottom: 1px dashed var(--line); max-width: none; margin: 0; }
+.steps li:last-child { border-bottom: 0; }
+.steps li::before { content: counter(st, decimal-leading-zero); font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.steps .who { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-family: var(--mono); font-size: 12px; }
+.steps .who .a { padding: 1px 7px; border-radius: 4px; background: var(--sunken); border: 1px solid var(--line); white-space: nowrap; }
+.steps .who .a.ml { border-color: var(--accent); color: var(--accent); }
+.steps .who .a.be { border-color: var(--data); color: var(--data); }
+.steps .who .arr { color: var(--muted); }
+.steps .txt { font-size: 14.5px; }
+.steps .branch { display: block; margin-top: 4px; font-size: 13.5px; color: var(--muted); }
+.steps .branch b { color: var(--ink); font-weight: 600; }
+.steps li.loop { background: var(--data-soft); border-radius: 6px; padding-inline: 8px; border-bottom: 0; margin-top: 6px; }
+@media (max-width: 640px) {
+  .steps li { grid-template-columns: 30px minmax(0, 1fr); }
+  .steps .txt { grid-column: 2; }
+}
+
+/* svg */
+.sv-box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+.sv-box.acc { stroke: var(--accent); }
+.sv-box.dat { stroke: var(--data); }
+.sv-vol { fill: var(--data-soft); stroke: var(--data); stroke-width: 1.5; stroke-dasharray: 6 4; }
+.sv-ext { fill: var(--sunken); stroke: var(--line); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.sv-t { fill: var(--ink); font-family: var(--sans); font-size: 15px; font-weight: 600; }
+.sv-s { fill: var(--muted); font-family: var(--sans); font-size: 12px; }
+.sv-m { fill: var(--ink); font-family: var(--mono); font-size: 12.5px; }
+.sv-lab { fill: var(--muted); font-family: var(--mono); font-size: 11.5px; }
+.sv-ar { stroke: var(--muted); stroke-width: 1.6; fill: none; }
+.sv-ar.w { stroke: var(--accent); }
+.sv-ar.r { stroke: var(--data); }
+.sv-head { fill: var(--muted); }
+.sv-head.w { fill: var(--accent); }
+.sv-head.r { fill: var(--data); }
+
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+html { scroll-behavior: smooth; }
+section:target h2 { color: var(--accent); }
+</style>
+
+<div class="page">
+  <nav class="toc" aria-label="Содержание">
+    <div class="label">Содержание</div>
+    <ol>
+      <li><a href="#decisions">Решения</a></li>
+      <li><a href="#containers">Контейнеры</a></li>
+      <li><a href="#volume">Общий том</a></li>
+      <li><a href="#ingest">Приём данных</a></li>
+      <li><a href="#runs">Прогнозы и публикация</a></li>
+      <li><a href="#reference">Справочники</a></li>
+      <li><a href="#serving">Правила отдачи</a></li>
+      <li><a href="#corrections">Поправки</a></li>
+      <li><a href="#models">Замена модели</a></li>
+      <li><a href="#failures">Сбои</a></li>
+      <li><a href="#config">Настройки</a></li>
+      <li><a href="#questions">Открытые вопросы</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="doc">
+      <div class="eyebrow">Прогноз загрузки трамваев · ML ↔ бэкенд</div>
+      <h1>Контракт прогнозного контура</h1>
+      <p class="lede">Как данные валидаций превращаются в прогноз, где он лежит, как бэкенд его читает и что происходит при новых, опоздавших и неполных данных. Документ фиксирует файлы, схемы, протокол публикации и границы ответственности.</p>
+      <div class="meta-row">
+        <span class="chip draft">Черновик на обсуждение</span>
+        <span class="chip">schema_version 1</span>
+        <span class="chip">время: Europe/Moscow, без смещения</span>
+        <span class="chip">гранулярность: маршрут × час</span>
+      </div>
+    </header>
+
+    <section id="decisions">
+      <h2><span class="num">01</span>Принятые решения</h2>
+      <div class="decisions">
+        <div class="decision"><b>Прогноз считается заранее</b><span>ML-воркер пакетно пишет прогноз на весь горизонт. Бэкенд модель не вызывает и держит активный прогноз в памяти.</span></div>
+        <div class="decision"><b>Обмен через общий том</b><span>Parquet и JSON в томе <code>tram-data</code>. ML пишет, бэкенд только читает. HTTP между контейнерами не нужен.</span></div>
+        <div class="decision"><b>Атомарная публикация</b><span>Новый прогноз становится видимым одним переименованием <code>active.json</code>. Недописанные файлы бэкенд не видит.</span></div>
+        <div class="decision"><b>Всё автоматически</b><span>Диспетчер ничего не загружает и не запускает. Источник выгрузок, расписания и пороги настраивают инженеры через переменные окружения.</span></div>
+        <div class="decision"><b>Только модели без обучения</b><span>Chronos-2, TimesFM, наивные модели и их ансамбли. Новые данные меняют контекст, переобучения нет.</span></div>
+        <div class="decision"><b>Два прогона</b><span>Краткосрочный: 61 день почасово. Годовой: 365 дней по дням, сезонная аппроксимация.</span></div>
+      </div>
+    </section>
+
+    <section id="containers">
+      <h2><span class="num">02</span>Контейнеры и связи</h2>
+      <p>Четыре постоянных сервиса и один общий том. MLflow нужен только при разработке и в поставку для жюри не входит.</p>
+
+      <div class="figure">
+        <svg viewBox="0 0 900 380" role="img" aria-labelledby="c-title c-desc">
+          <title id="c-title">Схема контейнеров</title>
+          <desc id="c-desc">Внешний источник кладёт файлы в inbox общего тома. ingest и ml-worker читают и пишут том. backend читает том только на чтение и отдаёт данные frontend.</desc>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="sv-head"/></marker>
+            <marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="sv-head w"/></marker>
+            <marker id="ahr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="sv-head r"/></marker>
+          </defs>
+
+          <!-- external source -->
+          <rect x="16" y="150" width="176" height="82" rx="8" class="sv-ext"/>
+          <text x="30" y="178" class="sv-t">Источник выгрузок</text>
+          <text x="30" y="198" class="sv-s">внешний, настраивают</text>
+          <text x="30" y="214" class="sv-s">инженеры (sftp, rsync, cron)</text>
+
+          <!-- ingest -->
+          <rect x="232" y="24" width="184" height="96" rx="8" class="sv-box acc"/>
+          <text x="248" y="52" class="sv-t">ingest</text>
+          <text x="248" y="72" class="sv-s">python + duckdb</text>
+          <text x="248" y="89" class="sv-s">опрос inbox раз в минуту</text>
+          <text x="248" y="106" class="sv-s">дедупликация, агрегаты</text>
+
+          <!-- ml-worker -->
+          <rect x="232" y="262" width="184" height="96" rx="8" class="sv-box acc"/>
+          <text x="248" y="290" class="sv-t">ml-worker</text>
+          <text x="248" y="310" class="sv-s">python + torch + Chronos-2</text>
+          <text x="248" y="327" class="sv-s">ночью и при сдвиге данных</text>
+          <text x="248" y="344" class="sv-s">год: раз в неделю</text>
+
+          <!-- volume -->
+          <rect x="462" y="16" width="206" height="348" rx="10" class="sv-vol"/>
+          <text x="478" y="44" class="sv-t">том tram-data</text>
+          <text x="478" y="76" class="sv-m">inbox/</text>
+          <text x="478" y="104" class="sv-m">raw/validations/</text>
+          <text x="478" y="132" class="sv-m">actuals/</text>
+          <text x="478" y="160" class="sv-m">ingestion/</text>
+          <text x="478" y="188" class="sv-m">state/watermark.json</text>
+          <text x="478" y="216" class="sv-m">reference/</text>
+          <text x="478" y="244" class="sv-m">runs/&lt;run_id&gt;/</text>
+          <text x="478" y="272" class="sv-m">active.json</text>
+          <text x="478" y="312" class="sv-s">ML пишет,</text>
+          <text x="478" y="328" class="sv-s">бэкенд только читает</text>
+
+          <!-- backend / frontend / users -->
+          <rect x="712" y="24" width="172" height="96" rx="8" class="sv-box dat"/>
+          <text x="728" y="52" class="sv-t">backend</text>
+          <text x="728" y="72" class="sv-s">FastAPI</text>
+          <text x="728" y="89" class="sv-s">прогноз в памяти</text>
+          <text x="728" y="106" class="sv-s">поправки, экспорт</text>
+
+          <rect x="712" y="166" width="172" height="70" rx="8" class="sv-box"/>
+          <text x="728" y="194" class="sv-t">frontend</text>
+          <text x="728" y="214" class="sv-s">React, карта, графики</text>
+
+          <rect x="712" y="286" width="172" height="62" rx="8" class="sv-ext"/>
+          <text x="728" y="312" class="sv-t">Диспетчер</text>
+          <text x="728" y="330" class="sv-s">только смотрит</text>
+
+          <!-- arrows -->
+          <path d="M192,176 C 330,176 330,150 462,150" class="sv-ar" marker-end="url(#ah)"/>
+          <text x="238" y="166" class="sv-lab">CSV → inbox/</text>
+
+          <path d="M416,60 L462,60" class="sv-ar w" marker-end="url(#ahw)" marker-start="url(#ahw)"/>
+          <text x="420" y="52" class="sv-lab">rw</text>
+
+          <path d="M416,300 L462,300" class="sv-ar w" marker-end="url(#ahw)" marker-start="url(#ahw)"/>
+          <text x="420" y="292" class="sv-lab">rw</text>
+
+          <path d="M668,72 L712,72" class="sv-ar r" marker-end="url(#ahr)"/>
+          <text x="674" y="64" class="sv-lab">ro</text>
+
+          <path d="M798,120 L798,166" class="sv-ar" marker-end="url(#ah)"/>
+          <text x="806" y="148" class="sv-lab">HTTP</text>
+
+          <path d="M798,236 L798,286" class="sv-ar" marker-end="url(#ah)"/>
+        </svg>
+        <div class="cap">Красные связи: запись в том. Бирюзовая: только чтение. Пунктиром: всё вне поставки.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Сервис</th><th>Роль</th><th>Запуск</th><th>Том</th><th>Ресурсы (оценка)</th></tr></thead>
+          <tbody>
+            <tr><td><b>ingest</b></td><td>Забирает файлы из <code>inbox/</code>, дедуплицирует валидации, пересчитывает агрегаты маршрут × час, определяет полноту дней и водяной знак</td><td>постоянно, опрос раз в <code>INGEST_POLL_SEC</code></td><td>rw</td><td>1 vCPU, 2 ГБ на начальную загрузку истории (DuckDB ограничен <code>INGEST_MEMORY_LIMIT</code>, излишек пишет на диск); суточный файл — десятки МБ</td></tr>
+            <tr><td><b>ml-worker</b></td><td>Считает краткосрочный и годовой прогнозы и эффекты факторов, проверяет качество, публикует run</td><td>постоянно, внутреннее расписание и реакция на сдвиг водяного знака</td><td>rw</td><td>2 vCPU, 3 ГБ; веса Chronos внутри образа</td></tr>
+            <tr><td><b>backend</b></td><td>Держит активный run в памяти, склеивает факт и прогноз, применяет поправки, агрегирует, экспортирует CSV и XLSX</td><td>постоянно</td><td>ro</td><td>2–4 vCPU, до 1 ГБ</td></tr>
+            <tr><td><b>frontend</b></td><td>Интерфейс: карта, графики, слайдеры поправок</td><td>постоянно</td><td>нет</td><td>статика</td></tr>
+            <tr><td><b>mlflow</b></td><td>История экспериментов и бэктестов</td><td>только профиль <code>dev</code></td><td>нет</td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="volume">
+      <h2><span class="num">03</span>Раскладка общего тома</h2>
+      <pre class="code">/data                                   том tram-data
+├── inbox/                              новые выгрузки, кладёт внешний процесс
+│   ├── processed/                      принятые файлы (ingest переносит сюда)
+│   └── failed/                         отклонённые + &lt;имя&gt;.error.txt
+├── raw/validations/date=YYYY-MM-DD/    сырые успешные валидации, parquet по дням
+├── actuals/
+│   ├── actuals_hourly.parquet          факт: маршрут × час
+│   └── day_status.parquet              полнота: маршрут × день
+├── ingestion/
+│   ├── batches.parquet                 журнал загрузок
+│   └── quarantine/&lt;batch_id&gt;.parquet   отбракованные строки с причиной
+├── tmp/duckdb/                         сброс DuckDB на диск при больших файлах
+├── state/watermark.json                последняя полностью загруженная дата
+├── reference/                          справочники и признаки (раздел 06)
+├── runs/
+│   ├── &lt;run_id&gt;/                       опубликованный прогон
+│   │   ├── meta.json
+│   │   ├── forecasts.parquet
+│   │   └── effects.parquet
+│   └── &lt;run_id&gt;.tmp/                   прогон в работе, бэкенд не читает
+└── active.json                         указатель на активные прогоны</pre>
+      <p>Кто пишет: <code>inbox/</code> заполняет внешний процесс; <code>raw/</code>, <code>actuals/</code>, <code>ingestion/</code>, <code>state/</code> пишет ingest; <code>runs/</code>, <code>active.json</code> и признаки в <code>reference/</code> пишет ml-worker. Бэкенд читает <code>active.json</code>, <code>runs/</code>, <code>actuals/</code>, <code>reference/</code> и <code>state/</code>.</p>
+    </section>
+
+    <section id="ingest">
+      <h2><span class="num">04</span>Приём данных</h2>
+
+      <h3>Как файл превращается в факт</h3>
+      <div class="figure">
+<ol class="steps">
+<li><span class="who"><span class="a ">источник</span> <span class="arr">→</span> <span class="a ">inbox/</span></span><span class="txt">Внешний процесс кладёт CSV-файл в <code>inbox/</code>.</span></li>
+<li><span class="who"><span class="a ml">ingest</span></span><span class="txt">Считает sha256 файла. Такой уже загружали — файл сразу уходит в <code>processed/</code>, дальше ничего не происходит.</span></li>
+<li><span class="who"><span class="a ml">ingest</span></span><span class="txt">Читает файл, оставляет только <code>validation_result = 1</code>, берёт номер маршрута из <code>ngpt_route</code>.</span></li>
+<li><span class="who"><span class="a ml">ingest</span> <span class="arr">→</span> <span class="a ">raw/</span></span><span class="txt">Раскладывает валидации по датам <code>tran_date_time</code>. Строки с уже известным ключом <code>(device_no, tran_no, tran_date_time)</code> пропускает.</span></li>
+<li><span class="who"><span class="a ml">ingest</span></span><span class="txt">Собирает список затронутых дат, включая ночной хвост следующих суток.</span></li>
+<li><span class="who"><span class="a ml">ingest</span> <span class="arr">→</span> <span class="a ">actuals/</span></span><span class="txt">Для каждой затронутой даты заново считает посадки маршрут × час по <b>всем</b> сырым данным за эту дату и заменяет строки по ключу <code>(route, ts)</code>.</span></li>
+<li><span class="who"><span class="a ml">ingest</span> <span class="arr">→</span> <span class="a ">actuals/</span></span><span class="txt">Пересчитывает статусы дней: final, partial или missing.</span></li>
+<li><span class="who"><span class="a ml">ingest</span> <span class="arr">→</span> <span class="a ">state/</span></span><span class="txt">Если все маршруты стали final по новую дату, сдвигает водяной знак в <code>watermark.json</code>.</span></li>
+<li><span class="who"><span class="a ml">ingest</span> <span class="arr">→</span> <span class="a ">ingestion/</span></span><span class="txt">Пишет запись в журнал загрузок и переносит файл в <code>processed/</code>. При ошибке — в <code>failed/</code> вместе с текстом ошибки.</span></li>
+</ol>
+        <div class="cap">Повторная загрузка того же файла ничего не меняет: сырые строки не дублируются, а агрегаты пересчитываются, а не прибавляются.</div>
+      </div>
+
+      <h3>Идемпотентность</h3>
+      <ul>
+        <li>Ключ сырой валидации: <code>(device_no, tran_no, tran_date_time)</code>. Сам <code>tran_no</code> — счётчик внутри валидатора и не уникален.</li>
+        <li>Агрегаты не накапливаются. Для каждой затронутой даты они заново считаются из всех сырых данных за эту дату и заменяют строки по ключу <code>(route, ts)</code>.</li>
+        <li>Ночной хвост склеивается сам. Выгрузки нарезаны по транспортным суткам: в файле за август есть валидации 1 сентября с 00:00 до 01:55. Какой бы файл ни пришёл вторым, 1 сентября пересчитается из обоих.</li>
+        <li>Время бэкенд берёт только из <code>tran_date_time</code>. Поле <code>input_date_time</code> местами битое и не используется.</li>
+      </ul>
+
+      <h3>Полнота дней и водяной знак</h3>
+      <p>Неполный последний день опаснее, чем отсутствующий: модель принимает его за провал спроса и занижает весь горизонт. Поэтому у каждого дня маршрута есть статус.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Статус</th><th>Условие</th><th>Что делает модель</th></tr></thead>
+          <tbody>
+            <tr><td><span class="pill ok">final</span></td><td>данные есть и прошло ≥ <code>FINALIZE_AFTER_DAYS</code> дней; или прошли сутки и объём ≥ <code>COMPLETENESS_RATIO</code> от ожидаемого. Низкий объём статус <b>не понижает</b>: ремонт даёт настоящие почти пустые дни, для них есть флаг <code>anomaly</code></td><td>берёт в контекст</td></tr>
+            <tr><td><span class="pill warn">partial</span></td><td>данные есть, но условия final не выполнены</td><td>не берёт; для Chronos это NaN</td></tr>
+            <tr><td><span class="pill bad">missing</span></td><td>данных за день нет</td><td>не берёт</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><b>Водяной знак</b> — последняя дата, до которой включительно все маршруты в статусе final. Контекст модели кончается на нём. Если данных нет неделю или месяц, прогноз строится от водяного знака, и горизонт просто покрывает дыру. Когда данные приходят задним числом, агрегаты пересчитываются, водяной знак сдвигается и ml-worker пересчитывает прогноз.</p>
+      <p>Ожидаемый объём дня — медиана того же дня недели за четыре предыдущие недели со статусом final.</p>
+
+      <div class="file">
+        <div class="path">actuals/actuals_hourly.parquet</div>
+        <div class="who"><span class="tag w">пишет ingest</span><span class="tag r">читает ml-worker, backend</span></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td>номер маршрута, из <code>ngpt_route</code> («25 трамвай» → 25)</td></tr>
+          <tr><td class="col">ts <span class="key">PK</span></td><td class="type">timestamp[s]</td><td>начало часа, Europe/Moscow без смещения</td></tr>
+          <tr><td class="col">boardings</td><td class="type">int32</td><td>число успешных валидаций за час; час без валидаций внутри загруженного дня = 0</td></tr>
+          <tr><td class="col">updated_at</td><td class="type">timestamp[s]</td><td>когда строка пересчитана</td></tr>
+          <tr><td class="col">batch_id</td><td class="type">string</td><td>последняя загрузка, затронувшая строку</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file">
+        <div class="path">actuals/day_status.parquet</div>
+        <div class="who"><span class="tag w">пишет ingest</span><span class="tag r">читает ml-worker, backend</span></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
+          <tr><td class="col">date <span class="key">PK</span></td><td class="type">date32</td><td></td></tr>
+          <tr><td class="col">status</td><td class="type">string</td><td>final / partial / missing</td></tr>
+          <tr><td class="col">observed</td><td class="type">int32</td><td>посадки за день</td></tr>
+          <tr><td class="col">expected</td><td class="type">int32</td><td>ожидаемый объём (медиана того же дня недели)</td></tr>
+          <tr><td class="col">anomaly</td><td class="type">bool</td><td>объём меньше <code>ANOMALY_RATIO</code> от ожидаемого: ремонт, отмена, сбой выгрузки. Для лога и интерфейса, статус не меняет</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file">
+        <div class="path">ingestion/batches.parquet</div>
+        <div class="who"><span class="tag w">пишет ingest</span><span class="tag r">читает backend (статус данных)</span></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td class="col">batch_id <span class="key">PK</span></td><td class="type">string</td><td>ULID загрузки</td></tr>
+          <tr><td class="col">file_name, sha256</td><td class="type">string</td><td>sha256 защищает от повторной обработки того же файла</td></tr>
+          <tr><td class="col">received_at, finished_at</td><td class="type">timestamp[s]</td><td></td></tr>
+          <tr><td class="col">rows_total / rows_refused / rows_quarantined</td><td class="type">int64</td><td>строк всего / отказов (validation_result ≠ 1) / отбракованных с причиной bad_value, future, too_old, no_route</td></tr>
+          <tr><td class="col">rows_valid / rows_new / rows_unknown_route</td><td class="type">int64</td><td>посадок в файле / из них новых после дедупликации / на маршрутах не из справочника</td></tr>
+          <tr><td class="col">date_min, date_max</td><td class="type">date32</td><td>диапазон по <code>tran_date_time</code></td></tr>
+          <tr><td class="col">status, error</td><td class="type">string</td><td>ok / failed и текст ошибки</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file">
+        <div class="path">state/watermark.json</div>
+        <div class="who"><span class="tag w">пишет ingest</span><span class="tag r">читает ml-worker, backend</span></div>
+      </div>
+      <pre class="code">{ "watermark": "2025-10-31", "latest_data": "2025-11-01T01:00:00", "updated_at": "2025-11-02T00:05:12" }</pre>
+      <p>Формат входных файлов в <code>inbox/</code> — как у выгрузок организаторов: CSV, разделитель <code>;</code>, UTF-8, те же 14 колонок. Другие форматы потребуют адаптера в ingest.</p>
+    </section>
+
+    <section id="runs">
+      <h2><span class="num">05</span>Прогнозы и публикация</h2>
+
+      <div class="table-wrap"><table>
+        <thead><tr><th>Прогон</th><th>Горизонт</th><th>Шаг</th><th>Метод</th><th>Когда</th><th>Для чего</th></tr></thead>
+        <tbody>
+          <tr><td><b>short</b></td><td>61 день от водяного знака</td><td>час</td><td>Chronos-2, календарь, каникулы, тип дня</td><td>ночью в <code>SHORT_RUN_AT</code> и при сдвиге водяного знака</td><td>день (почасово), неделя (почасово + суммы по дням), месяц (по дням)</td></tr>
+          <tr><td><b>year</b></td><td>365 дней</td><td>день</td><td>сезонная аппроксимация: дневная сумма = уровень × сезонный индекс × эффект типа дня; часы — по недельному профилю</td><td>раз в неделю в <code>YEAR_RUN_AT</code></td><td>год (по дням, неделям, месяцам); дальше горизонта short</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file">
+        <div class="path">runs/&lt;run_id&gt;/meta.json</div>
+        <div class="who"><span class="tag w">пишет ml-worker</span><span class="tag r">читает backend</span></div>
+      </div>
+<pre class="code">{
+  "schema_version": 1,
+  "run_id": "short-2025-11-02T030000-chronos2-cal-school-daytype",
+  "kind": "short",                              // short | year
+  "created_at": "2025-11-02T03:00:41",
+  "data_cutoff": "2025-10-31",                  // водяной знак на момент прогона
+  "horizon": { "start": "2025-11-01T00:00:00", "end": "2025-12-31T23:00:00", "step": "hour" },
+  "routes": [1, 5, 7, 11, 12, 17, 25, 26, 28, 50],
+  "model": {
+    "name": "chronos2_daily_cal_school_daytype",
+    "version": "amazon/chronos-2@&lt;revision&gt;",
+    "covariates": ["is_non_working", "is_holiday_weekday", "is_shortened",
+                   "school_holiday_modular", "school_holiday_quarter", "day_type"],
+    "quantiles": [0.1, 0.5, 0.9]
+  },
+  "backtest": { "window": "2025-09-01..2025-10-31", "wape_score": 0.8822 },
+  "quality_checks": { "rows": "ok", "non_negative": "ok", "daily_totals_range": "ok" },
+  "cold_start_routes": [5],                     // маршруты без истории, прогноз запасным методом
+  "mlflow_run_id": null
+}</pre>
+
+      <div class="file">
+        <div class="path">runs/&lt;run_id&gt;/forecasts.parquet</div>
+        <div class="who"><span class="tag w">пишет ml-worker</span><span class="tag r">читает backend</span></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
+          <tr><td class="col">ts <span class="key">PK</span></td><td class="type">timestamp[s]</td><td>начало часа (short) или начало дня (year)</td></tr>
+          <tr><td class="col">yhat</td><td class="type">float32</td><td>медиана прогноза, ≥ 0</td></tr>
+          <tr><td class="col">q10, q90</td><td class="type">float32, nullable</td><td>границы 80%-интервала; null, если модель квантилей не даёт</td></tr>
+        </tbody>
+      </table></div>
+      <p>Объём: short — 10 × 1464 = 14 640 строк, year — 10 × 365 = 3 650 строк. Оба помещаются в память бэкенда целиком.</p>
+
+      <div class="file">
+        <div class="path">runs/&lt;run_id&gt;/effects.parquet</div>
+        <div class="who"><span class="tag w">пишет ml-worker</span><span class="tag r">читает backend</span></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
+        <tbody>
+          <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
+          <tr><td class="col">date <span class="key">PK</span></td><td class="type">date32</td><td></td></tr>
+          <tr><td class="col">factor <span class="key">PK</span></td><td class="type">string</td><td>holiday / school_holiday</td></tr>
+          <tr><td class="col">log_effect</td><td class="type">float32</td><td>log(прогноз) − log(прогноз без фактора), усреднено по часам дня. Строки есть только там, где фактор активен</td></tr>
+        </tbody>
+      </table></div>
+
+      <div class="file">
+        <div class="path">active.json</div>
+        <div class="who"><span class="tag w">пишет ml-worker</span><span class="tag r">читает backend</span></div>
+      </div>
+<pre class="code">{
+  "schema_version": 1,
+  "short": "short-2025-11-02T030000-chronos2-cal-school-daytype",
+  "year":  "year-2025-10-27T040000-seasonal",
+  "published_at": "2025-11-02T03:01:05"
+}</pre>
+
+      <h3>Протокол публикации</h3>
+      <div class="figure">
+<ol class="steps">
+<li><span class="who"><span class="a ml">ml-worker</span> <span class="arr">→</span> <span class="a ">runs/&lt;id&gt;.tmp/</span></span><span class="txt">Пишет прогноз, эффекты и <code>meta.json</code> во временную папку. Бэкенд её не читает.</span></li>
+<li><span class="who"><span class="a ml">ml-worker</span></span><span class="txt">Проверяет качество: полная сетка, нет NaN и отрицательных значений, дневные суммы в разумных пределах.<span class="branch"><b>Не прошло:</b> временная папка удаляется, ошибка уходит в лог, <code>active.json</code> не меняется, бэкенд работает на прежнем прогнозе.</span></span></li>
+<li><span class="who"><span class="a ml">ml-worker</span> <span class="arr">→</span> <span class="a ">runs/&lt;id&gt;/</span></span><span class="txt">Переименовывает <code>runs/&lt;id&gt;.tmp</code> в <code>runs/&lt;id&gt;</code>.</span></li>
+<li><span class="who"><span class="a ml">ml-worker</span> <span class="arr">→</span> <span class="a ">active.json</span></span><span class="txt">Пишет <code>active.json.tmp</code> и переименовывает его в <code>active.json</code>. Это момент публикации.</span></li>
+<li class="loop"><span class="who"><span class="a be">backend</span> <span class="arr">→</span> <span class="a ">active.json</span></span><span class="txt">Раз в <code>BACKEND_RELOAD_SEC</code> читает <code>active.json</code>. Если id прогона сменился, загружает новый прогон рядом со старым.<span class="branch"><b>Загрузка успешна и schema_version совпал:</b> подменяет ссылку на новый прогон. <b>Иначе:</b> остаётся на старом и пишет ошибку.</span></span></li>
+</ol>
+        <div class="cap">Переименование в пределах одного тома атомарно: бэкенд видит либо старый прогноз, либо новый целиком.</div>
+      </div>
+      <ul>
+        <li>Проверки качества: полная сетка маршрут × час, нет NaN и отрицательных значений, дневные суммы маршрута в пределах 0.3–3 от медианы последних четырёх недель, <code>data_cutoff</code> не старше предыдущего run.</li>
+        <li>Хранятся последние <code>KEEP_RUNS</code> прогонов. Откат — перезапись <code>active.json</code> на прежний <code>run_id</code>.</li>
+        <li>Если <code>schema_version</code> не совпал, бэкенд остаётся на старом run и пишет ошибку. Несовместимые изменения схемы поднимают версию.</li>
+      </ul>
+    </section>
+
+    <section id="reference">
+      <h2><span class="num">06</span>Справочники и признаки</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Файл</th><th>Кто пишет</th><th>Содержимое</th><th>Источник</th></tr></thead>
+        <tbody>
+          <tr><td class="col">reference/routes.parquet</td><td>инженеры</td><td>route, название, конечные, цвет, депо</td><td>справочник организаторов, OSM</td></tr>
+          <tr><td class="col">reference/stops.parquet</td><td>инженеры</td><td>route, direction, seq, stop_id, name, lat, lon, weight</td><td>справочник организаторов, OSM; weight — доля маршрута для оценки по остановке</td></tr>
+          <tr><td class="col">reference/calendar.parquet</td><td>ml-worker</td><td>date, is_non_working, is_holiday_weekday, is_shortened, day_type, days_to_holiday, days_after_holiday</td><td><a href="https://isdayoff.ru/">isDayOff</a>, обновляется раз в сутки; при недоступности остаётся прежний</td></tr>
+          <tr><td class="col">reference/school_holidays.csv</td><td>инженеры</td><td>system, name, start, end, source</td><td>рекомендации ДОНМ; ведётся вручную раз в учебный год</td></tr>
+          <tr><td class="col">reference/route_regimes.csv</td><td>инженеры</td><td>route, start, end, days, status, source</td><td>объявления об изменениях маршрутов; пока не подаётся в модель</td></tr>
+          <tr><td class="col">reference/correction_factors.json</td><td>инженеры</td><td>факторы для слайдеров (раздел 08)</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="serving">
+      <h2><span class="num">07</span>Правила отдачи для бэкенда</h2>
+      <p>Эндпоинты проектирует команда бэкенда. Ниже — правила, которые должны выполняться при любом API.</p>
+
+      <h3>Склейка факта и прогноза</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Час запроса</th><th>Источник</th><th>Поле <code>source</code> в ответе</th></tr></thead>
+        <tbody>
+          <tr><td>≤ водяного знака, день final</td><td><code>actuals_hourly</code></td><td>actual</td></tr>
+          <tr><td>после водяного знака, в горизонте short</td><td>активный short</td><td>forecast</td></tr>
+          <tr><td>за горизонтом short, в горизонте year</td><td>активный year: дневная сумма, по часам — по недельному профилю</td><td>forecast_seasonal</td></tr>
+          <tr><td>за горизонтом year</td><td>нет данных</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <p>Дни partial до водяного знака не показываются как факт: вместо них идёт прогноз, чтобы график не проваливался из-за недогруженных данных.</p>
+
+      <h3>Агрегация</h3>
+      <ul>
+        <li>Суммы по часам, дням, неделям, месяцам, по маршруту и по нескольким маршрутам — простое сложение <code>yhat</code>.</li>
+        <li>Квантили при суммировании не складываются. Для сумм отдаётся только <code>yhat</code> или отдельная оценка интервала.</li>
+        <li>Остановка: <code>yhat маршрута × weight остановки</code>. В валидациях остановок нет (<code>place_id</code> — депо), поэтому ответ по остановке помечается как оценка.</li>
+        <li>Округление до целого — только при выводе и экспорте.</li>
+      </ul>
+
+      <h3>Метаданные для интерфейса</h3>
+      <p>Бэкенд отдаёт сведения об актуальности: водяной знак, время публикации short и year, модель, бэктест-скор, маршруты без истории. Если водяной знак старше <code>STALE_AFTER_DAYS</code>, интерфейс показывает предупреждение «данные по состоянию на …».</p>
+    </section>
+
+    <section id="corrections">
+      <h2><span class="num">08</span>Поправочные коэффициенты</h2>
+      <p>Праздники и каникулы модель уже учитывает. Поэтому факторы делятся на два вида, и формулы для них разные, чтобы не учесть эффект дважды.</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Вид</th><th>Примеры</th><th>Значение по умолчанию</th><th>Смысл слайдера</th></tr></thead>
+        <tbody>
+          <tr><td><b>model</b></td><td>праздник, школьные каникулы</td><td>1.0</td><td>сила эффекта относительно модели: 0 — без фактора, 1 — как считает модель, 2 — вдвое сильнее</td></tr>
+          <tr><td><b>scenario</b></td><td>погода, событие, режим маршрута</td><td>1.0 (выключено)</td><td>множитель на выбранные даты и маршруты, например 0.96 для сильного дождя</td></tr>
+        </tbody>
+      </table></div>
+      <div class="formula">yhat_adj = yhat
+         × Π_model    exp(log_effect(route, date, f) × (k_f − 1))
+         × Π_scenario m_s   (если дата и маршрут в области действия сценария)</div>
+      <p>Пример для 4 ноября: прогноз 107 тыс., без праздника было бы 230 тыс. Слайдер «праздник» на 0.5 даёт около 157 тыс., на 0 — 230 тыс. Квантили умножаются на те же множители. Модель при этом не перезапускается.</p>
+
+      <div class="file">
+        <div class="path">reference/correction_factors.json</div>
+        <div class="who"><span class="tag n">пишут инженеры</span><span class="tag r">читает backend, отдаёт frontend</span></div>
+      </div>
+<pre class="code">[
+  { "factor": "holiday", "kind": "model", "label": "Праздники",
+    "default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "scope": "city",
+    "description": "Сила эффекта праздничных дней относительно модели" },
+  { "factor": "school_holiday", "kind": "model", "label": "Школьные каникулы",
+    "default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "scope": "city" },
+  { "factor": "rain", "kind": "scenario", "label": "Сильный дождь",
+    "default": 1.0, "suggested": 0.96, "min": 0.8, "max": 1.0, "step": 0.01,
+    "scope": "city_dates",
+    "source": "исследование Берлина: осадки > 5 мм, около −4% для трамвая и автобуса" },
+  { "factor": "route_regime", "kind": "scenario", "label": "Режим маршрута",
+    "default": 1.0, "min": 0.0, "max": 1.5, "step": 0.05, "scope": "route_dates",
+    "description": "Ремонт, укорочение или усиление маршрута на выбранные даты" }
+]</pre>
+    </section>
+
+    <section id="models">
+      <h2><span class="num">09</span>Замена модели</h2>
+      <p>Бэкенд зависит только от формата прогона, поэтому смена модели его не затрагивает. Внутри ml-worker модели подключаются через один интерфейс.</p>
+<pre class="code">class Forecaster(Protocol):
+    name: str
+    def fit(self, history: DataFrame) -> Self             # history: route, ts, y до водяного знака; для моделей без обучения это контекст
+    def predict(self, start, end) -> DataFrame            # route, ts, yhat [, q0.1, q0.9]</pre>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Модель</th><th>Как подключается</th><th>Что меняется</th></tr></thead>
+        <tbody>
+          <tr><td>Chronos-2 (сейчас)</td><td>готово</td><td>—</td></tr>
+          <tr><td>TimesFM 2.5</td><td>новый класс; ковариаты через его XReg</td><td>образ ml-worker, <code>ML_MODEL</code></td></tr>
+          <tr><td>Ансамбль моделей</td><td>класс-обёртка, медиана прогнозов</td><td><code>ML_MODEL</code></td></tr>
+          <tr><td>Наивные модели</td><td>готово</td><td>запасной вариант для маршрутов без истории</td></tr>
+          <tr><td>Дообученный Chronos (LoRA)</td><td>понадобятся <code>train</code> и <code>save/load</code></td><td>интерфейс расширится, контракт с бэкендом не изменится</td></tr>
+        </tbody>
+      </table></div>
+      <p>Деревья решений и бустинг не используются: им нужны обучение по расписанию, хранение артефактов и лаговые признаки, а это усложняет контур без выигрыша на нашей задаче.</p>
+      <p>Перед сменой модели её прогоняют на тех же бэктест-окнах. Новая модель попадает в <code>ML_MODEL</code>, только если не хуже текущей. Скор записывается в <code>meta.json</code>.</p>
+    </section>
+
+    <section id="failures">
+      <h2><span class="num">10</span>Сбои и что происходит</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Ситуация</th><th>Поведение</th><th>Что видит интерфейс</th></tr></thead>
+        <tbody>
+          <tr><td>Тот же файл пришёл дважды</td><td>sha256 уже есть в журнале, файл уходит в processed/ без обработки</td><td>ничего</td></tr>
+          <tr><td>Битый файл</td><td>уходит в failed/ с текстом ошибки, остальные файлы обрабатываются</td><td>ничего; ошибка в журнале загрузок</td></tr>
+          <tr><td>За вчера пришла часть данных</td><td>день partial, водяной знак не двигается</td><td>вчера показан прогнозом</td></tr>
+          <tr><td>Данных нет неделю или месяц</td><td>прогноз от водяного знака, горизонт покрывает дыру</td><td>предупреждение «данные по состоянию на …»</td></tr>
+          <tr><td>Данные пришли задним числом</td><td>пересчёт агрегатов, сдвиг водяного знака, новый прогноз</td><td>факт появляется, прогноз обновляется</td></tr>
+          <tr><td>ml-worker упал или проверки не прошли</td><td>active.json не меняется</td><td>прежний прогноз, время публикации стареет</td></tr>
+          <tr><td>isDayOff недоступен</td><td>используется прежний calendar.parquet</td><td>ничего</td></tr>
+          <tr><td>Новый маршрут без истории</td><td>запасной метод, маршрут в <code>cold_start_routes</code></td><td>пометка «низкая достоверность»</td></tr>
+          <tr><td>Бэкенд перезапустился</td><td>при старте читает active.json и загружает run</td><td>ничего</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="config">
+      <h2><span class="num">11</span>Настройки для инженеров</h2>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Переменная</th><th>Сервис</th><th>По умолчанию</th><th>Смысл</th></tr></thead>
+        <tbody>
+          <tr><td class="col">DATA_DIR</td><td>все</td><td class="col">/data</td><td>путь к тому</td></tr>
+          <tr><td class="col">INGEST_POLL_SEC</td><td>ingest</td><td class="col">60</td><td>как часто проверять inbox</td></tr>
+          <tr><td class="col">FINALIZE_AFTER_DAYS</td><td>ingest</td><td class="col">3</td><td>через сколько дней день считается полным в любом случае</td></tr>
+          <tr><td class="col">COMPLETENESS_RATIO</td><td>ingest</td><td class="col">0.97</td><td>доля ожидаемого объёма для досрочного final (к концу D+1 приходит в среднем 97.4%)</td></tr>
+          <tr><td class="col">ANOMALY_RATIO</td><td>ingest</td><td class="col">0.5</td><td>ниже этой доли ожидаемого день помечается anomaly</td></tr>
+          <tr><td class="col">MIN_DATE</td><td>ingest</td><td class="col">2020-01-01</td><td>валидации раньше — битые даты, в карантин</td></tr>
+          <tr><td class="col">ROUTES</td><td>ingest</td><td class="col">1,5,7,11,12,17,25,26,28,50</td><td>маршруты из справочника; остальные принимаются, но попадают в предупреждения</td></tr>
+          <tr><td class="col">INGEST_MEMORY_LIMIT</td><td>ingest</td><td class="col">1GB</td><td>лимит памяти DuckDB, излишек пишется в tmp/duckdb</td></tr>
+          <tr><td class="col">ML_MODEL</td><td>ml-worker</td><td class="col">chronos2_daily_cal_school_daytype</td><td>имя модели из реестра</td></tr>
+          <tr><td class="col">SHORT_RUN_AT</td><td>ml-worker</td><td class="col">03:00</td><td>ночной прогон short</td></tr>
+          <tr><td class="col">RUN_ON_WATERMARK</td><td>ml-worker</td><td class="col">true</td><td>пересчитывать short при сдвиге водяного знака (не чаще раза в 30 минут)</td></tr>
+          <tr><td class="col">YEAR_RUN_AT</td><td>ml-worker</td><td class="col">MON 04:00</td><td>еженедельный прогон year</td></tr>
+          <tr><td class="col">KEEP_RUNS</td><td>ml-worker</td><td class="col">14</td><td>сколько прогонов хранить</td></tr>
+          <tr><td class="col">BACKEND_RELOAD_SEC</td><td>backend</td><td class="col">30</td><td>как часто проверять active.json</td></tr>
+          <tr><td class="col">STALE_AFTER_DAYS</td><td>backend</td><td class="col">3</td><td>когда показывать предупреждение об устаревших данных</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section id="questions">
+      <h2><span class="num">12</span>Открытые вопросы</h2>
+      <ol class="qs">
+        <li><div><b>Откуда приходят данные в продакшене.</b> Контракт предполагает, что внешний процесс кладёт CSV в <code>inbox/</code>. Если источник — API или поток, в ingest нужен адаптер; формат дальше не меняется.</div></li>
+        <li><div><b>Веса остановок.</b> Равные доли, или по близости к метро и точкам интереса? В любом случае ответ по остановке помечается как оценка.</div></li>
+        <li><div><b>Порог полноты.</b> <code>FINALIZE_AFTER_DAYS=3</code> и <code>COMPLETENESS_RATIO=0.97</code> подобраны по задержкам выгрузок за сентябрь 2025 (к D+3 приходит 97.7%). Кривую задержек стоит пересчитывать регулярно: к концу месяца выгрузки медленнее.</div></li>
+        <li><div><b>Маршрут 5.</b> Запущен 17 декабря 2025 года, истории почти нет. Держать его в cold_start с запасным методом, или скрывать до накопления данных?</div></li>
+        <li><div><b>Сценарные поправки.</b> Нужна ли область действия по маршрутам и датам, или хватит слайдеров на весь город?</div></li>
+        <li><div><b>Метрики в продакшене.</b> Считать ли фактическую точность прошлых прогонов (прогноз против факта по дням final) и показывать её в интерфейсе.</div></li>
+      </ol>
+    </section>
+  </main>
+</div>
