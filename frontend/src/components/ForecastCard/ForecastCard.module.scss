@@ -1,0 +1,58 @@
+.forecastCard {
+    width: 21.542vw;
+    padding: 0.964vw 0.964vw 1.077vw 0.964vw;
+    border: 1px solid #1F2E40;
+    background: linear-gradient(135deg, #1F2E40 14%, rgba(223, 74, 89, 0.5) 100%);
+    border-radius: 12px;
+}
+
+.forecastLogo {
+    img {
+        max-width: 3.118vw;
+        max-height: 3.118vw;
+    }
+
+    p {
+        font-weight: 500;
+        color: #fff;
+        font-size: 0.737vw;
+    }
+
+    display: flex;
+    align-items: center;
+    gap: 0.964vw;
+}
+
+.forecastTop {
+    button {
+        background: transparent;
+        max-width: 1.417vw;
+        cursor: pointer;
+    }
+
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.forecastBottom {
+    p {
+        color: #fff;
+        font-weight: 500;
+        font-size: 0.68vw;
+        line-height: 210%;
+    } 
+
+    span {
+        font-weight: 700;
+        font-size: 0.907vw;
+    }
+
+    img {
+        margin-left: 0.964vw;
+        max-width: 7.024vw;
+    }
+
+    display: flex;
+    align-items: center;
+}

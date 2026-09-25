@@ -6,9 +6,15 @@ import cogwheel from '../../assets/cogwheel.svg'
 import tram from '../../assets/menu-bottom-pic.svg'
 import calendar from '../../assets/calendar.svg'
 import calendarBig from '../../assets/calendar1.svg'
+import tram2 from '../../assets/tramIcon.svg'
+import pass from '../../assets/passenger.svg'
+import clock from '../../assets/clock.svg'
+import route from '../../assets/routeIcon.svg'
 
 import LoadGraph from '../../components/LoadGraph/LoadGraph'
 import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
+import StatCard from '../../components/StatCard/StatCard'
+import ForecatsCard from '../../components/ForecastCard/ForecastCard'
 import { Link } from 'react-router-dom'
 
 export default function Dashboard() {
@@ -90,6 +96,43 @@ export default function Dashboard() {
                             <div className={styles.columnLeftBottom}>
                                 <LoadGraph />
                                 <TopLoadedRoutes />
+                            </div>
+                        </div>
+
+                        <div className={styles.dashboardColumnRight}>
+                            <div className={styles.statCards}>
+                                <StatCard
+                                    icon={tram2}
+                                    title="Общая загрузка сети"
+                                    value="68%"
+                                    comparison="+6%"
+                                    comparisonText="vs. вчера"
+                                    isFirst
+                                    containsGraph
+                                />
+                                <StatCard
+                                    icon={pass}
+                                    title="Пассажиропоток (сегодня)"
+                                    value="1 248 930"
+                                    comparison="+12%"
+                                    comparisonText="vs. вчера"
+                                />
+                                <StatCard
+                                    icon={route}
+                                    title="Активные маршруты"
+                                    value="10"
+                                    comparison="+12%"
+                                    comparisonText="vs. вчера"
+                                    isRoute
+                                />
+                                <StatCard
+                                    icon={clock}
+                                    title="Средняя задержка"
+                                    value="2.4 мин"
+                                    comparison="-0.8 мин"
+                                    comparisonText="vs. вчера"
+                                />
+                                <ForecatsCard />
                             </div>
                         </div>
                     </div>

@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import styles from './LoadGraph.module.scss';
 import arrow from '../../assets/grow-icon.svg';
 
-const timeRanges = ['Сегодня', '7 дней', '30 дней'];
+const timeRanges = ['Сегодня', '7 дней', '1 месяц'];
 
 export default function LoadGraph() {
     const [selectedRange, setSelectedRange] = useState('Сегодня');

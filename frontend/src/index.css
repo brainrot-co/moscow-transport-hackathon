@@ -18,6 +18,10 @@ h6 {
   padding: 0;
 }
 
+img {
+  pointer-events: none;
+}
+
 section {
   border: none;
 }
