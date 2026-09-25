@@ -1,4 +1,4 @@
-import { useMemo, useState, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
 import clsx from 'clsx';
 
 import styles from './LoadGraph.module.scss';
@@ -22,10 +22,9 @@ interface ChartPoint extends LoadPoint {
     y: number;
 }
 
-const CHART_WIDTH = 680;
+const INITIAL_CHART_WIDTH = 680;
 const CHART_HEIGHT = 270;
-const PLOT = { left: 68, right: 18, top: 34, bottom: 48 };
-const PLOT_WIDTH = CHART_WIDTH - PLOT.left - PLOT.right;
+const PLOT = { left: 68, right: 60, top: 34, bottom: 48 };
 const PLOT_HEIGHT = CHART_HEIGHT - PLOT.top - PLOT.bottom;
 const BASELINE_Y = PLOT.top + PLOT_HEIGHT;
 
@@ -115,17 +114,46 @@ const createSmoothPath = (points: ChartPoint[]) => {
 };
 
 export default function LoadGraph() {
+    const chartRef = useRef<SVGSVGElement>(null);
     const [selectedRange, setSelectedRange] = useState<TimeRange>('Сегодня');
     const [activeIndex, setActiveIndex] = useState(rangeData['Сегодня'].defaultIndex);
+    const [chartWidth, setChartWidth] = useState(INITIAL_CHART_WIDTH);
     const currentRange = rangeData[selectedRange];
+    const plotWidth = chartWidth - PLOT.left - PLOT.right;
+
+    useEffect(() => {
+        const chart = chartRef.current;
+
+        if (!chart) {
+            return;
+        }
+
+        const updateChartWidth = () => {
+            const bounds = chart.getBoundingClientRect();
+
+            if (bounds.width === 0 || bounds.height === 0) {
+                return;
+            }
+
+            const nextWidth = Math.max(520, Math.round((bounds.width / bounds.height) * CHART_HEIGHT));
+            setChartWidth((currentWidth) => currentWidth === nextWidth ? currentWidth : nextWidth);
+        };
+
+        updateChartWidth();
+
+        const observer = new ResizeObserver(updateChartWidth);
+        observer.observe(chart);
+
+        return () => observer.disconnect();
+    }, []);
 
     const chartPoints = useMemo<ChartPoint[]>(() => (
         currentRange.points.map((point, index, points) => ({
             ...point,
-            x: PLOT.left + (index / (points.length - 1)) * PLOT_WIDTH,
+            x: PLOT.left + (index / (points.length - 1)) * plotWidth,
             y: PLOT.top + ((100 - point.value) / 100) * PLOT_HEIGHT,
         }))
-    ), [currentRange]);
+    ), [currentRange, plotWidth]);
 
     const linePath = useMemo(() => createSmoothPath(chartPoints), [chartPoints]);
     const areaPath = chartPoints.length > 0
@@ -137,7 +165,7 @@ export default function LoadGraph() {
     const tooltipHeight = 49;
     const tooltipX = Math.min(
         Math.max(activePoint.x - tooltipWidth / 2, PLOT.left),
-        CHART_WIDTH - PLOT.right - tooltipWidth,
+        chartWidth - PLOT.right - tooltipWidth,
     );
     const tooltipY = Math.max(2, activePoint.y - tooltipHeight - 16);
 
@@ -148,9 +176,9 @@ export default function LoadGraph() {
 
     const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
         const bounds = event.currentTarget.getBoundingClientRect();
-        const pointerX = ((event.clientX - bounds.left) / bounds.width) * CHART_WIDTH;
-        const clampedX = Math.min(Math.max(pointerX, PLOT.left), CHART_WIDTH - PLOT.right);
-        const pointStep = PLOT_WIDTH / (chartPoints.length - 1);
+        const pointerX = ((event.clientX - bounds.left) / bounds.width) * chartWidth;
+        const clampedX = Math.min(Math.max(pointerX, PLOT.left), chartWidth - PLOT.right);
+        const pointStep = plotWidth / (chartPoints.length - 1);
         const nearestIndex = Math.round((clampedX - PLOT.left) / pointStep);
 
         setActiveIndex(nearestIndex);
@@ -189,8 +217,9 @@ export default function LoadGraph() {
             </div>
 
             <svg
+                ref={chartRef}
                 className={styles.chart}
-                viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+                viewBox={`0 0 ${chartWidth} ${CHART_HEIGHT}`}
                 role="img"
                 aria-label={`График загрузки сети за период: ${selectedRange}`}
                 onPointerMove={handlePointerMove}
@@ -217,12 +246,12 @@ export default function LoadGraph() {
                                 className={styles.horizontalGrid}
                                 x1={PLOT.left}
                                 y1={y}
-                                x2={CHART_WIDTH - PLOT.right}
+                                x2={chartWidth - PLOT.right}
                                 y2={y}
                             />
                             <text
                                 className={styles.axisLabel}
-                                x={PLOT.left - 18}
+                                x={PLOT.left - 14}
                                 y={y + 5}
                                 textAnchor="end"
                             >

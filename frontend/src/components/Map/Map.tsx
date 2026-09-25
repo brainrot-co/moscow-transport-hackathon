@@ -21,6 +21,22 @@ setWorkerUrl(workerUrl);
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 const ALL_ROUTES = 'all';
+const DATA_LAYER_IDS = new Set([
+    'route-glow',
+    'route-inner-glow',
+    'route-lines',
+    'route-focus',
+    'route-hit-area',
+    'stop-glow',
+    'tram-stops',
+    'selected-stop',
+]);
+
+type MapTheme = 'dark' | 'light';
+
+interface MapProps {
+    theme?: MapTheme;
+}
 
 const networkBounds = new LngLatBounds();
 
@@ -36,63 +52,68 @@ const getRouteBounds = (routeId: string) => {
     return bounds;
 };
 
-const applyDarkBlueTheme = (map: MapLibreMap) => {
+const applyMapTheme = (map: MapLibreMap, theme: MapTheme) => {
     const styleLayers = map.getStyle().layers ?? [];
+    const isLight = theme === 'light';
 
     styleLayers.forEach((layer) => {
         const layerId = layer.id.toLowerCase();
 
+        if (DATA_LAYER_IDS.has(layer.id)) {
+            return;
+        }
+
         if (layer.type === 'background') {
-            map.setPaintProperty(layer.id, 'background-color', '#061321');
+            map.setPaintProperty(layer.id, 'background-color', isLight ? '#edf3f7' : '#061321');
             return;
         }
 
         if (layer.type === 'fill') {
             const fillColor = layerId.includes('water')
-                ? '#071a2c'
+                ? (isLight ? '#d9eaf3' : '#071a2c')
                 : layerId.includes('building')
-                    ? '#10243a'
+                    ? (isLight ? '#e1e6eb' : '#10243a')
                     : layerId.includes('park')
                         || layerId.includes('wood')
                         || layerId.includes('grass')
                         || layerId.includes('landcover')
-                        ? '#0a1d2d'
-                        : '#081827';
+                        ? (isLight ? '#dcebdd' : '#0a1d2d')
+                        : (isLight ? '#edf1f4' : '#081827');
 
             map.setPaintProperty(layer.id, 'fill-color', fillColor);
-            map.setPaintProperty(layer.id, 'fill-outline-color', '#10283d');
+            map.setPaintProperty(layer.id, 'fill-outline-color', isLight ? '#d1d8df' : '#10283d');
             return;
         }
 
         if (layer.type === 'line') {
             const lineColor = layerId.includes('motorway') || layerId.includes('trunk')
-                ? '#254563'
+                ? (isLight ? '#aebdcb' : '#254563')
                 : layerId.includes('road')
                     || layerId.includes('street')
                     || layerId.includes('bridge')
                     || layerId.includes('tunnel')
-                    ? '#193550'
+                    ? (isLight ? '#c3ced9' : '#193550')
                     : layerId.includes('boundary')
-                        ? '#27435f'
+                        ? (isLight ? '#91a2b5' : '#27435f')
                         : layerId.includes('water')
-                            ? '#12314b'
-                            : '#122b43';
+                            ? (isLight ? '#b8d5e4' : '#12314b')
+                            : (isLight ? '#cbd5df' : '#122b43');
 
             map.setPaintProperty(layer.id, 'line-color', lineColor);
             return;
         }
 
         if (layer.type === 'symbol') {
-            map.setPaintProperty(layer.id, 'text-color', '#6f87a3');
-            map.setPaintProperty(layer.id, 'text-halo-color', '#061321');
+            map.setPaintProperty(layer.id, 'text-color', isLight ? '#5f7083' : '#6f87a3');
+            map.setPaintProperty(layer.id, 'text-halo-color', isLight ? '#f8fafc' : '#061321');
             map.setPaintProperty(layer.id, 'text-halo-width', 1.1);
             map.setPaintProperty(layer.id, 'icon-opacity', 0.55);
             return;
         }
 
         if (layer.type === 'circle') {
-            map.setPaintProperty(layer.id, 'circle-color', '#193750');
-            map.setPaintProperty(layer.id, 'circle-stroke-color', '#071421');
+            map.setPaintProperty(layer.id, 'circle-color', isLight ? '#bccbda' : '#193750');
+            map.setPaintProperty(layer.id, 'circle-stroke-color', isLight ? '#f8fafc' : '#071421');
         }
     });
 };
@@ -110,26 +131,18 @@ const PinIcon = () => (
     </svg>
 );
 
-const ClockIcon = () => (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3.2 2" />
-    </svg>
-);
-
 const RecenterIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="m4 11 16-7-7 16-2-7-7-2Z" />
     </svg>
 );
 
-export default function Map() {
+export default function Map({ theme = 'dark' }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MapLibreMap | null>(null);
     const [mapReady, setMapReady] = useState(false);
     const [routeFilter, setRouteFilter] = useState(ALL_ROUTES);
     const [selectedStop, setSelectedStop] = useState(ALL_ROUTES);
-    const [timeRange, setTimeRange] = useState('12:00 — 20:00');
     const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -176,8 +189,6 @@ export default function Map() {
         });
 
         map.on('load', () => {
-            applyDarkBlueTheme(map);
-
             map.addSource('tram-routes', {
                 type: 'geojson',
                 data: routesGeoJson,
@@ -318,6 +329,16 @@ export default function Map() {
             mapRef.current = null;
         };
     }, []);
+
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || !mapReady) {
+            return;
+        }
+
+        applyMapTheme(map, theme);
+    }, [mapReady, theme]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -486,22 +507,6 @@ export default function Map() {
                     </span>
                 </label>
 
-                <label className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>
-                        <span className={styles.filterIcon}><ClockIcon /></span>
-                        Время
-                    </span>
-                    <span className={styles.selectWrap}>
-                        <select
-                            value={timeRange}
-                            onChange={(event) => setTimeRange(event.target.value)}
-                        >
-                            <option>06:00 — 12:00</option>
-                            <option>12:00 — 20:00</option>
-                            <option>20:00 — 00:00</option>
-                        </select>
-                    </span>
-                </label>
             </div>
             )}
 

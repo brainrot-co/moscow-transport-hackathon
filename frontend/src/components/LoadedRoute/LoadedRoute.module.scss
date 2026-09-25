@@ -18,14 +18,14 @@
 .routeName {
     font-weight: 500;
     font-size: 0.567vw;
-    color: #F0F5FC;
+    color: var(--text, #F0F5FC);
 }
 
 .loadPercentage {
     font-weight: 500;
     font-size: 11px;
     font-size: 0.624vw;
-    color: #F0F5FC;
+    color: var(--text, #F0F5FC);
 }
 
 .routeStatsTop {
@@ -35,7 +35,7 @@
 }
 
 .progressBar {
-    background: #1F2E40;
+    background: var(--progress-track, #1F2E40);
     width: 100%;
     height: 0.283vw;
     border-radius: 3px;

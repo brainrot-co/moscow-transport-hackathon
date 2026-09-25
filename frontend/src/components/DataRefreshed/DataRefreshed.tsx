@@ -3,10 +3,14 @@ import userIcon from '../../assets/user.svg'
 
 import { Link } from 'react-router-dom';
 
-export default function DataRefreshed() {
+interface DataRefreshedProps {
+    isLightTheme?: boolean
+}
+
+export default function DataRefreshed({ isLightTheme = false }: DataRefreshedProps) {
     return (
         <>
-            <div className={styles.refreshedBadgeContainer}>
+            <div className={`${styles.refreshedBadgeContainer} ${isLightTheme ? styles.lightTheme : ''}`}>
                 <div className={styles.statusOnline}>
                     <span className={styles.onlineStatus}></span>
                     <p className={styles.whenRefreshed}>Данные обновлены<br></br>

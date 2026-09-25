@@ -1,12 +1,16 @@
 .loadGraph {
-    width: 31vw;
+    width: 100%;
+    height: 100%;
     min-width: 0;
-    padding: 20px 20px 12px;
+    min-height: 0;
+    padding: 20px 0 12px;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
     overflow: hidden;
-    border: 1px solid #1f2e40;
+    border: 1px solid var(--border, #1f2e40);
     border-radius: 14px;
-    background: #09111b;
+    background: var(--surface, #09111b);
 }
 
 .graphTop {
@@ -14,6 +18,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 18px;
+    padding: 0 20px;
 }
 
 .graphTitle {
@@ -29,7 +34,7 @@
     }
 
     h6 {
-        color: #f0f5fc;
+        color: var(--text, #f0f5fc);
         font-size: clamp(10px, 0.794vw, 14px);
         font-weight: 700;
         white-space: nowrap;
@@ -42,9 +47,9 @@
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     overflow: hidden;
-    border: 1px solid #1f2e40;
+    border: 1px solid var(--border, #1f2e40);
     border-radius: 1000px;
-    background: #0f1828;
+    background: var(--surface-raised, #0f1828);
 }
 
 .selectedBackground {
@@ -65,7 +70,7 @@
     padding: 8px 10px;
     border-radius: 1000px;
     background: transparent;
-    color: #8c9eb8;
+    color: var(--muted, #8c9eb8);
     font-size: clamp(8px, 0.567vw, 10px);
     font-weight: 400;
     white-space: nowrap;
@@ -84,7 +89,9 @@
 
 .chart {
     width: 100%;
-    height: auto;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
     display: block;
     margin-top: 8px;
     overflow: visible;
@@ -95,7 +102,7 @@
 .horizontalGrid,
 .verticalGrid {
     vector-effect: non-scaling-stroke;
-    stroke: #16253a;
+    stroke: var(--chart-grid, #16253a);
     stroke-width: 1;
 }
 
@@ -108,7 +115,7 @@
 }
 
 .axisLabel {
-    fill: #8c9eb8;
+    fill: var(--muted, #8c9eb8);
     font-family: "Montserrat", sans-serif;
     font-size: 12px;
     font-weight: 400;
@@ -162,8 +169,8 @@
     pointer-events: none;
 
     rect {
-        fill: #142137;
-        stroke: #20324b;
+        fill: var(--surface-raised, #142137);
+        stroke: var(--border, #20324b);
         stroke-width: 1;
         filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
     }
@@ -175,7 +182,7 @@
 
 .tooltipTitle,
 .tooltipValue {
-    fill: #f0f5fc;
+    fill: var(--text, #f0f5fc);
     font-family: "Montserrat", sans-serif;
     font-weight: 600;
 }
@@ -190,11 +197,12 @@
 
 @media (max-width: 1280px) {
     .loadGraph {
-        padding: 15px 14px 9px;
+        padding: 15px 0 9px;
     }
 
     .graphTop {
         gap: 10px;
+        padding: 0 14px;
     }
 
     .graphTitle {

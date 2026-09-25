@@ -1,0 +1,43 @@
+.themeToggle {
+    display: inline-flex;
+    min-height: 38px;
+    padding: 8px 12px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 1px solid var(--theme-toggle-border, #2d323a);
+    border-radius: 9px;
+    color: var(--theme-toggle-color, #8c9eb8);
+    background: var(--theme-toggle-bg, rgba(14, 18, 23, 0.9));
+    box-shadow: var(--theme-toggle-shadow, none);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+    svg {
+        width: 18px;
+        height: 18px;
+        flex: 0 0 auto;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    &:hover {
+        color: var(--theme-toggle-hover-color, #f0f5fc);
+        border-color: var(--theme-toggle-hover-border, #464d58);
+        background: var(--theme-toggle-hover-bg, #151b23);
+    }
+
+    &:active {
+        transform: translateY(1px);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #f10624;
+        outline-offset: 2px;
+    }
+}

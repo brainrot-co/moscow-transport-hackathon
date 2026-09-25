@@ -10,10 +10,70 @@
 }
 
 .containerNotFound {
-    background: url('../../assets/404-bg.png') no-repeat center top / cover;
+    --theme-toggle-bg: rgba(9, 17, 27, 0.9);
+    --theme-toggle-border: #1f2e40;
+    --theme-toggle-color: #8c9eb8;
+    --theme-toggle-hover-bg: #101a28;
+    --theme-toggle-hover-border: #30445c;
+    --theme-toggle-hover-color: #f0f5fc;
+
+    position: relative;
+    min-height: 100vh;
+    box-sizing: border-box;
+    background: #06101c;
     padding-top: 30px;
     padding-right: 22px;
     padding-bottom: 282px;
+    color-scheme: dark;
+    isolation: isolate;
+
+    &::before,
+    &::after {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        content: '';
+    }
+
+    &::before {
+        background: url('../../assets/404-bg.png') no-repeat center top / cover;
+        transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+
+    &::after {
+        background: transparent;
+        transition: background-color 0.3s ease;
+    }
+}
+
+.lightTheme {
+    --theme-toggle-bg: rgba(255, 255, 255, 0.88);
+    --theme-toggle-border: #cbd5e1;
+    --theme-toggle-color: #66758a;
+    --theme-toggle-hover-bg: #ffffff;
+    --theme-toggle-hover-border: #aebccc;
+    --theme-toggle-hover-color: #172033;
+    --theme-toggle-shadow: 0 5px 18px rgba(29, 46, 68, 0.08);
+
+    background: #edf3f8;
+    color-scheme: light;
+
+    .leftBarCollapsed {
+        border-right: 1px solid #d9e1ea;
+        background: rgba(255, 255, 255, 0.94);
+        box-shadow: 8px 0 30px rgba(29, 46, 68, 0.08);
+    }
+
+}
+
+.topControls {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
 }
 
 .leftBarCollapsed {
@@ -25,6 +85,20 @@
     height: 100vh;
     background: #080E18;
     padding: 30px 22px;
+}
+
+@media (max-width: 900px) {
+    .topControls {
+        gap: 10px;
+
+        > button span {
+            display: none;
+        }
+    }
+
+    .notFoundContent {
+        margin-left: 94px;
+    }
 }
 
 .menu {
