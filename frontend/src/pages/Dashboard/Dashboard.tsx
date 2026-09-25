@@ -15,6 +15,7 @@ import LoadGraph from '../../components/LoadGraph/LoadGraph'
 import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
 import StatCard from '../../components/StatCard/StatCard'
 import ForecatsCard from '../../components/ForecastCard/ForecastCard'
+import Map from '../../components/Map/Map'
 import { Link } from 'react-router-dom'
 
 export default function Dashboard() {
@@ -91,7 +92,7 @@ export default function Dashboard() {
                     <div className={styles.dashboardContentContainer}>
                         <div className={styles.dashboardColumnLeft}>
                             <div className={styles.mapContainer}>
-                                
+                                <Map />
                             </div>
                             <div className={styles.columnLeftBottom}>
                                 <LoadGraph />
