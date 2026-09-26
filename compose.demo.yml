@@ -1,0 +1,13 @@
+# Демо для утро 1 ноября 2025, прогназируем модель на 2 месяца
+
+services:
+  ingest:
+    environment:
+      CLOCK_START: "2025-11-01T03:00:00"
+      INGEST_POLL_SEC: "5"
+
+  ml-worker:
+    environment:
+      CLOCK_START: "2025-11-01T03:00:00"
+      MIN_RERUN_MINUTES: "2"
+      WORKER_POLL_SEC: "10"

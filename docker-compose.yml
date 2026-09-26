@@ -1,0 +1,77 @@
+# Прогнозный контур: ingest (приём данных) и ml-worker (прогноз) на общем томе tram-data.
+
+x-clock: &clock
+  CLOCK_START: ${CLOCK_START:-}
+  CLOCK_SPEED: ${CLOCK_SPEED:-0}
+  CLOCK_END: ${CLOCK_END:-}
+
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: docker/ingest.Dockerfile
+    image: tram-forecast/ingest
+    restart: unless-stopped
+    environment:
+      # Вставка переменной часов выше 
+      <<: *clock
+      INGEST_POLL_SEC: ${INGEST_POLL_SEC:-60}
+      INGEST_MEMORY_LIMIT: ${INGEST_MEMORY_LIMIT:-1GB}
+    volumes:
+      - tram-data:/data
+      - ./dataset:/dataset:ro
+    deploy:
+      resources:
+        limits:
+          # Из требований задачки
+          cpus: "1"
+          memory: 2g
+
+  ml-worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    image: tram-forecast/ml-worker
+    restart: unless-stopped
+    environment:
+      <<: *clock
+      ML_MODEL: ${ML_MODEL:-chronos2_daily_cal_school_daytype}
+      MIN_RERUN_MINUTES: ${MIN_RERUN_MINUTES:-60}
+      WORKER_POLL_SEC: ${WORKER_POLL_SEC:-60}
+      SHORT_RUN_AT: ${SHORT_RUN_AT:-03:00}
+
+      # Число потоков для параллельных вычислений
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+    volumes:
+      - tram-data:/data
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 3g
+
+  # Заготовки для команды бэкенда и фронтенда:
+  # большее информации тут : docs/integration-guide.md
+  # backend:
+  #   build: ./backend
+  #   restart: unless-stopped
+  #   environment:
+  #     DATA_DIR: /data
+  #   volumes:
+  #     - tram-data:/data:ro     # том только на чтение: прогноз, факты, часы, эффекты
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     - ml-worker
+  #
+  # frontend:
+  #   build: ./frontend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - backend
+
+volumes:
+  tram-data:

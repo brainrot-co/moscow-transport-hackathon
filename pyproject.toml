@@ -4,15 +4,14 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
+
+# базовые зависимости
 dependencies = [
-    "chronos-forecasting>=2.0",
     "duckdb==1.5.5",
-    "folium==0.20.0",
-    "matplotlib>=3.11.2",
-    "mlflow>=3.16.1",
-    "openpyxl>=3.1.5",
     "pandas>=3.0.6",
     "pyarrow>=25.0.1",
+    # база часовых поясов для Europe/Moscow: в минимальных образах её нет
+    "tzdata>=2025.2",
 ]
 
 [tool.ruff]
@@ -30,12 +29,31 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [dependency-groups]
+worker = [
+    "chronos-forecasting>=2.0",
+    "torch>=2.14.0",
+]
+# эксперименты, графики, ноутбуки, тесты
 dev = [
+    { include-group = "worker" },
+    "folium==0.20.0",
     "ipykernel>=7.3.0",
+    "matplotlib>=3.11.2",
+    "mlflow>=3.16.1",
     "nbconvert>=7.17.1",
     "nbformat>=5.11.1",
+    "openpyxl>=3.1.5",
     "pytest==9.1.1",
 ]
+
+# торч без куда, легковесная сборка
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.pytest.ini_options]
 testpaths = ["ml/tests"]
