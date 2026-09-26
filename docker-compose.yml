@@ -57,8 +57,10 @@ services:
       POSTGRES_DB: transport
       POSTGRES_USER: transport
       POSTGRES_PASSWORD: transport
+    # volumes:
+    #   - postgres-data:/var/lib/postgresql/data
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
 
   redis:
     image: redis:8-alpine
