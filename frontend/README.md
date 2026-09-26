@@ -1,5 +1,24 @@
 # React + TypeScript + Vite
 
+## Подключение к backend
+
+Frontend использует typed client в `src/api/forecast.ts` и hook `src/hooks/useForecast.ts`.
+
+```powershell
+npm ci
+npm run dev
+```
+
+По умолчанию API вызывается через `/api/v1`. Для отдельного backend задайте:
+
+```text
+VITE_API_URL=http://localhost:8000/api/v1
+```
+
+Основные endpoint’ы: `GET /forecast/meta`, `GET /forecast`, `POST /forecast/preview`, `GET /scenarios`. Forecast строки используют поля `value` только для actual и `yhat_model/yhat` для forecast. Состояния `loading`, `forecast_unavailable`, `stale`, `mixed` и отсутствие данных должны отображаться явно.
+
+Подробный контракт и пример preview находятся в корневом [README.md](../README.md) и [backend/ml-backend-contract.md](../backend/ml-backend-contract.md).
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

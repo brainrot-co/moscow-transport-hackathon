@@ -7,6 +7,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     debug: bool = False
+    data_dir: str = "/data"
+    backend_reload_sec: int = 30
+    stale_after_days: int = 3
     cors_origins: list[str] = [
         "http://localhost",
         "http://localhost:8000",

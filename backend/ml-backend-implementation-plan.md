@@ -5,6 +5,21 @@
 **Статус:** рабочий план реализации
 **Базовый контракт:** [backend/ml-backend-contract.md](../backend/ml-backend-contract.md)
 
+## Текущий прогресс
+
+Реализованы и проверены:
+
+- `ForecastSnapshot`, Parquet/JSON loader, атомарный `ForecastStore` и reload в lifespan;
+- единая семантика `value`/`yhat_model`/`yhat`, приоритет `actual > short > year`;
+- corrections engine, effects, draft preview и сценарная валидация;
+- hour/day/week/month aggregation с явным `source: mixed`;
+- `GET /forecast/meta`, `GET /forecast`, `POST /forecast/preview`;
+- Scenario model, Alembic migration и CRUD endpoint’ы с USER/ADMIN RBAC;
+- frontend API client/hook, dashboard data states, Dockerfile/nginx и общий compose;
+- README-инструкции для backend/frontend.
+
+Пока не завершены: справочники маршрутов/остановок, status/accuracy endpoint’ы, CSV/XLSX export, полноценная карта и UI CRUD сценариев. Они остаются следующими задачами по чек-листу ниже.
+
 ## 1. Цель
 
 Собрать запускаемый через Docker веб-сервис, который:

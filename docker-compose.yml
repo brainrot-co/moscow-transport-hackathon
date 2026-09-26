@@ -51,6 +51,49 @@ services:
           cpus: "2"
           memory: 3g
 
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: transport
+      POSTGRES_USER: transport
+      POSTGRES_PASSWORD: transport
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:8-alpine
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    command: >-
+      sh -c "alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    environment:
+      DATA_DIR: /data
+      DATABASE_URL: postgresql+asyncpg://transport:transport@postgres:5432/transport
+      REDIS_URL: redis://redis:6379/0
+      ACCESS_SECRET: ${ACCESS_SECRET:-local-access-secret-change-me-32chars}
+      REFRESH_SECRET: ${REFRESH_SECRET:-local-refresh-secret-change-me-32chars}
+      COOKIE_SECURE: "false"
+      COOKIE_SAMESITE: lax
+      CORS_ORIGINS: '["http://localhost:3000"]'
+    volumes:
+      - tram-data:/data:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
   # Заготовки для команды бэкенда и фронтенда:
   # большее информации тут : docs/integration-guide.md
   # backend:
@@ -75,3 +118,4 @@ services:
 
 volumes:
   tram-data:
+  postgres-data:

@@ -3,10 +3,15 @@ import clsx from 'clsx';
 
 import styles from './LoadGraph.module.scss';
 import arrow from '../../assets/grow-icon.svg';
+import type { ForecastRow } from '../../api/forecast';
 
 const timeRanges = ['Сегодня', '7 дней', '30 дней'];
 
-export default function LoadGraph() {
+interface LoadGraphProps {
+    rows: ForecastRow[];
+}
+
+export default function LoadGraph({ rows }: LoadGraphProps) {
     const [selectedRange, setSelectedRange] = useState('Сегодня');
 
     return (
@@ -41,6 +46,18 @@ export default function LoadGraph() {
                         </button>
                     ))}
                 </div>
+            </div>
+            <div className={styles.graphData}>
+                {rows.length === 0 ? (
+                    <p>Нет данных для выбранного периода</p>
+                ) : (
+                    rows.slice(0, 24).map((row) => (
+                        <div key={`${row.route}-${row.ts}`} className={styles.graphPoint}>
+                            <span>{row.route}</span>
+                            <strong>{row.value ?? row.yhat ?? '—'}</strong>
+                        </div>
+                    ))
+                )}
             </div>
         </div>
     );
