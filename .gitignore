@@ -144,6 +144,8 @@ datasets/
 !**/.gitkeep
 
 models/
+!backend/app/models/
+!backend/app/models/**
 checkpoints/
 weights/
 saved_models/

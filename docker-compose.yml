@@ -78,6 +78,9 @@ services:
       COOKIE_SECURE: "false"
       COOKIE_SAMESITE: lax
       CORS_ORIGINS: '["http://localhost:3000"]'
+      DEMO_USERNAME: ${DEMO_USERNAME:-demo}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-transport}
+      DEMO_EMAIL: ${DEMO_EMAIL:-demo@transport.local}
     volumes:
       - tram-data:/data:ro
     ports:
@@ -87,34 +90,16 @@ services:
       - redis
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_DEMO_USERNAME: ${DEMO_USERNAME:-demo}
+        VITE_DEMO_PASSWORD: ${DEMO_PASSWORD:-demo-transport}
     restart: unless-stopped
     ports:
       - "3000:80"
     depends_on:
       - backend
-
-  # Заготовки для команды бэкенда и фронтенда:
-  # большее информации тут : docs/integration-guide.md
-  # backend:
-  #   build: ./backend
-  #   restart: unless-stopped
-  #   environment:
-  #     DATA_DIR: /data
-  #   volumes:
-  #     - tram-data:/data:ro     # том только на чтение: прогноз, факты, часы, эффекты
-  #   ports:
-  #     - "8000:8000"
-  #   depends_on:
-  #     - ml-worker
-  #
-  # frontend:
-  #   build: ./frontend
-  #   restart: unless-stopped
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - backend
 
 volumes:
   tram-data:

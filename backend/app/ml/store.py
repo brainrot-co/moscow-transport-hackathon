@@ -5,6 +5,7 @@ import json
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .models import (
     ActualRecord,
@@ -23,6 +24,8 @@ class ForecastStore:
         self._snapshot: ForecastSnapshot | None = None
         self._lock = asyncio.Lock()
         self.last_error: str | None = None
+        self._active: dict[str, Any] = {}
+        self._clock: dict[str, Any] = {}
 
     @property
     def snapshot(self) -> ForecastSnapshot | None:
@@ -32,6 +35,24 @@ class ForecastStore:
         async with self._lock:
             self._snapshot = snapshot
             self.last_error = None
+
+    @property
+    def published_at(self) -> datetime | None:
+        value = self._active.get("published_at")
+        return datetime.fromisoformat(str(value)) if value else None
+
+    def now(self) -> datetime:
+        real_now = datetime.now(ZoneInfo("Europe/Moscow")).replace(
+            tzinfo=None, microsecond=0
+        )
+        virtual_start = _optional_datetime(self._clock.get("virtual_start"))
+        if virtual_start is None:
+            return real_now
+        real_start = _optional_datetime(self._clock.get("real_start")) or real_now
+        speed = float(self._clock.get("speed", 0))
+        current = virtual_start + (real_now - real_start) * speed
+        virtual_end = _optional_datetime(self._clock.get("virtual_end"))
+        return min(current, virtual_end) if virtual_end else current
 
     async def load(self) -> bool:
         try:
@@ -54,13 +75,17 @@ class ForecastStore:
 
         short_meta = self._read_meta(short_id)
         year_meta = self._read_meta(year_id)
+        if int(active.get("schema_version", -1)) != short_meta.schema_version:
+            raise SnapshotError("active.json schema_version does not match active runs")
         short = self._read_forecasts(short_id)
         year = self._read_forecasts(year_id)
         effects = self._read_effects(short_id)
-        actuals = self._read_actuals()
+        day_status = self._read_day_status()
+        actuals = self._read_actuals(day_status)
         watermark_data = self._read_json("state/watermark.json", {})
         watermark = date.fromisoformat(watermark_data["watermark"])
-        return ForecastSnapshot(
+        clock = self._read_json("state/clock.json", {})
+        snapshot = ForecastSnapshot(
             actuals=actuals,
             short=short,
             year=year,
@@ -69,6 +94,9 @@ class ForecastStore:
             year_meta=year_meta,
             watermark=watermark,
         )
+        self._active = active
+        self._clock = clock
+        return snapshot
 
     def _read_meta(self, run_id: str) -> RunMetadata:
         raw = self._read_json(f"runs/{run_id}/meta.json")
@@ -82,6 +110,10 @@ class ForecastStore:
             step=horizon["step"],
             routes=frozenset(int(route) for route in raw["routes"]),
             timezone=model.get("timezone", "Europe/Moscow"),
+            cold_start_routes=frozenset(
+                int(route) for route in raw.get("cold_start_routes", [])
+            ),
+            model_name=model.get("name") or model.get("model"),
         )
 
     def _read_json(self, relative: str, default: Any = None) -> Any:
@@ -108,7 +140,9 @@ class ForecastStore:
             result[(record.route, record.ts)] = record
         return result
 
-    def _read_actuals(self) -> dict[tuple[int, datetime], ActualRecord]:
+    def _read_actuals(
+        self, day_status: dict[tuple[int, date], str]
+    ) -> dict[tuple[int, datetime], ActualRecord]:
         rows = self._read_parquet("actuals/actuals_hourly.parquet")
         result: dict[tuple[int, datetime], ActualRecord] = {}
         for row in rows:
@@ -116,10 +150,22 @@ class ForecastStore:
                 route=int(row["route"]),
                 ts=_parse_timestamp(row["ts"]),
                 value=int(row["boardings"]),
-                status=str(row.get("status", "final")),
+                status=day_status.get(
+                    (int(row["route"]), _parse_timestamp(row["ts"]).date()),
+                    str(row.get("status", "final")),
+                ),
             )
             result[(record.route, record.ts)] = record
         return result
+
+    def _read_day_status(self) -> dict[tuple[int, date], str]:
+        path = self.data_dir / "actuals/day_status.parquet"
+        if not path.exists():
+            return {}
+        return {
+            (int(row["route"]), _parse_date(row["date"])): str(row["status"])
+            for row in self._read_parquet("actuals/day_status.parquet")
+        }
 
     def _read_effects(self, run_id: str) -> dict[tuple[int, date, str], float]:
         path = self.data_dir / f"runs/{run_id}/effects.parquet"
@@ -129,7 +175,7 @@ class ForecastStore:
         return {
             (
                 int(row["route"]),
-                date.fromisoformat(str(row["date"])),
+                _parse_date(row["date"]),
                 str(row["factor"]),
             ): float(row["log_effect"])
             for row in rows
@@ -156,3 +202,15 @@ def _optional_float(value: Any) -> float | None:
     except TypeError:
         pass
     return float(value)
+
+
+def _optional_datetime(value: Any) -> datetime | None:
+    return datetime.fromisoformat(str(value)) if value else None
+
+
+def _parse_date(value: Any) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    return date.fromisoformat(str(value)[:10])

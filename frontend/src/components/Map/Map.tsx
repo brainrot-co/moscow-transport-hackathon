@@ -12,6 +12,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import styles from './Map.module.scss';
 import { routeColors } from '../../data/routeColors';
 import RouteDetailsModal from '../RouteDetailsModal/RouteDetailsModal';
+import type { ForecastMeta, ForecastRow } from '../../api/forecast';
 import {
     findRoute,
     tramRoutes,
@@ -49,6 +50,8 @@ type MapTheme = 'dark' | 'light';
 
 interface MapProps {
     theme?: MapTheme;
+    rows?: ForecastRow[];
+    meta?: ForecastMeta | null;
 }
 
 const networkBounds = new LngLatBounds();
@@ -166,7 +169,7 @@ const RecenterIcon = () => (
     </svg>
 );
 
-export default function Map({ theme = 'dark' }: MapProps) {
+export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MapLibreMap | null>(null);
     const [mapReady, setMapReady] = useState(false);
@@ -178,9 +181,28 @@ export default function Map({ theme = 'dark' }: MapProps) {
     const [routeStops, setRouteStops] = useState<RouteStop[]>(fallbackRouteStops);
     const [mapRoutes, setMapRoutes] = useState<RoutesMapGeoJson>(INITIAL_ROUTES_GEOJSON);
     const [mapStops, setMapStops] = useState<StopsMapGeoJson>(INITIAL_STOPS_GEOJSON);
+    const routeLoads = useMemo(() => {
+        const totals = new globalThis.Map<string, number>();
+        rows.forEach((row) => {
+            if (row.availability === 'cold_start' || row.availability === 'unavailable') return;
+            const amount = row.source === 'mixed'
+                ? (row.value ?? 0) + (row.yhat ?? 0)
+                : row.value ?? row.yhat;
+            if (amount !== null) {
+                const routeId = String(row.route);
+                totals.set(routeId, (totals.get(routeId) ?? 0) + amount);
+            }
+        });
+        const maximum = Math.max(0, ...totals.values());
+        return new globalThis.Map([...totals].map(([routeId, amount]) => [
+            routeId,
+            maximum > 0 ? Math.max(1, Math.round((amount / maximum) * 100)) : 0,
+        ]));
+    }, [rows]);
 
     const focusedRoute = focusedRouteId ? findRoute(focusedRouteId) : null;
     const detailsRoute = detailsRouteId ? findRoute(detailsRouteId) : null;
+    const focusedLoad = focusedRoute ? routeLoads.get(focusedRoute.id) ?? null : null;
     const stopOptions = useMemo(() => {
         const matchingStops = routeFilter === ALL_ROUTES
             ? routeStops
@@ -522,16 +544,20 @@ export default function Map({ theme = 'dark' }: MapProps) {
 
     const loadStatus = !focusedRoute
         ? ''
-        : focusedRoute.load >= 75
+        : focusedLoad === null
+            ? 'Нет данных для прогноза'
+        : focusedLoad >= 75
         ? 'Высокая загрузка'
-        : focusedRoute.load >= 55
+        : focusedLoad >= 55
             ? 'Средняя загрузка'
             : 'Низкая загрузка';
     const loadStatusColor = !focusedRoute
         ? '#38d1a3'
-        : focusedRoute.load >= 75
+        : focusedLoad === null
+            ? '#8c9eb8'
+        : focusedLoad >= 75
             ? '#f10624'
-            : focusedRoute.load >= 55
+            : focusedLoad >= 55
                 ? '#ffb74d'
                 : '#38d1a3';
 
@@ -681,11 +707,11 @@ export default function Map({ theme = 'dark' }: MapProps) {
                             <span className={styles.loadDot} />
                             <p>{loadStatus}</p>
                         </div>
-                        <strong>{focusedRoute.load}%</strong>
+                        <strong>{focusedLoad === null ? '—' : `${focusedLoad}%`}</strong>
                         <span className={styles.progressTrack}>
                             <span
                                 style={{
-                                    width: `${focusedRoute.load}%`,
+                                    width: `${focusedLoad ?? 0}%`,
                                     backgroundColor: routeColors[focusedRoute.id],
                                 }}
                             />
@@ -702,9 +728,11 @@ export default function Map({ theme = 'dark' }: MapProps) {
 
             {detailsRoute && (
                 <RouteDetailsModal
-                    route={detailsRoute}
+                    route={{ ...detailsRoute, load: routeLoads.get(detailsRoute.id) ?? 0 }}
                     stops={routeStops.filter((tramStop) => tramStop.routeId === detailsRoute.id)}
                     theme={theme}
+                    rows={rows.filter((row) => row.route === Number(detailsRoute.id))}
+                    meta={meta}
                     onClose={() => setDetailsRouteId(null)}
                 />
             )}

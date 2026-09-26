@@ -22,7 +22,11 @@ export interface ForecastMeta {
     year_run_id: string | null;
     watermark: string | null;
     data_cutoff: string | null;
+    now: string | null;
+    published_at: string | null;
     stale: boolean;
+    cold_start_routes: number[];
+    model: Record<string, string | null>;
     error?: string | null;
 }
 
@@ -52,4 +56,71 @@ export function getForecast(
         granularity,
     });
     return apiRequest<ForecastResponse>(`/forecast?${params.toString()}`);
+}
+
+export interface ScenarioDraft {
+    kind: 'model_factor' | 'scenario';
+    factor: string;
+    value: number;
+    routes: number[] | null;
+    date_from: string;
+    date_to: string;
+    days: 'all' | 'weekdays' | 'weekends';
+    hour_from: number | null;
+    hour_to: number | null;
+    title?: string | null;
+    comment?: string | null;
+    source_url?: string | null;
+    active?: boolean;
+}
+
+export interface ScenarioRecord extends ScenarioDraft {
+    id: number;
+    created_by: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ForecastPreviewRequest {
+    date_from: string;
+    date_to: string;
+    routes?: number[];
+    granularity?: 'hour' | 'day' | 'week' | 'month';
+    model_factors?: Record<string, number>;
+    draft?: ScenarioDraft[];
+}
+
+export function previewForecast(payload: ForecastPreviewRequest) {
+    return apiRequest<ForecastResponse>('/forecast/preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+}
+
+export function getScenarios(dateFrom?: string, dateTo?: string) {
+    const params = new URLSearchParams({ active: 'true' });
+    if (dateFrom) params.set('date_from', dateFrom);
+    if (dateTo) params.set('date_to', dateTo);
+    return apiRequest<ScenarioRecord[]>(`/scenarios?${params.toString()}`);
+}
+
+export function createScenario(payload: ScenarioDraft) {
+    return apiRequest<ScenarioRecord>('/scenarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+}
+
+export function updateScenario(id: number, payload: Partial<ScenarioDraft>) {
+    return apiRequest<ScenarioRecord>(`/scenarios/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+}
+
+export function deleteScenario(id: number) {
+    return apiRequest<void>(`/scenarios/${id}`, { method: 'DELETE' });
 }

@@ -946,6 +946,29 @@
         border-color: #f10624;
         color: #f10624;
     }
+
+    &:disabled {
+        opacity: 0.4;
+        cursor: default;
+    }
+}
+
+.chartEmpty {
+    min-height: 260px;
+    display: grid;
+    place-items: center;
+    color: var(--modal-muted);
+    font-size: 12px;
+}
+
+.previewStatus {
+    margin: 6px 0 0;
+    color: var(--modal-muted);
+    font-size: 11px;
+}
+
+.previewError {
+    color: #f10624;
 }
 
 .resetButton {

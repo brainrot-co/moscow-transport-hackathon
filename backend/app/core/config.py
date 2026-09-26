@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     refresh_token_expire_m: int = 43200  # 30 days
     cookie_secure: bool = True
     cookie_samesite: Literal["lax", "strict", "none"] = "strict"
+    demo_username: str | None = None
+    demo_password: str | None = None
+    demo_email: str = "demo@transport.local"
 
     @field_validator("database_url")
     @classmethod

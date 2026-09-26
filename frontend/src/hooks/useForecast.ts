@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { getForecast, getForecastMeta, type ForecastMeta, type ForecastRow } from '../api/forecast';
 
@@ -7,44 +7,56 @@ interface ForecastState {
     meta: ForecastMeta | null;
     loading: boolean;
     error: string | null;
+    refresh: () => void;
 }
 
 export function useForecast(days = 1): ForecastState {
+    const [reload, setReload] = useState(0);
     const [state, setState] = useState<ForecastState>({
         rows: [],
         meta: null,
         loading: true,
         error: null,
+        refresh: () => undefined,
     });
+    const refresh = useCallback(() => setReload((value) => value + 1), []);
 
     useEffect(() => {
-        const controller = new AbortController();
+        let cancelled = false;
         void (async () => {
             try {
                 const meta = await getForecastMeta();
-                if (!meta.available || !meta.data_cutoff) {
-                    setState({ rows: [], meta, loading: false, error: null });
+                if (!meta.available || !meta.now) {
+                    if (!cancelled) {
+                        setState({ rows: [], meta, loading: false, error: null, refresh });
+                    }
                     return;
                 }
-                const start = new Date(`${meta.data_cutoff}T00:00:00+03:00`);
-                const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000 - 60_000);
-                const forecast = await getForecast(start.toISOString(), end.toISOString());
-                if (!controller.signal.aborted) {
-                    setState({ rows: forecast.data, meta, loading: false, error: null });
+                const date = meta.now.slice(0, 10);
+                const start = new Date(`${date}T00:00:00+03:00`);
+                const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000 - 60 * 60 * 1000);
+                const forecast = await getForecast(start.toISOString(), end.toISOString(), 'hour');
+                if (!cancelled) {
+                    setState({ rows: forecast.data, meta: forecast.meta, loading: false, error: null, refresh });
                 }
             } catch (error) {
-                if (!controller.signal.aborted) {
+                if (!cancelled) {
                     setState({
                         rows: [],
                         meta: null,
                         loading: false,
                         error: error instanceof Error ? error.message : 'Не удалось загрузить прогноз',
+                        refresh,
                     });
                 }
             }
         })();
-        return () => controller.abort();
-    }, [days]);
+        const interval = window.setInterval(refresh, 30_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [days, refresh, reload]);
 
     return state;
 }

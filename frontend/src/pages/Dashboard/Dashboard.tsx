@@ -1,5 +1,5 @@
 import styles from './Dashboard.module.scss'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import logoIcon from '../../assets/logo-icon.svg'
 import dashIcon from '../../assets/dashboard-icon.svg'
@@ -9,14 +9,10 @@ import calendar from '../../assets/calendar.svg'
 import LoadGraph from '../../components/LoadGraph/LoadGraph'
 import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
 import Map from '../../components/Map/Map'
-import { Link } from 'react-router-dom'
-<<<<<<< HEAD
-import { useForecast } from '../../hooks/useForecast';
-
-export default function Dashboard() {
-    const { rows, meta, loading, error } = useForecast(1);
-=======
+import { Link, useNavigate } from 'react-router-dom'
 import useTheme from '../../hooks/useTheme'
+import { useForecast } from '../../hooks/useForecast'
+import { logout } from '../../api/auth'
 
 const GraphsIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -56,28 +52,20 @@ const getCurrentDateTime = (now: Date) => {
 
 export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-    const [now, setNow] = useState(() => new Date())
     const { isLightTheme, setIsLightTheme } = useTheme()
+    const { rows, meta, loading, error } = useForecast(1)
+    const navigate = useNavigate()
+    const nowValue = meta?.now
+        ? /(?:Z|[+-]\d{2}:?\d{2})$/.test(meta.now) ? meta.now : `${meta.now}+03:00`
+        : null
+    const now = nowValue ? new Date(nowValue) : new Date()
 
-    const { date, time } = getCurrentDateTime(now)
+    const { time } = getCurrentDateTime(now)
 
-    useEffect(() => {
-        let intervalId: number | undefined
-        const millisecondsUntilNextMinute = 60_000 - (Date.now() % 60_000)
-        const timeoutId = window.setTimeout(() => {
-            setNow(new Date())
-            intervalId = window.setInterval(() => setNow(new Date()), 60_000)
-        }, millisecondsUntilNextMinute)
-
-        return () => {
-            window.clearTimeout(timeoutId)
-
-            if (intervalId !== undefined) {
-                window.clearInterval(intervalId)
-            }
-        }
-    }, [])
->>>>>>> feature/stops_and_func
+    const handleLogout = async () => {
+        await logout()
+        navigate('/login', { replace: true })
+    }
 
     return (
         <>
@@ -95,22 +83,11 @@ export default function Dashboard() {
                             {isSidebarOpen ? '‹' : '›'}
                         </span>
                     </button>
-
-<<<<<<< HEAD
-                    <div className={styles.menuBottomBlock}>
-                        <div className={styles.menuBottomInfo}>
-                            <div className={styles.statusOnline}>
-                                <span className={styles.onlineStatus}></span>
-                                <p className={styles.whenRefreshed}>Данные обновлены<br></br>
-                                    {meta?.watermark ?? 'нет данных'}
-                                </p>
-=======
                     <div className={styles.sideMenuClip}>
                         <div className={styles.sideMenuContent} id="dashboard-sidebar-content">
                             <div className={styles.logo}>
                                 <img src={logoIcon} alt="" />
                                 <p>Московский транспорт</p>
->>>>>>> feature/stops_and_func
                             </div>
                             <ul className={styles.sideMenu}>
                                 <li>
@@ -141,7 +118,9 @@ export default function Dashboard() {
                                         <div className={styles.statusOnline}>
                                             <span className={styles.onlineStatus}></span>
                                             <p className={styles.whenRefreshed}>Данные обновлены<br />
-                                                {date} {time}
+                                                {meta?.watermark
+                                                    ? new Date(`${meta.watermark}T00:00:00+03:00`).toLocaleDateString('ru-RU')
+                                                    : 'прогноз ещё не готов'}
                                             </p>
                                         </div>
                                         <div className={styles.statusOnline}>
@@ -163,6 +142,15 @@ export default function Dashboard() {
                                             {isLightTheme ? 'Тёмная тема' : 'Светлая тема'}
                                         </span>
                                     </button>
+                                    <button
+                                        type="button"
+                                        aria-label="Выйти из системы"
+                                        className={styles.sidebarAction}
+                                        onClick={() => void handleLogout()}
+                                    >
+                                        <span className={styles.sidebarIcon} aria-hidden="true">↪</span>
+                                        <span className={styles.sidebarActionLabel}>Выйти</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -178,12 +166,6 @@ export default function Dashboard() {
 
                         <div className={styles.topControls}>
                             <div className={styles.topTimestamp}>
-<<<<<<< HEAD
-                                    <p className={styles.topDate}>{meta?.data_cutoff ?? 'Дата неизвестна'}</p>
-                                <div className={styles.topTime}>
-                                    <img src={calendar} alt="calendar" />
-                                    <h6>{loading ? '...' : error ? 'Ошибка' : 'Готово'}</h6>
-=======
                                 <p className={styles.topDate}>
                                     {now.toLocaleDateString('ru-RU', {
                                         day: 'numeric',
@@ -193,11 +175,10 @@ export default function Dashboard() {
                                 </p>
                                 <div className={styles.topTime}>
                                     <img src={calendar} alt="calendar" />
-                                    <h6>{time}</h6>
->>>>>>> feature/stops_and_func
+                                    <h6>{loading ? '…' : time}</h6>
                                     <div className={styles.topOnline}>
                                         <span></span>
-                                        <p>Онлайн</p>
+                                        <p>{error ? 'Ошибка' : meta?.stale ? 'Устарели' : 'Онлайн'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -205,14 +186,20 @@ export default function Dashboard() {
                         </div> 
                     </div>
 
+                    {(error || !meta?.available || meta?.stale) && (
+                        <div className={`${styles.dataBanner} ${error ? styles.dataBannerError : ''}`}>
+                            {error
+                                ? `Не удалось загрузить прогноз: ${error}`
+                                : !meta?.available
+                                    ? 'Прогноз ещё не готов. Данные появятся после первого прогона ML-worker.'
+                                    : `Данные устарели: последний полный день — ${meta.watermark ?? 'неизвестен'}.`}
+                        </div>
+                    )}
+
                     <div className={styles.dashboardContentContainer}>
                         <div className={styles.dashboardColumnLeft}>
                             <div className={styles.mapContainer}>
-<<<<<<< HEAD
-                                {error ? <p>{error}</p> : <p>{loading ? 'Загрузка прогноза...' : 'Карта маршрутов готовится'}</p>}
-=======
-                                <Map theme={isLightTheme ? 'light' : 'dark'} />
->>>>>>> feature/stops_and_func
+                                <Map theme={isLightTheme ? 'light' : 'dark'} rows={rows} meta={meta} />
                             </div>
                             <div className={styles.columnLeftBottom}>
                                 <LoadGraph rows={rows} />

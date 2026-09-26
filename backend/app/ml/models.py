@@ -69,6 +69,8 @@ class RunMetadata:
     step: str
     routes: frozenset[int]
     timezone: str = "Europe/Moscow"
+    cold_start_routes: frozenset[int] = field(default_factory=frozenset)
+    model_name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +116,23 @@ class ForecastSnapshot:
                 yhat=None,
                 q10=None,
                 q90=None,
+            )
+
+        cold_start_routes = (
+            (self.short_meta.cold_start_routes if self.short_meta else frozenset())
+            | (self.year_meta.cold_start_routes if self.year_meta else frozenset())
+        )
+        if route in cold_start_routes:
+            return ResponseRow(
+                route=route,
+                ts=ts,
+                source=None,
+                value=None,
+                yhat_model=None,
+                yhat=None,
+                q10=None,
+                q90=None,
+                availability="cold_start",
             )
 
         short = self.short.get(key)

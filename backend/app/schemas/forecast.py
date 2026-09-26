@@ -29,14 +29,18 @@ class ForecastMetaRead(BaseModel):
     year_run_id: str | None = None
     watermark: date | None = None
     data_cutoff: date | None = None
+    now: datetime | None = None
+    published_at: datetime | None = None
     stale: bool = False
+    cold_start_routes: list[int] = Field(default_factory=list)
+    model: dict[str, str | None] = Field(default_factory=dict)
     error: str | None = None
 
 
 class ForecastQueryRead(BaseModel):
     date_from: datetime
     date_to: datetime
-    granularity: Literal["hour"]
+    granularity: Literal["hour", "day", "week", "month"]
 
 
 class ForecastResponse(BaseModel):
@@ -50,5 +54,6 @@ class ForecastPreviewRequest(BaseModel):
     date_from: datetime
     date_to: datetime
     routes: list[int] | None = None
+    granularity: Literal["hour", "day", "week", "month"] = "hour"
     model_factors: dict[str, float] = Field(default_factory=dict)
     draft: list[ScenarioBase] = Field(default_factory=list)

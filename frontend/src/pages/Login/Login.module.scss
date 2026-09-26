@@ -396,6 +396,25 @@
     }
 }
 
+.demoCredentials,
+.loginError {
+    margin-top: 16px;
+    font-size: 10px;
+    line-height: 1.45;
+}
+
+.demoCredentials {
+    color: #8c9eb8;
+
+    b {
+        color: inherit;
+    }
+}
+
+.loginError {
+    color: #ff5d70;
+}
+
 .submitButton {
     display: flex;
     width: 100%;
@@ -423,6 +442,11 @@
     &:focus-visible {
         outline: 2px solid #ffffff;
         outline-offset: 3px;
+    }
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: wait;
     }
 }
 

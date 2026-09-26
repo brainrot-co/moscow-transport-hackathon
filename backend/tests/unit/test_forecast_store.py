@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from datetime import date, datetime
 from pathlib import Path
 
@@ -76,6 +77,33 @@ def test_missing_forecast_is_not_returned_as_zero():
     assert row.source is None
     assert row.yhat is None
     assert row.availability == "unavailable"
+
+
+def test_cold_start_forecast_is_not_returned_as_zero():
+    timestamp = datetime(2026, 10, 2, 10)
+    short_meta = replace(
+        metadata("short"),
+        routes=frozenset({5}),
+        cold_start_routes=frozenset({5}),
+    )
+    year_meta = replace(
+        metadata("year"),
+        routes=frozenset({5}),
+        cold_start_routes=frozenset({5}),
+    )
+    snapshot = ForecastSnapshot(
+        actuals={},
+        short={(5, timestamp): ForecastRecord(5, timestamp, 0)},
+        year={(5, timestamp): ForecastRecord(5, timestamp, 0)},
+        short_meta=short_meta,
+        year_meta=year_meta,
+    )
+
+    row = snapshot.resolve(5, timestamp)
+
+    assert row.source is None
+    assert row.yhat is None
+    assert row.availability == "cold_start"
 
 
 def test_incompatible_runs_are_rejected():

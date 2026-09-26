@@ -28,10 +28,14 @@ def aggregate_rows(
             if row.source in {"forecast", "forecast_seasonal"}
         ]
         unavailable = [row for row in bucket if row.source is None]
-        yhat_model = sum(row.yhat_model or 0 for row in forecasts) or None
-        yhat = sum(row.yhat or 0 for row in forecasts) or None
-        q10 = _sum_optional(row.q10 for row in forecasts)
-        q90 = _sum_optional(row.q90 for row in forecasts)
+        yhat_model = (
+            sum(row.yhat_model or 0 for row in forecasts) if forecasts else None
+        )
+        yhat = sum(row.yhat or 0 for row in forecasts) if forecasts else None
+        # Forecast quantiles are not additive. Aggregated intervals require a
+        # separate estimate, so the public contract intentionally returns null.
+        q10 = None
+        q90 = None
         if actuals and not forecasts and not unavailable:
             source = "actual"
         elif forecasts and not actuals and not unavailable:
@@ -57,7 +61,11 @@ def aggregate_rows(
                 estimated=any(row.estimated for row in bucket),
                 applied=tuple(item for row in bucket for item in row.applied),
                 availability=(
-                    "unavailable"
+                    (
+                        "cold_start"
+                        if any(row.availability == "cold_start" for row in unavailable)
+                        else "unavailable"
+                    )
                     if unavailable and not actuals and not forecasts
                     else None
                 ),
@@ -73,8 +81,3 @@ def _bucket(timestamp: datetime, granularity: Granularity) -> datetime:
         start = timestamp - timedelta(days=timestamp.weekday())
         return start.replace(hour=0, minute=0, second=0, microsecond=0)
     return timestamp.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-
-def _sum_optional(values) -> float | None:
-    values = [value for value in values if value is not None]
-    return sum(values) if values else None

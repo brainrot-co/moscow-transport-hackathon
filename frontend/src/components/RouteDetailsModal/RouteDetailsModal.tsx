@@ -3,6 +3,16 @@ import { createPortal } from 'react-dom';
 
 import type { TramRoute } from '../Map/routes';
 import type { RouteStop } from '../Map/transitData';
+import {
+    createScenario as createScenarioRequest,
+    deleteScenario as deleteScenarioRequest,
+    getScenarios,
+    previewForecast,
+    updateScenario as updateScenarioRequest,
+    type ForecastMeta,
+    type ForecastRow,
+    type ScenarioDraft,
+} from '../../api/forecast';
 import styles from './RouteDetailsModal.module.scss';
 
 type Period = 'day' | 'week' | 'year';
@@ -13,12 +23,15 @@ interface RouteDetailsModalProps {
     route: TramRoute;
     stops: RouteStop[];
     theme: 'dark' | 'light';
+    rows: ForecastRow[];
+    meta: ForecastMeta | null;
     onClose: () => void;
 }
 
 interface ChartDatum {
     label: string;
     model: number;
+    adjusted: number;
     group?: string;
 }
 
@@ -31,6 +44,7 @@ interface ScenarioOption {
 
 interface Scenario extends ScenarioOption {
     id: string;
+    persistedId?: number;
     title: string;
     dateFrom: string;
     dateTo: string;
@@ -55,75 +69,37 @@ const SCENARIO_OPTIONS: ScenarioOption[] = [
     { type: 'custom', label: 'Другое', multiplier: 1, estimate: 'задаётся диспетчером' },
 ];
 
-const createScenario = (routeId: string): Scenario => ({
-    ...SCENARIO_OPTIONS[0],
-    id: `${routeId}-weather-demo`,
-    title: 'Сильный дождь',
-    dateFrom: '2026-09-26',
-    dateTo: '2026-09-26',
-    days: 'all',
-    hourFrom: 0,
-    hourTo: 23,
-    active: true,
-});
-
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
-const getChartData = (route: TramRoute, period: Period, granularity: Granularity): ChartDatum[] => {
-    const routeShift = Number(route.id) % 9;
-
-    if (period === 'year') {
-        return ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'].map((label, index) => ({
-            label,
-            model: clamp(route.load - 13 + Math.sin((index + routeShift) * 0.86) * 11 + (index > 7 ? 5 : 0)),
-        }));
+const rowAmount = (row: ForecastRow, field: 'model' | 'adjusted') => {
+    if (row.source === 'actual') return row.value ?? 0;
+    if (row.source === 'mixed') {
+        return (row.value ?? 0) + (field === 'model' ? row.yhat_model ?? 0 : row.yhat ?? 0);
     }
-
-    if (period === 'week' && granularity === 'summary') {
-        return ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map((label, index) => ({
-            label,
-            model: clamp(route.load - 9 + Math.sin((index + routeShift) * 1.15) * 8 - (index > 4 ? 12 : 0)),
-        }));
-    }
-
-    if (period === 'week' && granularity === 'hour') {
-        const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        const hours = [9, 12, 18];
-
-        return days.flatMap((day, dayIndex) => hours.map((hour) => {
-            const isWeekend = dayIndex > 4;
-            const hourPeak = hour === 9 ? 12 : hour === 18 ? 18 : -4;
-            const dayShift = Math.sin((dayIndex + routeShift) * 1.08) * 6;
-
-            return {
-                label: `${String(hour).padStart(2, '0')}:00`,
-                group: day,
-                model: clamp(route.load - 16 + hourPeak + dayShift - (isWeekend ? 12 : 0)),
-            };
-        }));
-    }
-
-    if (period === 'day' && granularity === 'summary') {
-        return [
-            { label: 'Утро', model: clamp(route.load + 3) },
-            { label: 'День', model: clamp(route.load - 15) },
-            { label: 'Вечер', model: clamp(route.load + 8) },
-            { label: 'Ночь', model: clamp(route.load - 34) },
-        ];
-    }
-
-    return Array.from({ length: 17 }, (_, index) => {
-        const hour = index + 6;
-        const morningPeak = 27 * Math.exp(-((hour - 9) ** 2) / 5.2);
-        const eveningPeak = 32 * Math.exp(-((hour - 18) ** 2) / 7.5);
-        const baseline = route.load - 30 + Math.sin((hour + routeShift) * 0.82) * 4;
-
-        return {
-            label: `${String(hour).padStart(2, '0')}:00`,
-            model: clamp(baseline + morningPeak + eveningPeak),
-        };
-    });
+    return field === 'model' ? row.yhat_model ?? 0 : row.yhat ?? 0;
 };
+
+const getChartData = (
+    rows: ForecastRow[],
+    period: Period,
+    granularity: Granularity,
+): ChartDatum[] => rows.map((row) => {
+    const timestamp = new Date(row.ts);
+    const isHourly = period !== 'year' && granularity === 'hour';
+    const label = isHourly
+        ? timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' })
+        : period === 'year'
+            ? timestamp.toLocaleDateString('ru-RU', { month: 'short', timeZone: 'Europe/Moscow' })
+            : timestamp.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', timeZone: 'Europe/Moscow' });
+    return {
+        label,
+        group: period === 'week' && isHourly
+            ? timestamp.toLocaleDateString('ru-RU', { weekday: 'short', timeZone: 'Europe/Moscow' })
+            : undefined,
+        model: rowAmount(row, 'model'),
+        adjusted: rowAmount(row, 'adjusted'),
+    };
+});
 
 const formatEffect = (multiplier: number) => {
     const percent = Math.round((multiplier - 1) * 100);
@@ -131,9 +107,35 @@ const formatEffect = (multiplier: number) => {
     return `${percent > 0 ? '+' : ''}${percent}%`;
 };
 
-const getForecastCsvUrl = (routeId: string) => (
-    `/api/routes/${encodeURIComponent(routeId)}/forecast.csv`
-);
+const addDays = (date: string, days: number) => {
+    const value = new Date(`${date}T00:00:00Z`);
+    value.setUTCDate(value.getUTCDate() + days);
+    return value.toISOString().slice(0, 10);
+};
+
+const previewRange = (today: string, period: Period) => {
+    const days = period === 'day' ? 1 : period === 'week' ? 7 : 365;
+    return {
+        startDate: today,
+        endDate: addDays(today, days - 1),
+        dateFrom: `${today}T00:00:00+03:00`,
+        dateTo: `${addDays(today, days - 1)}T23:00:00+03:00`,
+    };
+};
+
+const scenarioPayload = (scenario: Scenario, routeId: number): ScenarioDraft => ({
+    kind: 'scenario',
+    factor: scenario.type,
+    value: scenario.multiplier,
+    routes: [routeId],
+    date_from: scenario.dateFrom,
+    date_to: scenario.dateTo,
+    days: scenario.days,
+    hour_from: scenario.hourFrom,
+    hour_to: scenario.hourTo,
+    title: scenario.title,
+    active: scenario.active,
+});
 
 const DownloadIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -156,11 +158,9 @@ const makeSmoothPath = (points: { x: number; y: number }[]) => {
 
 function RouteLoadChart({
     data,
-    correctionMultiplier,
     forecastMode,
 }: {
     data: ChartDatum[];
-    correctionMultiplier: number;
     forecastMode: ForecastMode;
 }) {
     const width = 920;
@@ -169,17 +169,24 @@ function RouteLoadChart({
     const plotWidth = width - plot.left - plot.right;
     const plotHeight = height - plot.top - plot.bottom;
     const baseline = height - plot.bottom;
+    const maximum = Math.max(1, ...data.flatMap((datum) => [datum.model, datum.adjusted]));
+    const magnitude = 10 ** Math.floor(Math.log10(maximum));
+    const yMaximum = Math.ceil(maximum / magnitude) * magnitude;
     const [activeIndex, setActiveIndex] = useState(Math.min(8, data.length - 1));
     const safeActiveIndex = Math.min(activeIndex, data.length - 1);
 
+    if (data.length === 0) {
+        return <div className={styles.chartEmpty}>Нет данных для выбранного периода</div>;
+    }
+
     const modelPoints = data.map((datum, index) => ({
         x: plot.left + (index / Math.max(data.length - 1, 1)) * plotWidth,
-        y: plot.top + ((100 - datum.model) / 100) * plotHeight,
+        y: plot.top + (1 - datum.model / yMaximum) * plotHeight,
     }));
-    const adjustedValues = data.map((datum) => clamp(datum.model * correctionMultiplier));
+    const adjustedValues = data.map((datum) => datum.adjusted);
     const adjustedPoints = adjustedValues.map((value, index) => ({
         x: modelPoints[index].x,
-        y: plot.top + ((100 - value) / 100) * plotHeight,
+        y: plot.top + (1 - value / yMaximum) * plotHeight,
     }));
     const modelPath = makeSmoothPath(modelPoints);
     const adjustedPath = makeSmoothPath(adjustedPoints);
@@ -215,13 +222,13 @@ function RouteLoadChart({
                 </linearGradient>
             </defs>
 
-            {[0, 50, 100].map((value) => {
-                const y = plot.top + ((100 - value) / 100) * plotHeight;
+            {[0, yMaximum / 2, yMaximum].map((value) => {
+                const y = plot.top + (1 - value / yMaximum) * plotHeight;
 
                 return (
                     <g key={value}>
                         <line className={styles.gridLine} x1={plot.left} x2={width - plot.right} y1={y} y2={y} />
-                        <text className={styles.axisText} x={plot.left - 12} y={y + 5} textAnchor="end">{value}%</text>
+                        <text className={styles.axisText} x={plot.left - 12} y={y + 5} textAnchor="end">{new Intl.NumberFormat('ru-RU', { notation: 'compact', maximumFractionDigits: 1 }).format(value)}</text>
                     </g>
                 );
             })}
@@ -233,7 +240,7 @@ function RouteLoadChart({
 
                 return (
                     <g key={`${datum.group ?? ''}-${datum.label}-${index}`}>
-                        {datum.group && index % 3 === 1 && (
+                        {datum.group && (
                             <text
                                 className={styles.weekdayText}
                                 x={modelPoints[index].x}
@@ -282,15 +289,18 @@ function RouteLoadChart({
             <g className={styles.chartTooltip} transform={`translate(${tooltipX} ${tooltipY})`}>
                 <rect width="108" height="65" rx="10" />
                     <text x="12" y="19">{activeDatum.group ? `${activeDatum.group}, ${activeDatum.label}` : activeDatum.label}</text>
-                <text x="12" y="38" className={styles.tooltipModel}>Модель {Math.round(activeDatum.model)}%</text>
-                <text x="12" y="56" className={styles.tooltipAdjusted}>Итог {adjustedValue}%</text>
+                <text x="12" y="38" className={styles.tooltipModel}>Модель {Math.round(activeDatum.model).toLocaleString('ru-RU')}</text>
+                <text x="12" y="56" className={styles.tooltipAdjusted}>Итог {adjustedValue.toLocaleString('ru-RU')}</text>
             </g>
         </svg>
     );
 }
 
-export default function RouteDetailsModal({ route, stops, theme, onClose }: RouteDetailsModalProps) {
+export default function RouteDetailsModal({ route, stops, theme, rows, meta, onClose }: RouteDetailsModalProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
+    const persistedScenarioIds = useRef(new Set<number>());
+    const factorIds = useRef<Record<string, number>>({});
+    const today = meta?.now?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
     const directions = useMemo(() => (
         [...new Map(stops.map((tramStop) => [tramStop.directionId, tramStop.directionName])).entries()]
             .sort(([first], [second]) => first - second)
@@ -301,21 +311,25 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
     const [forecastMode, setForecastMode] = useState<ForecastMode>('adjusted');
     const [holidayStrength, setHolidayStrength] = useState(1);
     const [schoolHolidayStrength, setSchoolHolidayStrength] = useState(1);
-    const [scenarios, setScenarios] = useState<Scenario[]>(() => [createScenario(route.id)]);
+    const [scenarios, setScenarios] = useState<Scenario[]>([]);
     const [scenarioType, setScenarioType] = useState(SCENARIO_OPTIONS[0].type);
     const [scenarioMultiplier, setScenarioMultiplier] = useState(SCENARIO_OPTIONS[0].multiplier);
     const [scenarioTitle, setScenarioTitle] = useState('');
-    const [dateFrom, setDateFrom] = useState('2026-09-26');
-    const [dateTo, setDateTo] = useState('2026-09-26');
+    const [dateFrom, setDateFrom] = useState(today);
+    const [dateTo, setDateTo] = useState(today);
     const [days, setDays] = useState<Scenario['days']>('all');
     const [hourFrom, setHourFrom] = useState(0);
     const [hourTo, setHourTo] = useState(23);
     const [savedFingerprint, setSavedFingerprint] = useState(() => JSON.stringify({
         holidayStrength: 1,
         schoolHolidayStrength: 1,
-        scenarios: [createScenario(route.id)],
+        scenarios: [],
     }));
     const [saveMessage, setSaveMessage] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [previewRows, setPreviewRows] = useState(rows);
+    const [previewError, setPreviewError] = useState('');
+    const [previewLoading, setPreviewLoading] = useState(false);
 
     const directedStops = useMemo(() => {
         const uniqueStops = new Map<number, RouteStop>();
@@ -334,18 +348,101 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
     const selectedScenario = SCENARIO_OPTIONS.find((option) => option.type === scenarioType) ?? SCENARIO_OPTIONS[0];
     const currentFingerprint = JSON.stringify({ holidayStrength, schoolHolidayStrength, scenarios });
     const dirty = savedFingerprint !== currentFingerprint;
-    const modelFactorMultiplier = Math.exp(-0.755 * (holidayStrength - 1))
-        * Math.exp(-0.18 * (schoolHolidayStrength - 1));
-    const scenarioProduct = scenarios
-        .filter((scenario) => scenario.active)
-        .reduce((product, scenario) => product * scenario.multiplier, 1);
-    const correctionMultiplier = modelFactorMultiplier * scenarioProduct;
+    const displayRows = meta?.available ? previewRows : rows;
     const chartData = useMemo(
-        () => getChartData(route, period, granularity),
-        [granularity, period, route],
+        () => getChartData(displayRows, period, granularity),
+        [displayRows, granularity, period],
     );
-    const modelAverage = Math.round(chartData.reduce((sum, datum) => sum + datum.model, 0) / chartData.length);
-    const adjustedAverage = Math.round(clamp(modelAverage * correctionMultiplier));
+    const modelAverage = chartData.length
+        ? Math.round(chartData.reduce((sum, datum) => sum + datum.model, 0) / chartData.length)
+        : 0;
+    const adjustedAverage = chartData.length
+        ? Math.round(chartData.reduce((sum, datum) => sum + datum.adjusted, 0) / chartData.length)
+        : 0;
+    const correctionMultiplier = modelAverage > 0 ? adjustedAverage / modelAverage : 1;
+    const routeUnavailable = rows.length === 0 || meta?.cold_start_routes.includes(Number(route.id));
+
+    useEffect(() => {
+        let cancelled = false;
+        void getScenarios().then((stored) => {
+            if (cancelled) return;
+            const holiday = stored.find((item) => item.kind === 'model_factor' && item.factor === 'holiday');
+            const school = stored.find((item) => item.kind === 'model_factor' && item.factor === 'school_holiday');
+            if (holiday) factorIds.current.holiday = holiday.id;
+            if (school) factorIds.current.school_holiday = school.id;
+            const nextHoliday = holiday?.value ?? 1;
+            const nextSchool = school?.value ?? 1;
+            const nextScenarios = stored
+                .filter((item) => item.kind === 'scenario' && (!item.routes || item.routes.includes(Number(route.id))))
+                .map((item): Scenario => {
+                    const option = SCENARIO_OPTIONS.find((candidate) => candidate.type === item.factor)
+                        ?? { type: item.factor, label: item.title ?? item.factor, multiplier: item.value, estimate: 'сохранённый сценарий' };
+                    return {
+                        ...option,
+                        id: String(item.id),
+                        persistedId: item.id,
+                        multiplier: item.value,
+                        title: item.title ?? option.label,
+                        dateFrom: item.date_from,
+                        dateTo: item.date_to,
+                        days: item.days,
+                        hourFrom: item.hour_from ?? 0,
+                        hourTo: item.hour_to ?? 23,
+                        active: item.active ?? true,
+                    };
+                });
+            persistedScenarioIds.current = new Set(nextScenarios.map((item) => item.persistedId!));
+            setHolidayStrength(nextHoliday);
+            setSchoolHolidayStrength(nextSchool);
+            setScenarios(nextScenarios);
+            setSavedFingerprint(JSON.stringify({
+                holidayStrength: nextHoliday,
+                schoolHolidayStrength: nextSchool,
+                scenarios: nextScenarios,
+            }));
+        }).catch(() => {
+            if (!cancelled) setSaveMessage('Не удалось загрузить сохранённые поправки');
+        });
+        return () => { cancelled = true; };
+    }, [route.id]);
+
+    useEffect(() => {
+        if (!meta?.available) {
+            return;
+        }
+        let cancelled = false;
+        const timer = window.setTimeout(() => {
+            const range = previewRange(today, period);
+            const apiGranularity = period === 'year'
+                ? 'month'
+                : granularity === 'hour' ? 'hour' : 'day';
+            setPreviewLoading(true);
+            setPreviewError('');
+            void previewForecast({
+                date_from: range.dateFrom,
+                date_to: range.dateTo,
+                routes: [Number(route.id)],
+                granularity: apiGranularity,
+                model_factors: {
+                    holiday: holidayStrength,
+                    school_holiday: schoolHolidayStrength,
+                },
+                draft: scenarios
+                    .filter((scenario) => scenario.active)
+                    .map((scenario) => scenarioPayload(scenario, Number(route.id))),
+            }).then((response) => {
+                if (!cancelled) setPreviewRows(response.data);
+            }).catch((error) => {
+                if (!cancelled) setPreviewError(error instanceof Error ? error.message : 'Ошибка предпросмотра');
+            }).finally(() => {
+                if (!cancelled) setPreviewLoading(false);
+            });
+        }, 250);
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+        };
+    }, [granularity, holidayStrength, meta?.available, period, route.id, rows, scenarios, schoolHolidayStrength, today]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -385,6 +482,15 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
     const addScenario = () => {
         const fallbackTitle = selectedScenario.label.replace(/\s*\(.+\)$/, '');
 
+        if (dateTo < dateFrom) {
+            setSaveMessage('Дата окончания не может быть раньше даты начала');
+            return;
+        }
+        if (hourTo < hourFrom) {
+            setSaveMessage('Час окончания не может быть раньше часа начала');
+            return;
+        }
+
         setScenarios((current) => [
             ...current,
             {
@@ -411,9 +517,105 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
         setSaveMessage('');
     };
 
-    const saveCorrections = () => {
-        setSavedFingerprint(currentFingerprint);
-        setSaveMessage('Поправки сохранены для маршрута');
+    const saveCorrections = async () => {
+        setSaving(true);
+        setSaveMessage('Сохраняем поправки…');
+
+        try {
+            const saveModelFactor = async (factor: 'holiday' | 'school_holiday', value: number) => {
+                const existingId = factorIds.current[factor];
+                if (existingId) {
+                    const stored = await updateScenarioRequest(existingId, { value, active: true });
+                    factorIds.current[factor] = stored.id;
+                    return;
+                }
+
+                const stored = await createScenarioRequest({
+                    kind: 'model_factor',
+                    factor,
+                    value,
+                    routes: null,
+                    date_from: '2020-01-01',
+                    date_to: '2100-12-31',
+                    days: 'all',
+                    hour_from: null,
+                    hour_to: null,
+                    title: factor === 'holiday' ? 'Сила эффекта праздников' : 'Сила эффекта школьных каникул',
+                    active: true,
+                });
+                factorIds.current[factor] = stored.id;
+            };
+
+            await Promise.all([
+                saveModelFactor('holiday', holidayStrength),
+                saveModelFactor('school_holiday', schoolHolidayStrength),
+            ]);
+
+            const nextScenarios: Scenario[] = [];
+            for (const scenario of scenarios) {
+                const payload = scenarioPayload(scenario, Number(route.id));
+                const stored = scenario.persistedId
+                    ? await updateScenarioRequest(scenario.persistedId, {
+                        value: payload.value,
+                        date_from: payload.date_from,
+                        date_to: payload.date_to,
+                        days: payload.days,
+                        hour_from: payload.hour_from,
+                        hour_to: payload.hour_to,
+                        title: payload.title,
+                        active: payload.active,
+                    })
+                    : await createScenarioRequest(payload);
+                nextScenarios.push({ ...scenario, id: String(stored.id), persistedId: stored.id });
+            }
+
+            const keptIds = new Set(nextScenarios.map((scenario) => scenario.persistedId));
+            const removedIds = [...persistedScenarioIds.current].filter((id) => !keptIds.has(id));
+            await Promise.all(removedIds.map((id) => deleteScenarioRequest(id)));
+            persistedScenarioIds.current = new Set(
+                nextScenarios.map((scenario) => scenario.persistedId).filter((id): id is number => id !== undefined),
+            );
+
+            const nextFingerprint = JSON.stringify({
+                holidayStrength,
+                schoolHolidayStrength,
+                scenarios: nextScenarios,
+            });
+            setScenarios(nextScenarios);
+            setSavedFingerprint(nextFingerprint);
+            setSaveMessage('Поправки сохранены для маршрута');
+        } catch (error) {
+            setSaveMessage(error instanceof Error ? `Не удалось сохранить: ${error.message}` : 'Не удалось сохранить поправки');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const downloadForecast = () => {
+        const escapeCell = (value: unknown) => {
+            const stringValue = value == null ? '' : String(value);
+            return `"${stringValue.replaceAll('"', '""')}"`;
+        };
+        const header = ['route', 'timestamp', 'source', 'actual', 'model', 'adjusted', 'q10', 'q90', 'availability', 'applied'];
+        const lines = displayRows.map((row) => [
+            row.route,
+            row.ts,
+            row.source,
+            row.value,
+            row.yhat_model,
+            row.yhat,
+            row.q10,
+            row.q90,
+            row.availability,
+            JSON.stringify(row.applied),
+        ].map(escapeCell).join(','));
+        const blob = new Blob([[header.join(','), ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `forecast-route-${route.id}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
     };
 
     return createPortal(
@@ -432,8 +634,7 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
                         <p className={styles.eyebrow}>Детали маршрута</p>
                         <h2 id="route-details-title">Маршрут №{route.id}: {route.name}</h2>
                         <div className={styles.routeMeta}>
-                            <span><i />Работает</span>
-                            <span>Вагонов: <b>18 / 18</b></span>
+                            <span><i />{routeUnavailable ? 'Нет данных для прогноза' : 'Прогноз доступен'}</span>
                             <span>Остановок: <b>{directedStops.length}</b></span>
                             {directedStops[0]?.sourceDate && <span>Данные: <b>{directedStops[0].sourceDate}</b></span>}
                         </div>
@@ -472,19 +673,15 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
                         </p>
 
                         <ol className={styles.stopsList}>
-                            {directedStops.map((tramStop, index) => {
-                                const stopLoad = clamp(route.load - 19 + Math.sin((index + Number(route.id)) * 0.7) * 16);
-
-                                return (
+                            {directedStops.map((tramStop) => (
                                     <li key={tramStop.id}>
                                         <span className={styles.stopMarker}>{tramStop.sequence}</span>
                                         <div>
                                             <b>{tramStop.name}</b>
-                                            <small>Ожидаемая загрузка {Math.round(stopLoad)}%</small>
+                                            <small>Остановка маршрута №{route.id}</small>
                                         </div>
                                     </li>
-                                );
-                            })}
+                            ))}
                         </ol>
                     </aside>
 
@@ -533,9 +730,13 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
 
                             <RouteLoadChart
                                 data={chartData}
-                                correctionMultiplier={correctionMultiplier}
                                 forecastMode={forecastMode}
                             />
+                            {(previewLoading || previewError) && (
+                                <p className={`${styles.previewStatus} ${previewError ? styles.previewError : ''}`} role={previewError ? 'alert' : 'status'}>
+                                    {previewError || 'Пересчитываем прогноз…'}
+                                </p>
+                            )}
                         </section>
 
                         <section className={styles.correctionsCard}>
@@ -631,20 +832,21 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
 
                             <div className={styles.correctionsFooter}>
                                 <div className={styles.footerStatus}>
-                                    <p><b>Итог:</b> {modelAverage}% → {adjustedAverage}% <span>{formatEffect(correctionMultiplier)}</span></p>
+                                    <p><b>Среднее:</b> {modelAverage.toLocaleString('ru-RU')} → {adjustedAverage.toLocaleString('ru-RU')} пасс. <span>{formatEffect(correctionMultiplier)}</span></p>
                                     {saveMessage && <output>{saveMessage}</output>}
                                 </div>
                                 <div className={styles.footerActions}>
-                                    <a
+                                    <button
+                                        type="button"
                                         className={styles.downloadButton}
-                                        href={getForecastCsvUrl(route.id)}
-                                        download={`forecast-route-${route.id}.csv`}
+                                        onClick={downloadForecast}
+                                        disabled={displayRows.length === 0}
                                     >
                                         <DownloadIcon />
                                         Скачать прогноз в CSV
-                                    </a>
+                                    </button>
                                     <button type="button" className={styles.resetButton} onClick={resetCorrections}>Сбросить</button>
-                                    <button type="button" className={styles.saveButton} onClick={saveCorrections} disabled={!dirty}>Сохранить поправки</button>
+                                    <button type="button" className={styles.saveButton} onClick={saveCorrections} disabled={!dirty || saving}>{saving ? 'Сохраняем…' : 'Сохранить поправки'}</button>
                                 </div>
                             </div>
                         </section>

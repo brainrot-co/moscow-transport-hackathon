@@ -38,3 +38,31 @@ def test_mixed_day_exposes_actual_and_forecast_parts_separately():
     assert result[0].value == 100
     assert result[0].yhat_model == 200
     assert result[0].yhat == 200
+
+
+def test_day_aggregation_preserves_cold_start_availability():
+    unavailable = ResponseRow(
+        route=5,
+        ts=datetime(2026, 10, 1, 10),
+        source=None,
+        value=None,
+        yhat_model=None,
+        yhat=None,
+        q10=None,
+        q90=None,
+        availability="cold_start",
+    )
+
+    result = aggregate_rows([unavailable], "day")
+
+    assert result[0].source is None
+    assert result[0].availability == "cold_start"
+
+
+def test_day_aggregation_preserves_zero_after_route_closure():
+    closed = row(10, "forecast", None, 0)
+
+    result = aggregate_rows([closed], "day")
+
+    assert result[0].source == "forecast"
+    assert result[0].yhat == 0
