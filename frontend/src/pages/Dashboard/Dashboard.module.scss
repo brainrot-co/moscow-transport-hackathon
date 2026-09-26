@@ -18,6 +18,7 @@
     --map-border: #17304A;
     --map-panel: rgba(6, 15, 27, 0.92);
     --map-shade: radial-gradient(circle at 58% 46%, transparent 18%, rgba(3, 13, 28, 0.13) 74%), linear-gradient(180deg, rgba(6, 25, 45, 0.06), rgba(2, 11, 25, 0.2));
+    --popover-shadow: 0 18px 42px rgba(0, 0, 0, 0.46);
 
     display: flex;
     align-items: stretch;
@@ -49,6 +50,7 @@
     --map-border: #C6D2DF;
     --map-panel: rgba(255, 255, 255, 0.94);
     --map-shade: radial-gradient(circle at 58% 46%, transparent 28%, rgba(123, 145, 166, 0.04) 78%), linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(99, 120, 142, 0.07));
+    --popover-shadow: 0 18px 42px rgba(42, 58, 75, 0.18);
 
     color-scheme: light;
 }
@@ -57,7 +59,7 @@
     position: relative;
     z-index: 5;
     min-height: 100vh;
-    width: 14.844vw;
+    width: clamp(220px, 14.844vw, 285px);
     box-sizing: border-box;
     flex: 0 0 auto;
     background: var(--sidebar-bg);
@@ -74,7 +76,7 @@
 
 .sideMenuContent {
     display: flex;
-    width: calc(14.844vw - 60px);
+    width: calc(clamp(220px, 14.844vw, 285px) - 60px);
     min-width: 0;
     height: 100%;
     flex-direction: column;
@@ -164,8 +166,7 @@
         padding: 11px;
     }
 
-    .sidebarActionLabel,
-    .themeSwitch {
+    .sidebarActionLabel {
         display: none;
     }
 
@@ -258,34 +259,44 @@
 }
 
 .onlineStatus {
-        display: block;
-        border-radius: 1000px;
-        width: 8px;
-        height: 8px;
-        background-color: #44C69F;
+    width: 8px;
+    height: 8px;
+    margin: 4px 5px 0;
+    display: block;
+    border-radius: 1000px;
+    background-color: #44C69F;
 }
 
 .whenRefreshed {
-    width: 122px;
+    min-width: 0;
     color: var(--muted);
     font-weight: 500;
     font-size: 11px;
+    line-height: 1.45;
 }
 
 .statusOnline {
-    gap: 14px;
-    display: flex;
-    align-items: flex-start;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1fr);
+    align-items: start;
+    gap: 11px;
+
+    img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+    }
 }
 
 .menuBottomInfo {
     box-sizing: border-box;
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 20px 43px 22px 15px;
+    padding: 18px 15px;
     display: flex;
     flex-direction: column;
-    gap: 13px;
+    gap: 15px;
     align-items: flex-start;
 }
 
@@ -340,36 +351,6 @@
 .sidebarActionLabel {
     min-width: 0;
     flex: 1;
-}
-
-.themeSwitch {
-    position: relative;
-    width: 28px;
-    height: 16px;
-    display: block;
-    flex: 0 0 auto;
-    border-radius: 999px;
-    background: var(--border-hover);
-    transition: background-color 0.2s ease;
-
-    span {
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #FFFFFF;
-        transition: transform 0.2s ease;
-    }
-}
-
-.themeSwitchActive {
-    background: #D2092A;
-
-    span {
-        transform: translateX(12px);
-    }
 }
 
 .dashboardContent {

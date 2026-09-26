@@ -4,7 +4,7 @@ const THEME_STORAGE_KEY = 'dashboard-theme'
 
 export default function useTheme() {
     const [isLightTheme, setIsLightTheme] = useState(
-        () => window.localStorage.getItem(THEME_STORAGE_KEY) === 'light',
+        () => window.localStorage.getItem(THEME_STORAGE_KEY) !== 'dark',
     )
 
     useEffect(() => {

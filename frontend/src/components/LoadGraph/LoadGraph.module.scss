@@ -106,7 +106,7 @@
     &:hover,
     &:focus-visible {
         border-color: rgba(241, 6, 36, 0.72);
-        background: #121e2f;
+        background: var(--surface-hover, #121e2f);
     }
 }
 
@@ -130,8 +130,8 @@
     overflow: hidden;
     border: 1px solid var(--border, #20324b);
     border-radius: 12px;
-    background: #0d1725;
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.46);
+    background: var(--surface-raised, #0d1725);
+    box-shadow: var(--popover-shadow, 0 18px 42px rgba(0, 0, 0, 0.46));
 }
 
 .routeMenuHeader {
@@ -162,7 +162,7 @@
     min-height: 0;
     padding: 6px;
     overflow-y: auto;
-    scrollbar-color: #33465e transparent;
+    scrollbar-color: var(--border-hover, #33465e) transparent;
     scrollbar-width: thin;
 }
 
@@ -196,7 +196,7 @@
 
         b {
             margin-right: 7px;
-            color: #ffffff;
+            color: var(--text-strong, #ffffff);
         }
     }
 
@@ -209,7 +209,7 @@
 
     &:hover:not(:disabled),
     &:focus-visible {
-        background: rgba(255, 255, 255, 0.055);
+        background: var(--surface-hover, rgba(255, 255, 255, 0.055));
     }
 
     &:disabled {
@@ -243,7 +243,7 @@
         overflow: hidden;
         border: 1px solid var(--border, #20324b);
         border-radius: 8px;
-        background: rgba(15, 24, 40, 0.86);
+        background: var(--surface-raised, rgba(15, 24, 40, 0.86));
         color: var(--muted, #8c9eb8);
         font-family: inherit;
         cursor: pointer;
@@ -257,7 +257,7 @@
 
         > b {
             flex: 0 0 auto;
-            color: #ffffff;
+            color: var(--text-strong, #ffffff);
             font-size: 9px;
         }
 
@@ -276,7 +276,7 @@
         }
 
         &:hover:not(:disabled) {
-            border-color: #40526b;
+            border-color: var(--border-hover, #40526b);
         }
 
         &:disabled {

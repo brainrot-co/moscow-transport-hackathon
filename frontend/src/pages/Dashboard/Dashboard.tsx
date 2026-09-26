@@ -1,5 +1,5 @@
 import styles from './Dashboard.module.scss'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import logoIcon from '../../assets/logo-icon.svg'
 import dashIcon from '../../assets/dashboard-icon.svg'
@@ -18,12 +18,6 @@ const GraphsIcon = () => (
     </svg>
 )
 
-const DownloadIcon = () => (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" />
-    </svg>
-)
-
 const ThemeIcon = ({ isLight }: { isLight: boolean }) => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         {isLight ? (
@@ -39,9 +33,7 @@ const ThemeIcon = ({ isLight }: { isLight: boolean }) => (
     </svg>
 )
 
-const getCurrentDateTime = () => {
-    const now = new Date()
-
+const getCurrentDateTime = (now: Date) => {
     const date = now.toLocaleDateString('ru-RU', {
         day: '2-digit',
         month: '2-digit',
@@ -58,9 +50,27 @@ const getCurrentDateTime = () => {
 
 export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [now, setNow] = useState(() => new Date())
     const { isLightTheme, setIsLightTheme } = useTheme()
 
-    const { date, time } = getCurrentDateTime()
+    const { date, time } = getCurrentDateTime(now)
+
+    useEffect(() => {
+        let intervalId: number | undefined
+        const millisecondsUntilNextMinute = 60_000 - (Date.now() % 60_000)
+        const timeoutId = window.setTimeout(() => {
+            setNow(new Date())
+            intervalId = window.setInterval(() => setNow(new Date()), 60_000)
+        }, millisecondsUntilNextMinute)
+
+        return () => {
+            window.clearTimeout(timeoutId)
+
+            if (intervalId !== undefined) {
+                window.clearInterval(intervalId)
+            }
+        }
+    }, [])
 
     return (
         <>
@@ -127,24 +137,13 @@ export default function Dashboard() {
                                 <div className={styles.sidebarActions}>
                                     <button
                                         type="button"
-                                        className={styles.sidebarAction}
-                                        aria-label="Скачать данные в CSV"
-                                    >
-                                        <span className={styles.sidebarIcon}><DownloadIcon /></span>
-                                        <span className={styles.sidebarActionLabel}>Скачать CSV</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        role="switch"
-                                        aria-checked={isLightTheme}
-                                        aria-label="Светлая тема"
+                                        aria-label={isLightTheme ? 'Включить тёмную тему' : 'Включить светлую тему'}
                                         className={styles.sidebarAction}
                                         onClick={() => setIsLightTheme((isLight) => !isLight)}
                                     >
                                         <span className={styles.sidebarIcon}><ThemeIcon isLight={isLightTheme} /></span>
-                                        <span className={styles.sidebarActionLabel}>Светлая тема</span>
-                                        <span className={`${styles.themeSwitch} ${isLightTheme ? styles.themeSwitchActive : ''}`} aria-hidden="true">
-                                            <span />
+                                        <span className={styles.sidebarActionLabel}>
+                                            {isLightTheme ? 'Тёмная тема' : 'Светлая тема'}
                                         </span>
                                     </button>
                                 </div>
@@ -163,7 +162,7 @@ export default function Dashboard() {
                         <div className={styles.topControls}>
                             <div className={styles.topTimestamp}>
                                 <p className={styles.topDate}>
-                                    {new Date().toLocaleDateString('ru-RU', {
+                                    {now.toLocaleDateString('ru-RU', {
                                         day: 'numeric',
                                         month: 'long',
                                         year: 'numeric',
@@ -171,7 +170,7 @@ export default function Dashboard() {
                                 </p>
                                 <div className={styles.topTime}>
                                     <img src={calendar} alt="calendar" />
-                                    <h6>14:32</h6>
+                                    <h6>{time}</h6>
                                     <div className={styles.topOnline}>
                                         <span></span>
                                         <p>Онлайн</p>

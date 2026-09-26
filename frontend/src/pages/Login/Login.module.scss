@@ -114,6 +114,11 @@
     .serviceInfo {
         border-top-color: rgba(91, 107, 130, 0.18);
 
+        img {
+            filter: brightness(0) saturate(100%);
+            opacity: 0.82;
+        }
+
         p {
             color: rgba(55, 69, 89, 0.72);
         }

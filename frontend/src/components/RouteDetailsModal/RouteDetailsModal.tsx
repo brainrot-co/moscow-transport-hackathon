@@ -131,6 +131,16 @@ const formatEffect = (multiplier: number) => {
     return `${percent > 0 ? '+' : ''}${percent}%`;
 };
 
+const getForecastCsvUrl = (routeId: string) => (
+    `/api/routes/${encodeURIComponent(routeId)}/forecast.csv`
+);
+
+const DownloadIcon = () => (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 3v12m0 0 4-4m-4 4-4-4M5 19h14" />
+    </svg>
+);
+
 const makeSmoothPath = (points: { x: number; y: number }[]) => {
     if (points.length < 2) {
         return '';
@@ -620,10 +630,22 @@ export default function RouteDetailsModal({ route, stops, theme, onClose }: Rout
                             </div>
 
                             <div className={styles.correctionsFooter}>
-                                <p><b>Итог:</b> {modelAverage}% → {adjustedAverage}% <span>{formatEffect(correctionMultiplier)}</span></p>
-                                {saveMessage && <output>{saveMessage}</output>}
-                                <button type="button" className={styles.resetButton} onClick={resetCorrections}>Сбросить</button>
-                                <button type="button" className={styles.saveButton} onClick={saveCorrections} disabled={!dirty}>Сохранить поправки</button>
+                                <div className={styles.footerStatus}>
+                                    <p><b>Итог:</b> {modelAverage}% → {adjustedAverage}% <span>{formatEffect(correctionMultiplier)}</span></p>
+                                    {saveMessage && <output>{saveMessage}</output>}
+                                </div>
+                                <div className={styles.footerActions}>
+                                    <a
+                                        className={styles.downloadButton}
+                                        href={getForecastCsvUrl(route.id)}
+                                        download={`forecast-route-${route.id}.csv`}
+                                    >
+                                        <DownloadIcon />
+                                        Скачать прогноз в CSV
+                                    </a>
+                                    <button type="button" className={styles.resetButton} onClick={resetCorrections}>Сбросить</button>
+                                    <button type="button" className={styles.saveButton} onClick={saveCorrections} disabled={!dirty}>Сохранить поправки</button>
+                                </div>
                             </div>
                         </section>
                     </main>
