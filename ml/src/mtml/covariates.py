@@ -128,13 +128,24 @@ def load_events_near_routes(hours: pd.DatetimeIndex, radius_m: float = EVENT_RAD
     return counts.reindex(index, fill_value=0).reset_index()
 
 
-def load_hourly_covariates(start: str = "2025-01-01", end: str = "2026-12-31"):
-    """Погода есть только за историю, на горизонте прогноза она NaN."""
+def load_hourly_covariates(
+    columns: tuple[str, ...], start: str = "2025-01-01", end: str = "2026-12-31"
+):
+    """Календарь и каникулы есть всегда; погода и события — только если модель их просит.
+
+    Погода есть только за историю, на горизонте прогноза она NaN.
+    """
     hours = pd.date_range(pd.Timestamp(start), pd.Timestamp(end) + pd.Timedelta(hours=23), freq="h")
     days = pd.DataFrame({"ts": hours, "date": hours.normalize()})
     calendar = load_calendar()
     daily = calendar.merge(load_day_features(calendar), on="date")
     daily = daily.merge(load_school_holidays(hours.normalize().unique()), on="date")
     common = days.merge(daily, on="date", how="left").drop(columns="date")
-    common = common.merge(pd.read_csv(WEATHER_PATH, parse_dates=["ts"]), on="ts", how="left")
-    return load_events_near_routes(hours).merge(common, on="ts", how="left")
+    # погода, события и остановки нужны только экспериментальным моделям: их файлов
+    # нет в образе воркера, поэтому они читаются лишь по запросу
+    if set(columns) & set(WEATHER):
+        common = common.merge(pd.read_csv(WEATHER_PATH, parse_dates=["ts"]), on="ts", how="left")
+    if set(columns) & set(EVENTS):
+        return load_events_near_routes(hours).merge(common, on="ts", how="left")
+    routes = pd.DataFrame({"route": list(MODEL_ROUTES)})
+    return routes.merge(common, how="cross")

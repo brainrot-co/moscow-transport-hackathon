@@ -32,7 +32,7 @@ def parse_time(value: str | None):
 
 
 def load_clock(path: Path):
-    '''Часы общие для всех контейнеров: первый запуск пишет state/clock.json из CLOCK_*.'''
+    """Часы общие для всех контейнеров: первый запуск пишет state/clock.json из CLOCK_*."""
     if path.exists():
         saved = json.loads(path.read_text(encoding="utf-8"))
         return Clock(

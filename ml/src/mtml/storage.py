@@ -72,6 +72,16 @@ class Volume:
         return self.root / "state" / "clock.json"
 
     @property
+    def worker_state(self):
+        """Когда и на каком водяном знаке воркер считал в последний раз, последняя ошибка."""
+        return self.root / "state" / "worker.json"
+
+    @property
+    def accuracy(self):
+        """Реальная точность опубликованных прогонов против пришедших фактов по горизонтам."""
+        return self.root / "monitoring" / "accuracy.parquet"
+
+    @property
     def runs(self):
         """Опубликованные прогоны: runs/<run_id>/ с прогнозом и meta.json."""
         return self.root / "runs"

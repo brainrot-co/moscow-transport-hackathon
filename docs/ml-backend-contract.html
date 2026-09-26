@@ -307,7 +307,7 @@ section:target h2 { color: var(--accent); }
           <text x="248" y="290" class="sv-t">ml-worker</text>
           <text x="248" y="310" class="sv-s">python + torch + Chronos-2</text>
           <text x="248" y="327" class="sv-s">ночью и при сдвиге данных</text>
-          <text x="248" y="344" class="sv-s">год: раз в неделю</text>
+          <text x="248" y="344" class="sv-s">год: вместе с краткосрочным</text>
 
           <!-- volume -->
           <rect x="462" y="16" width="206" height="348" rx="10" class="sv-vol"/>
@@ -389,6 +389,8 @@ section:target h2 { color: var(--accent); }
 ├── tmp/duckdb/                         сброс DuckDB на диск при больших файлах
 ├── state/watermark.json                последняя полностью загруженная дата
 ├── state/clock.json                    общие часы системы (раздел 11)
+├── state/worker.json                   последний прогон воркера: когда, на каком водяном знаке, ошибка
+├── monitoring/accuracy.parquet         реальная точность прошлых прогонов по горизонтам
 ├── reference/                          справочники и признаки (раздел 06)
 ├── runs/
 │   ├── &lt;run_id&gt;/                       опубликованный прогон
@@ -505,7 +507,7 @@ section:target h2 { color: var(--accent); }
         <thead><tr><th>Прогон</th><th>Горизонт</th><th>Шаг</th><th>Метод</th><th>Когда</th><th>Для чего</th></tr></thead>
         <tbody>
           <tr><td><b>short</b></td><td>61 день от водяного знака</td><td>час</td><td>Chronos-2, календарь, каникулы, тип дня</td><td>ночью в <code>SHORT_RUN_AT</code> и при сдвиге водяного знака</td><td>день (почасово), неделя (почасово + суммы по дням), месяц (по дням)</td></tr>
-          <tr><td><b>year</b></td><td>365 дней</td><td>день</td><td>сезонная аппроксимация: дневная сумма = уровень × сезонный индекс × эффект типа дня; часы — по недельному профилю</td><td>раз в неделю в <code>YEAR_RUN_AT</code></td><td>год (по дням, неделям, месяцам); дальше горизонта short</td></tr>
+          <tr><td><b>year</b></td><td>365 дней от водяного знака</td><td>час</td><td>сезонная модель по маршруту: <code>log(дневная сумма) ~ месяц + тип дня + каникулы</code>, обычный МНК; уровень подтянут к последним 8 неделям; дни с ремонтами (<code>anomaly</code>) и пропусками в обучение не идут; месяцы без истории берут эффект последнего наблюдённого; часы — дневная сумма × суточный профиль маршрута (рабочий / суббота / выходной и праздник); q10 и q90 — по квантилям остатков. Бэктесты: 0.79–0.85 почасово, слабое место — сезонный переход в месяц, которого нет в истории</td><td>вместе с short; отдельно — <code>once --kind year</code></td><td>всё, что дальше горизонта short: год по дням, неделям, месяцам</td></tr>
         </tbody>
       </table></div>
 
@@ -542,12 +544,12 @@ section:target h2 { color: var(--accent); }
         <thead><tr><th>Колонка</th><th>Тип</th><th>Описание</th></tr></thead>
         <tbody>
           <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
-          <tr><td class="col">ts <span class="key">PK</span></td><td class="type">timestamp[s]</td><td>начало часа (short) или начало дня (year)</td></tr>
+          <tr><td class="col">ts <span class="key">PK</span></td><td class="type">timestamp[s]</td><td>начало часа (оба прогона почасовые)</td></tr>
           <tr><td class="col">yhat</td><td class="type">float64</td><td>медиана прогноза, ≥ 0. float64, чтобы округление в сабмишене и экспорте совпадало с проверенным</td></tr>
           <tr><td class="col">q10, q90</td><td class="type">float64, nullable</td><td>границы 80%-интервала; null, если модель квантилей не даёт или маршрут без истории</td></tr>
         </tbody>
       </table></div>
-      <p>Объём: short — 10 × 1464 = 14 640 строк, year — 10 × 365 = 3 650 строк. Оба помещаются в память бэкенда целиком.</p>
+      <p>Объём: short — 10 × 1464 = 14 640 строк, year — 10 × 8 760 = 87 600 строк. Оба помещаются в память бэкенда целиком.</p>
 
       <div class="file">
         <div class="path">runs/&lt;run_id&gt;/effects.parquet</div>
@@ -618,7 +620,7 @@ section:target h2 { color: var(--accent); }
         <tbody>
           <tr><td>≤ водяного знака, день final</td><td><code>actuals_hourly</code></td><td>actual</td></tr>
           <tr><td>после водяного знака, в горизонте short</td><td>активный short</td><td>forecast</td></tr>
-          <tr><td>за горизонтом short, в горизонте year</td><td>активный year: дневная сумма, по часам — по недельному профилю</td><td>forecast_seasonal</td></tr>
+          <tr><td>за горизонтом short, в горизонте year</td><td>активный year (почасовой)</td><td>forecast_seasonal</td></tr>
           <tr><td>за горизонтом year</td><td>нет данных</td><td>—</td></tr>
         </tbody>
       </table></div>
@@ -724,9 +726,10 @@ section:target h2 { color: var(--accent); }
           <tr><td class="col">ROUTES</td><td>ingest</td><td class="col">1,5,7,11,12,17,25,26,28,50</td><td>маршруты из справочника; остальные принимаются, но попадают в предупреждения</td></tr>
           <tr><td class="col">INGEST_MEMORY_LIMIT</td><td>ingest</td><td class="col">1GB</td><td>лимит памяти DuckDB, излишек пишется в tmp/duckdb</td></tr>
           <tr><td class="col">ML_MODEL</td><td>ml-worker</td><td class="col">chronos2_daily_cal_school_daytype</td><td>имя модели из реестра</td></tr>
-          <tr><td class="col">SHORT_RUN_AT</td><td>ml-worker</td><td class="col">03:00</td><td>ночной прогон short</td></tr>
-          <tr><td class="col">RUN_ON_WATERMARK</td><td>ml-worker</td><td class="col">true</td><td>пересчитывать short при сдвиге водяного знака (не чаще раза в 30 минут)</td></tr>
-          <tr><td class="col">YEAR_RUN_AT</td><td>ml-worker</td><td class="col">MON 04:00</td><td>еженедельный прогон year</td></tr>
+          <tr><td class="col">SHORT_RUN_AT</td><td>ml-worker</td><td class="col">03:00</td><td>ночной прогон по часам системы, даже если водяной знак не сдвинулся</td></tr>
+          <tr><td class="col">WORKER_POLL_SEC</td><td>ml-worker</td><td class="col">60</td><td>как часто цикл воркера проверяет водяной знак и расписание</td></tr>
+          <tr><td class="col">MIN_RERUN_MINUTES</td><td>ml-worker</td><td class="col">10</td><td>любой пересчёт (сдвиг водяного знака или ночной) не чаще, реальные минуты; в продакшене 30–60, в демо 1–2 (при ускоренных часах и ночь, и сдвиг знака наступают каждые секунды). Годовой прогон считается вместе с краткосрочным (1.6 с)</td></tr>
+          <tr><td class="col">YEAR_HORIZON_DAYS</td><td>ml-worker</td><td class="col">365</td><td>горизонт годового прогона</td></tr>
           <tr><td class="col">KEEP_RUNS</td><td>ml-worker</td><td class="col">14</td><td>сколько прогонов хранить</td></tr>
           <tr><td class="col">CLOCK_START</td><td>все</td><td class="col">не задано</td><td>виртуальное «сейчас» при первом запуске, например 2025-11-01T03:00:00; не задано — реальное московское время. Часы хранятся в <code>state/clock.json</code>, общие для всех сервисов; <b>системное время напрямую не используется</b></td></tr>
           <tr><td class="col">CLOCK_SPEED</td><td>все</td><td class="col">0</td><td>скорость виртуальных часов: 0 — стоят, 1 — реальное время, 1440 — сутки за минуту</td></tr>

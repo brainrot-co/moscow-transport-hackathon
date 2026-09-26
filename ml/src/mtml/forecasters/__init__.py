@@ -20,14 +20,14 @@ covariates = cache(load_hourly_covariates)
 def _daily(future: tuple[str, ...] = (), past: tuple[str, ...] = ()):
     return Chronos2Forecaster(
         "route_hour_daily",
-        covariates=covariates() if future or past else None,
+        covariates=covariates(future + past) if future or past else None,
         future_covariates=future,
         past_covariates=past,
     )
 
 
 def _xreg(columns: tuple[str, ...], pool: str, base_future: tuple[str, ...] = ()):
-    return XRegChronos(_daily(base_future), covariates(), columns, pool=pool)
+    return XRegChronos(_daily(base_future), covariates(columns + base_future), columns, pool=pool)
 
 
 def build(name: str):
