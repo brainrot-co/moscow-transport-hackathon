@@ -8,7 +8,7 @@ from mtml.data import ALL_ROUTES
 @dataclass(frozen=True)
 class WorkerSettings:
     # Актуальная модель
-    model: str = "chronos2_daily_cal_school_daytype"
+    model: str = "ensemble_cal_school_daytype_profile"
 
     # на этом горизонте модель проверена бэктестами, дальше отвечает годовой прогон
     horizon_days: int = 61

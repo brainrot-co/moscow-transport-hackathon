@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     environment:
       <<: *clock
-      ML_MODEL: ${ML_MODEL:-chronos2_daily_cal_school_daytype}
+      ML_MODEL: ${ML_MODEL:-ensemble_cal_school_daytype_profile}
       MIN_RERUN_MINUTES: ${MIN_RERUN_MINUTES:-60}
       WORKER_POLL_SEC: ${WORKER_POLL_SEC:-60}
       SHORT_RUN_AT: ${SHORT_RUN_AT:-03:00}

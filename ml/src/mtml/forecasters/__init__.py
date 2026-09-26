@@ -11,7 +11,15 @@ from mtml.covariates import (
 )
 from mtml.forecasters.base import Forecaster
 from mtml.forecasters.chronos2 import Chronos2Forecaster
+from mtml.forecasters.ensemble import EnsembleForecaster
 from mtml.forecasters.naive import SeasonalNaive, WeeklyProfile
+from mtml.forecasters.profile import (
+    DAILY_CALENDAR,
+    DAILY_VARIANTS,
+    DAILY_WEATHER,
+    DailyVariant,
+    ProfileDailyForecaster,
+)
 from mtml.forecasters.xreg import XRegChronos
 
 covariates = cache(load_hourly_covariates)
@@ -28,6 +36,23 @@ def _daily(future: tuple[str, ...] = (), past: tuple[str, ...] = ()):
 
 def _xreg(columns: tuple[str, ...], pool: str, base_future: tuple[str, ...] = ()):
     return XRegChronos(_daily(base_future), covariates(columns + base_future), columns, pool=pool)
+
+
+def _ensemble(variants: tuple[DailyVariant, ...] = DAILY_VARIANTS):
+    # у всех участников одна таблица: эффекты подменяют ковариаты сразу у всего ансамбля
+    weather = WEATHER if any(set(DAILY_WEATHER) & set(f + p) for f, p in variants) else ()
+    table = covariates(CALENDAR + SCHOOL + DAY_TYPE + weather)
+
+    def member(future: tuple[str, ...]):
+        return Chronos2Forecaster("route_hour_daily", covariates=table, future_covariates=future)
+
+    return EnsembleForecaster(
+        [
+            member(CALENDAR + SCHOOL),
+            member(CALENDAR + SCHOOL + DAY_TYPE),
+            ProfileDailyForecaster(table, variants),
+        ]
+    )
 
 
 def build(name: str):
@@ -53,6 +78,15 @@ def build(name: str):
         ),
         # тип дня вместо флагов календаря: он их включает
         "chronos2_daily_daytype_prox_school": lambda: _daily(DAY_TYPE + HOLIDAY_PROXIMITY + SCHOOL),
+        "ensemble_cal_school_daytype_profile": _ensemble,
+        # погода на горизонте известна (фактическая, как у лидерборда): только для экспериментов
+        "ensemble_cal_school_daytype_profile_wx": lambda: _ensemble(
+            DAILY_VARIANTS + ((DAILY_CALENDAR + tuple(DAILY_WEATHER), ()),)
+        ),
+        # погода только прошлой ковариатой: на горизонте её знать не нужно
+        "ensemble_cal_school_daytype_profile_pwx": lambda: _ensemble(
+            DAILY_VARIANTS + ((DAILY_CALENDAR, tuple(DAILY_WEATHER)),)
+        ),
         "xreg_global_cal": lambda: _xreg(CALENDAR, "global"),
         "xreg_route_cal": lambda: _xreg(CALENDAR, "route"),
         "xreg_series_cal": lambda: _xreg(CALENDAR, "series"),
@@ -72,7 +106,9 @@ def build(name: str):
 
 __all__ = [
     "Chronos2Forecaster",
+    "EnsembleForecaster",
     "Forecaster",
+    "ProfileDailyForecaster",
     "SeasonalNaive",
     "WeeklyProfile",
     "XRegChronos",

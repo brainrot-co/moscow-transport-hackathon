@@ -83,7 +83,7 @@ docker compose logs -f ml-worker
 | `CLOCK_SPEED`, `CLOCK_END` | оба | 0, пусто | 0, пусто |
 | `INGEST_POLL_SEC` | ingest | 60 | 5 |
 | `INGEST_MEMORY_LIMIT` | ingest | 1GB | 1GB |
-| `ML_MODEL` | воркер | `chronos2_daily_cal_school_daytype` | то же |
+| `ML_MODEL` | воркер | `ensemble_cal_school_daytype_profile` | то же |
 | `MIN_RERUN_MINUTES` | воркер | 60 | 2 |
 | `WORKER_POLL_SEC` | воркер | 60 | 10 |
 | `SHORT_RUN_AT` | воркер | 03:00 | 03:00 |
