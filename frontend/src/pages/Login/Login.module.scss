@@ -47,6 +47,20 @@
     background: #eef3f8;
     color-scheme: light;
 
+    &::before {
+        background: url('../../assets/login-bg-light.svg') no-repeat center / cover;
+        transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+
+    &::after {
+        background: transparent;
+        transition: background-color 0.3s ease;
+    }
+
+    .hero p {
+        color: rgba(255, 255, 255, 0.9)
+    }
+
     .loginCard {
         border-color: rgba(156, 170, 187, 0.46);
         background: rgba(255, 255, 255, 0.94);

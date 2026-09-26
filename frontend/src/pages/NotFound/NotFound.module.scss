@@ -65,6 +65,20 @@
         box-shadow: 8px 0 30px rgba(29, 46, 68, 0.08);
     }
 
+    &::before {
+        background: url('../../assets/404-bg-light.png') no-repeat center top / cover;
+        transition: filter 0.3s ease, opacity 0.3s ease;
+    }
+
+    &::after {
+        background: transparent;
+        transition: background-color 0.3s ease;
+    }
+
+    .notFoundContent h2 {
+        color: #0B0F14;
+    }
+
 }
 
 .topControls {
