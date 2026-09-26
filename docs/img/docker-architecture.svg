@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" width="1400" height="900" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3302a"/></marker>
+<marker id="a-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2c6a6e"/></marker>
+<marker id="a-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5f686c"/></marker>
+</defs>
+<rect width="1400" height="900" fill="#f5f5f5"/>
+<text x="700.0" y="44" text-anchor="middle" font-size="22" font-weight="600" fill="#1f2426">Логика Docker: контейнеры и общий том</text>
+<rect x="40" y="90" width="300" height="62" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="116" font-size="15" font-weight="600" fill="#1f2426">Источник выгрузок</text>
+<text x="54" y="138" font-size="12.5" fill="#5f686c">CSV валидаций, настраивают инженеры</text>
+<rect x="40" y="170" width="300" height="62" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="196" font-size="13" font-weight="600" fill="#1f2426">./dataset (только чтение)</text>
+<text x="54" y="218" font-size="12.5" fill="#5f686c">история для начальной загрузки</text>
+<rect x="40" y="250" width="300" height="190" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="54" y="276" font-size="15" font-weight="600" fill="#1f2426">ingest</text>
+<text x="54" y="298" font-size="12.5" fill="#5f686c">образ tram-forecast/ingest · 172 МБ</text>
+<text x="54" y="316" font-size="12.5" fill="#5f686c">лимит: 1 CPU · 2 ГБ</text>
+<text x="54" y="334" font-size="12.5" fill="#5f686c">python -m mtml.ingest run</text>
+<text x="54" y="352" font-size="12.5" fill="#5f686c">опрос inbox/ раз в 60 с</text>
+<text x="54" y="370" font-size="12.5" fill="#5f686c">разбор → сырой слой → факты</text>
+<text x="54" y="388" font-size="12.5" fill="#5f686c">→ статусы дней → водяной знак</text>
+<rect x="40" y="500" width="300" height="210" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="54" y="526" font-size="15" font-weight="600" fill="#1f2426">ml-worker</text>
+<text x="54" y="548" font-size="12.5" fill="#5f686c">образ tram-forecast/ml-worker · 428 МБ</text>
+<text x="54" y="566" font-size="12.5" fill="#5f686c">torch CPU · лимит: 2 CPU · 3 ГБ</text>
+<text x="54" y="584" font-size="12.5" fill="#5f686c">python -m mtml.worker run</text>
+<text x="54" y="602" font-size="12.5" fill="#5f686c">пересчёт: сдвиг водяного знака</text>
+<text x="54" y="620" font-size="12.5" fill="#5f686c">или ночь 03:00 (не чаще раза в 60 мин)</text>
+<text x="54" y="638" font-size="12.5" fill="#5f686c">краткосрочный 61 д + эффекты</text>
+<text x="54" y="656" font-size="12.5" fill="#5f686c">+ годовой + мониторинг точности</text>
+<rect x="40" y="760" width="300" height="58" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="786" font-size="13" font-weight="600" fill="#1f2426">Hugging Face</text>
+<text x="54" y="808" font-size="12.5" fill="#5f686c">веса Chronos-2, скачиваются один раз</text>
+<rect x="470" y="80" width="450" height="700" rx="9" fill="#eef4f4" stroke="#2c6a6e" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="484" y="106" font-size="17" font-weight="600" fill="#1f2426">Том tram-data  (/data)</text>
+<rect x="492" y="128" width="406" height="196" rx="9" fill="#fbeeed" stroke="#b3302a" stroke-width="2"/>
+<text x="506" y="154" font-size="14" font-weight="600" fill="#1f2426">пишет ingest</text>
+<text x="506" y="176" font-size="12.5" fill="#5f686c">inbox/  ← новые CSV, processed/, failed/</text>
+<text x="506" y="194" font-size="12.5" fill="#5f686c">raw/validations/  посадки по дням</text>
+<text x="506" y="212" font-size="12.5" fill="#5f686c">actuals/actuals_hourly.parquet  факт маршрут × час</text>
+<text x="506" y="230" font-size="12.5" fill="#5f686c">actuals/day_status.parquet  final / partial / missing</text>
+<text x="506" y="248" font-size="12.5" fill="#5f686c">ingestion/  журнал загрузок, карантин</text>
+<text x="506" y="266" font-size="12.5" fill="#5f686c">state/watermark.json  до какой даты данные полные</text>
+<text x="506" y="284" font-size="12.5" fill="#5f686c">tmp/duckdb/  сброс памяти при больших файлах</text>
+<rect x="492" y="346" width="406" height="196" rx="9" fill="#fbeeed" stroke="#b3302a" stroke-width="2"/>
+<text x="506" y="372" font-size="14" font-weight="600" fill="#1f2426">пишет ml-worker</text>
+<text x="506" y="394" font-size="12.5" fill="#5f686c">runs/&lt;run_id&gt;/forecasts.parquet  прогноз</text>
+<text x="506" y="412" font-size="12.5" fill="#5f686c">runs/&lt;run_id&gt;/effects.parquet  эффекты для слайдеров</text>
+<text x="506" y="430" font-size="12.5" fill="#5f686c">runs/&lt;run_id&gt;/meta.json  модель, данные, проверки</text>
+<text x="506" y="448" font-size="12.5" fill="#5f686c">active.json  какие прогоны актуальны</text>
+<text x="506" y="466" font-size="12.5" fill="#5f686c">monitoring/accuracy.parquet  реальная точность</text>
+<text x="506" y="484" font-size="12.5" fill="#5f686c">state/worker.json  последний прогон, ошибка</text>
+<text x="506" y="502" font-size="12.5" fill="#5f686c">hf/  кэш весов Chronos-2</text>
+<rect x="492" y="564" width="406" height="88" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="506" y="590" font-size="14" font-weight="600" fill="#1f2426">общее для всех сервисов</text>
+<text x="506" y="612" font-size="12.5" fill="#5f686c">state/clock.json  «сейчас» системы</text>
+<text x="506" y="630" font-size="12.5" fill="#5f686c">(в демо — 01.11.2025 03:00; системное время не использовать)</text>
+<text x="695" y="700" font-size="12.5" font-weight="600" fill="#2c6a6e" text-anchor="middle">бэкенд подключает том только на чтение (:ro)</text>
+<rect x="1050" y="90" width="310" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1064" y="116" font-size="14" font-weight="600" fill="#1f2426">БД бэкенда</text>
+<text x="1064" y="138" font-size="12.5" fill="#5f686c">сценарии и поправки диспетчера</text>
+<rect x="1050" y="250" width="310" height="200" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="1064" y="276" font-size="15" font-weight="600" fill="#1f2426">backend</text>
+<text x="1064" y="298" font-size="12.5" fill="#5f686c">команда бэкенда · FastAPI</text>
+<text x="1064" y="316" font-size="12.5" fill="#5f686c">том только на чтение</text>
+<text x="1064" y="334" font-size="12.5" fill="#5f686c">держит прогноз в памяти,</text>
+<text x="1064" y="352" font-size="12.5" fill="#5f686c">перечитывает active.json раз в 30 с</text>
+<text x="1064" y="370" font-size="12.5" fill="#5f686c">склейка: факт → short → year</text>
+<text x="1064" y="388" font-size="12.5" fill="#5f686c">поправки, API, экспорт CSV / XLSX</text>
+<rect x="1050" y="530" width="310" height="150" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="1064" y="556" font-size="15" font-weight="600" fill="#1f2426">frontend</text>
+<text x="1064" y="578" font-size="12.5" fill="#5f686c">команда фронтенда</text>
+<text x="1064" y="596" font-size="12.5" fill="#5f686c">только HTTP к backend</text>
+<text x="1064" y="614" font-size="12.5" fill="#5f686c">сутки и неделя по часам,</text>
+<text x="1064" y="632" font-size="12.5" fill="#5f686c">месяц и год по дням, карта, слайдеры</text>
+<rect x="1050" y="760" width="310" height="58" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1064" y="786" font-size="14" font-weight="600" fill="#1f2426">Диспетчер</text>
+<text x="1064" y="808" font-size="12.5" fill="#5f686c">браузер</text>
+<path d="M340,121 C 410,121 420,160 492,160" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<text x="350" y="112" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">CSV → inbox/</text>
+<path d="M190,232 V250" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M340,300 H492" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)" marker-start="url(#a-w)"/>
+<text x="350" y="292" font-size="12" font-weight="400" fill="#b3302a" text-anchor="start">чтение и запись</text>
+<path d="M492,250 C 420,250 420,520 340,520" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="60" y="474" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">читает факты, статусы и водяной знак</text>
+<path d="M340,560 C 420,560 420,445 492,445" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<text x="350" y="590" font-size="12" font-weight="400" fill="#b3302a" text-anchor="start">пишет прогнозы</text>
+<path d="M190,760 V710" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M920,350 H1050" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="930" y="342" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">только чтение</text>
+<path d="M1205,160 V250" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<path d="M1205,450 V530" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<text x="1215" y="495" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">HTTP API</text>
+<path d="M1205,680 V760" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+</svg>

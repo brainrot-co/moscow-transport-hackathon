@@ -524,13 +524,13 @@ section:target h2 { color: var(--accent); }
   "horizon": { "start": "2025-11-01T00:00:00", "end": "2025-12-31T23:00:00", "step": "hour" },
   "routes": [1, 5, 7, 11, 12, 17, 25, 26, 28, 50],
   "model": {
-    "name": "chronos2_daily_cal_school_daytype",
+    "name": "ensemble_cal_school_daytype_profile",
     "version": "amazon/chronos-2@&lt;revision&gt;",
     "covariates": ["is_non_working", "is_holiday_weekday", "is_shortened",
                    "school_holiday_modular", "school_holiday_quarter", "day_type"],
     "quantiles": [0.1, 0.5, 0.9]
   },
-  "backtest": { "window": "2025-09-01..2025-10-31", "wape_score": 0.8822 },
+  "backtest": { "window": "2025-09-01..2025-10-31", "wape_score": 0.8791 },
   "quality_checks": { "rows": "ok", "non_negative": "ok", "daily_totals_range": "ok" },
   "cold_start_routes": [5],                     // маршруты без истории, прогноз запасным методом
   "mlflow_run_id": null
@@ -725,7 +725,7 @@ section:target h2 { color: var(--accent); }
           <tr><td class="col">MIN_DATE</td><td>ingest</td><td class="col">2020-01-01</td><td>валидации раньше — битые даты, в карантин</td></tr>
           <tr><td class="col">ROUTES</td><td>ingest</td><td class="col">1,5,7,11,12,17,25,26,28,50</td><td>маршруты из справочника; остальные принимаются, но попадают в предупреждения</td></tr>
           <tr><td class="col">INGEST_MEMORY_LIMIT</td><td>ingest</td><td class="col">1GB</td><td>лимит памяти DuckDB, излишек пишется в tmp/duckdb</td></tr>
-          <tr><td class="col">ML_MODEL</td><td>ml-worker</td><td class="col">chronos2_daily_cal_school_daytype</td><td>имя модели из реестра</td></tr>
+          <tr><td class="col">ML_MODEL</td><td>ml-worker</td><td class="col">ensemble_cal_school_daytype_profile</td><td>имя модели из реестра</td></tr>
           <tr><td class="col">SHORT_RUN_AT</td><td>ml-worker</td><td class="col">03:00</td><td>ночной прогон по часам системы, даже если водяной знак не сдвинулся</td></tr>
           <tr><td class="col">WORKER_POLL_SEC</td><td>ml-worker</td><td class="col">60</td><td>как часто цикл воркера проверяет водяной знак и расписание</td></tr>
           <tr><td class="col">MIN_RERUN_MINUTES</td><td>ml-worker</td><td class="col">10</td><td>любой пересчёт (сдвиг водяного знака или ночной) не чаще, реальные минуты; в продакшене 30–60, в демо 1–2 (при ускоренных часах и ночь, и сдвиг знака наступают каждые секунды). Годовой прогон считается вместе с краткосрочным (1.6 с)</td></tr>

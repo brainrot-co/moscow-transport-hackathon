@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1120" width="1480" height="1120" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3302a"/></marker>
+<marker id="a-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2c6a6e"/></marker>
+<marker id="a-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5f686c"/></marker>
+</defs>
+<rect width="1480" height="1120" fill="#f5f5f5"/>
+<text x="740.0" y="44" text-anchor="middle" font-size="22" font-weight="600" fill="#1f2426">Боевая модель: ensemble_cal_school_daytype_profile</text>
+<rect x="16" y="64" width="1448" height="146" rx="12" fill="#ececec"/>
+<text x="34" y="90" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">ВХОДЫ</text>
+<rect x="40" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="54" y="118" font-size="14" font-weight="600" fill="#1f2426">Факты (actuals)</text>
+<text x="54" y="140" font-size="12.5" fill="#5f686c">история до водяного знака</text>
+<text x="54" y="158" font-size="12.5" fill="#5f686c">плотная сетка маршрут × час</text>
+<text x="54" y="176" font-size="12.5" fill="#5f686c">из ingest</text>
+<rect x="278" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="292" y="118" font-size="14" font-weight="600" fill="#1f2426">calendar.csv · isDayOff</text>
+<text x="292" y="140" font-size="12.5" fill="#5f686c">is_non_working</text>
+<text x="292" y="158" font-size="12.5" fill="#5f686c">is_holiday_weekday</text>
+<text x="292" y="176" font-size="12.5" fill="#5f686c">is_shortened · 2025–2026</text>
+<rect x="516" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="530" y="118" font-size="14" font-weight="600" fill="#1f2426">Школьные каникулы</text>
+<text x="530" y="140" font-size="12.5" fill="#5f686c">school_holiday_modular</text>
+<text x="530" y="158" font-size="12.5" fill="#5f686c">school_holiday_quarter</text>
+<text x="530" y="176" font-size="12.5" fill="#5f686c">источники в CSV</text>
+<rect x="754" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="768" y="118" font-size="14" font-weight="600" fill="#1f2426">Тип дня (covariates.py)</text>
+<text x="768" y="140" font-size="12.5" fill="#5f686c">workday / saturday / sunday</text>
+<text x="768" y="158" font-size="12.5" fill="#5f686c">holiday / pre_holiday /</text>
+<text x="768" y="176" font-size="12.5" fill="#5f686c">post_holiday</text>
+<rect x="992" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="1006" y="118" font-size="14" font-weight="600" fill="#1f2426">Chronos-2 (Hugging Face)</text>
+<text x="1006" y="140" font-size="12.5" fill="#5f686c">amazon/chronos-2, zero-shot</text>
+<text x="1006" y="158" font-size="12.5" fill="#5f686c">без дообучения</text>
+<text x="1006" y="176" font-size="12.5" fill="#5f686c">одна копия весов</text>
+<rect x="1230" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1244" y="118" font-size="14" font-weight="600" fill="#1f2426">Погода (не входит)</text>
+<text x="1244" y="140" font-size="12.5" fill="#5f686c">только эксперименты</text>
+<text x="1244" y="158" font-size="12.5" fill="#5f686c">_wx / _pwx</text>
+<text x="1244" y="176" font-size="12.5" fill="#5f686c">прирост ≤ +0.0007</text>
+<rect x="16" y="226" width="1448" height="560" rx="12" fill="#e8f1f1"/>
+<text x="34" y="252" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">УЧАСТНИКИ АНСАМБЛЯ · каждый получает историю, свою часть ковариат и общие веса</text>
+<rect x="40" y="262" width="300" height="506" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="54" y="288" font-size="16" font-weight="600" fill="#1f2426">RH · вес 1/3</text>
+<text x="54" y="310" font-size="12.5" fill="#5f686c">Chronos2Forecaster, route_hour_daily</text>
+<text x="54" y="328" font-size="12.5" fill="#5f686c">216 рядов = 9 маршрутов × 24 часа</text>
+<text x="54" y="346" font-size="12.5" fill="#5f686c">ряд: посадки в этот час по дням</text>
+<text x="54" y="364" font-size="12.5" fill="#5f686c">горизонт 61 шаг (день)</text>
+<text x="54" y="382" font-size="12.5" fill="#5f686c"></text>
+<text x="54" y="400" font-size="12.5" fill="#5f686c">ковариаты на горизонте:</text>
+<text x="54" y="418" font-size="12.5" fill="#5f686c">· is_non_working</text>
+<text x="54" y="436" font-size="12.5" fill="#5f686c">· is_holiday_weekday</text>
+<text x="54" y="454" font-size="12.5" fill="#5f686c">· is_shortened</text>
+<text x="54" y="472" font-size="12.5" fill="#5f686c">· school_holiday_modular</text>
+<text x="54" y="490" font-size="12.5" fill="#5f686c">· school_holiday_quarter</text>
+<text x="54" y="508" font-size="12.5" fill="#5f686c"></text>
+<text x="54" y="526" font-size="12.5" fill="#5f686c"></text>
+<text x="54" y="544" font-size="12.5" fill="#5f686c"></text>
+<text x="54" y="562" font-size="12.5" fill="#5f686c">выход: медиана, q10, q90</text>
+<text x="54" y="580" font-size="12.5" fill="#5f686c">= chronos2_daily_cal_school</text>
+<rect x="360" y="262" width="300" height="506" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="374" y="288" font-size="16" font-weight="600" fill="#1f2426">RHD · вес 1/3</text>
+<text x="374" y="310" font-size="12.5" fill="#5f686c">Chronos2Forecaster, route_hour_daily</text>
+<text x="374" y="328" font-size="12.5" fill="#5f686c">216 рядов = 9 маршрутов × 24 часа</text>
+<text x="374" y="346" font-size="12.5" fill="#5f686c">ряд: посадки в этот час по дням</text>
+<text x="374" y="364" font-size="12.5" fill="#5f686c">горизонт 61 шаг (день)</text>
+<text x="374" y="382" font-size="12.5" fill="#5f686c"></text>
+<text x="374" y="400" font-size="12.5" fill="#5f686c">ковариаты на горизонте:</text>
+<text x="374" y="418" font-size="12.5" fill="#5f686c">· is_non_working</text>
+<text x="374" y="436" font-size="12.5" fill="#5f686c">· is_holiday_weekday</text>
+<text x="374" y="454" font-size="12.5" fill="#5f686c">· is_shortened</text>
+<text x="374" y="472" font-size="12.5" fill="#5f686c">· school_holiday_modular</text>
+<text x="374" y="490" font-size="12.5" fill="#5f686c">· school_holiday_quarter</text>
+<text x="374" y="508" font-size="12.5" fill="#5f686c">· day_type</text>
+<text x="374" y="526" font-size="12.5" fill="#5f686c"></text>
+<text x="374" y="544" font-size="12.5" fill="#5f686c"></text>
+<text x="374" y="562" font-size="12.5" fill="#5f686c">выход: медиана, q10, q90</text>
+<text x="374" y="580" font-size="12.5" fill="#5f686c">= chronos2_daily_cal_school_daytype</text>
+<text x="374" y="598" font-size="12.5" fill="#5f686c">(прежняя боевая модель)</text>
+<rect x="680" y="262" width="764" height="506" rx="9" fill="#f7fafa" stroke="#5f686c" stroke-width="2"/>
+<text x="694" y="288" font-size="16" font-weight="600" fill="#1f2426">V2 · ProfileDailyForecaster · вес 1/3</text>
+<rect x="700" y="306" width="724" height="66" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="714" y="332" font-size="13" font-weight="600" fill="#1f2426">day_features: признаки дня из календаря</text>
+<text x="714" y="354" font-size="12.5" fill="#5f686c">dow · work_weekend (рабочая Сб/Вс) · special = праздник в будни или рабочий выходной</text>
+<rect x="700" y="392" width="230" height="156" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="714" y="418" font-size="13" font-weight="600" fill="#1f2426">Недельный профиль (без ML)</text>
+<text x="714" y="440" font-size="12.5" fill="#5f686c">уровень: медиана Пн–Чт за 7 дн</text>
+<text x="714" y="458" font-size="12.5" fill="#5f686c">× коэф. дня недели за 6 нед</text>
+<text x="714" y="476" font-size="12.5" fill="#5f686c">доли часов: за 4 недели</text>
+<text x="714" y="494" font-size="12.5" fill="#5f686c">праздник → как воскресенье</text>
+<text x="714" y="512" font-size="12.5" fill="#5f686c">раб. суббота → (Пт + Сб) / 2</text>
+<rect x="947" y="392" width="230" height="156" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="961" y="418" font-size="13" font-weight="600" fill="#1f2426">Chronos-2: суммы за день</text>
+<text x="961" y="440" font-size="12.5" fill="#5f686c">10 рядов — по маршруту</text>
+<text x="961" y="458" font-size="12.5" fill="#5f686c">горизонт 61 день</text>
+<text x="961" y="476" font-size="12.5" fill="#5f686c">ковариат нет</text>
+<text x="961" y="494" font-size="12.5" fill="#5f686c">медиана</text>
+<rect x="1194" y="392" width="230" height="156" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="1208" y="418" font-size="13" font-weight="600" fill="#1f2426">Chronos-2: суммы + календарь</text>
+<text x="1208" y="440" font-size="12.5" fill="#5f686c">10 рядов — по маршруту</text>
+<text x="1208" y="458" font-size="12.5" fill="#5f686c">на горизонте:</text>
+<text x="1208" y="476" font-size="12.5" fill="#5f686c">is_non_working,</text>
+<text x="1208" y="494" font-size="12.5" fill="#5f686c">is_holiday_weekday, dow</text>
+<text x="1208" y="512" font-size="12.5" fill="#5f686c">медиана</text>
+<path d="M815.0,372 V392" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1062.0,372 V392" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1309.0,372 V392" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<rect x="947" y="572" width="477" height="84" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="961" y="598" font-size="13" font-weight="600" fill="#1f2426">spread_over_hours: сумма дня → по часам</text>
+<text x="961" y="620" font-size="12.5" fill="#5f686c">сумма дня × доли часов профиля;</text>
+<text x="961" y="638" font-size="12.5" fill="#5f686c">в special-дни и при простое маршрута (&lt; 5%) — сумма профиля</text>
+<path d="M1062.0,548 V572" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1309.0,548 V572" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M910,548 V600 H947" fill="none" stroke="#5f686c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a-m)"/>
+<text x="904" y="596" font-size="12" font-weight="400" fill="#5f686c" text-anchor="end">форма</text>
+<rect x="700" y="680" width="724" height="72" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="714" y="706" font-size="13" font-weight="600" fill="#1f2426">Среднее трёх вариантов → × new_year_factor</text>
+<text x="714" y="728" font-size="12.5" fill="#5f686c">будни 27–31.12 × ≈ 0.90: первые рабочие дни последнего января к трём следующим неделям</text>
+<path d="M760,548 V680" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1187,656 V680" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<rect x="16" y="800" width="1448" height="160" rx="12" fill="#fbeeed"/>
+<text x="34" y="826" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">ENSEMBLEFORECASTER</text>
+<rect x="40" y="842" width="900" height="100" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="54" y="868" font-size="16" font-weight="600" fill="#1f2426">yhat = (RH + RHD + V2) / 3</text>
+<text x="54" y="890" font-size="12.5" fill="#5f686c">q10, q90 = среднее по RH и RHD (у V2 квантилей нет)</text>
+<text x="54" y="908" font-size="12.5" fill="#5f686c">одна таблица ковариат на всех: подмена covariates доходит до каждого участника</text>
+<rect x="960" y="842" width="484" height="100" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="974" y="868" font-size="14" font-weight="600" fill="#1f2426">Итоговые веса</text>
+<text x="974" y="890" font-size="12.5" fill="#5f686c">RH 1/3 · RHD 1/3</text>
+<text x="974" y="908" font-size="12.5" fill="#5f686c">профиль 1/9 · суммы без ковариат 1/9 · суммы + календарь 1/9</text>
+<path d="M190,768 V842" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M510,768 V842" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M800,768 V842" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<rect x="16" y="976" width="1448" height="128" rx="12" fill="#f0ecf6"/>
+<text x="34" y="1002" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">ВЫХОД ПРОГОНА (runs/&lt;run_id&gt;/)</text>
+<rect x="40" y="1016" width="440" height="76" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="54" y="1042" font-size="14" font-weight="600" fill="#1f2426">forecasts.parquet</text>
+<text x="54" y="1064" font-size="12.5" fill="#5f686c">route, ts, yhat, q10, q90 · 61 день почасово</text>
+<text x="54" y="1082" font-size="12.5" fill="#5f686c">маршрут 5 без истории → 0 (cold start)</text>
+<rect x="500" y="1016" width="460" height="76" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="514" y="1042" font-size="14" font-weight="600" fill="#1f2426">effects.parquet</text>
+<text x="514" y="1064" font-size="12.5" fill="#5f686c">контрольные прогоны ансамбля без праздников</text>
+<text x="514" y="1082" font-size="12.5" fill="#5f686c">и без каникул → log_effect для слайдеров</text>
+<rect x="980" y="1016" width="464" height="76" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="994" y="1042" font-size="14" font-weight="600" fill="#1f2426">meta.json</text>
+<text x="994" y="1064" font-size="12.5" fill="#5f686c">model = ensemble_cal_school_daytype_profile</text>
+<text x="994" y="1082" font-size="12.5" fill="#5f686c">ковариаты, квантили, проверки качества</text>
+<path d="M260,942 V1016" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M730,942 V1016" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M900,942 V980 H1210 V1016" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+</svg>

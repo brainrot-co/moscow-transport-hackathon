@@ -1,3 +1,4 @@
+from functools import cache
 from typing import Literal
 
 import pandas as pd
@@ -16,6 +17,14 @@ def default_device():
     if torch.backends.mps.is_available():
         return "mps"
     return "cpu"
+
+
+# участники ансамбля делят одни веса: иначе каждый держит в памяти свою копию модели
+@cache
+def load_pipeline(model_id: str, device: str):
+    from chronos import Chronos2Pipeline
+
+    return Chronos2Pipeline.from_pretrained(model_id, device_map=device)
 
 
 class Chronos2Forecaster:
@@ -52,15 +61,6 @@ class Chronos2Forecaster:
         ctx = f"_ctx{context_length}" if context_length else ""
         cov = ("_fc" if future_covariates else "") + ("_pc" if past_covariates else "")
         self.name = f"chronos2_{layout}{ctx}{suffix}{cov}"
-        self._pipeline = None
-
-    @property
-    def pipeline(self):
-        if self._pipeline is None:
-            from chronos import Chronos2Pipeline
-
-            self._pipeline = Chronos2Pipeline.from_pretrained(self.model_id, device_map=self.device)
-        return self._pipeline
 
     def fit(self, history: pd.DataFrame):
         # zero-shot: обучения нет, история — это контекст для прогноза
@@ -83,7 +83,7 @@ class Chronos2Forecaster:
             context, future = self._daily_layout(context), self._daily_layout(future)
             prediction_length, freq = len(hours) // 24, "D"
 
-        raw = self.pipeline.predict_df(
+        raw = load_pipeline(self.model_id, self.device).predict_df(
             context,
             # колонки, которых нет в future_df, Chronos считает прошлыми ковариатами
             future_df=future if self.future_covariates else None,
