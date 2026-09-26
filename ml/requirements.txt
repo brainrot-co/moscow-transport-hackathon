@@ -1,0 +1,6 @@
+pandas
+numpy
+pyarrow
+# на CPU достаточно: pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch
+chronos-forecasting>=2.0
