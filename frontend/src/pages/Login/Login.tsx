@@ -55,11 +55,6 @@ export default function Login() {
                 <span>Московский<br />транспорт</span>
             </div>
 
-            <section className={styles.hero} aria-labelledby="login-hero-title">
-                <h1 id="login-hero-title">Умный транспорт -<br />комфортный город</h1>
-                <p>Анализируй. Планируй. Развивай.</p>
-            </section>
-
             <section className={styles.loginCard} aria-labelledby="login-title">
                 <ThemeToggle
                     isLightTheme={isLightTheme}

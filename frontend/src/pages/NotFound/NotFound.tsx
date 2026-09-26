@@ -1,9 +1,6 @@
 import styles from './NotFound.module.scss'
 import { Link } from 'react-router-dom';
 
-import DataRefreshed from '../../components/DataRefreshed/DataRefreshed'
-
-import logoIcon from '../../assets/logo-icon.svg'
 import dashboardIcon from '../../assets/dashboard-icon.svg'
 import notFoundBadge from '../../assets/404-pic.svg'
 import ThemeToggle from '../../components/ThemeToggle/ThemeToggle'
@@ -15,23 +12,11 @@ export default function NotFound() {
     return (
         <>
             <div className={`${styles.containerNotFound} ${isLightTheme ? styles.lightTheme : ''}`}>
-                <div className={styles.leftBarCollapsed}>
-                    <img src={logoIcon} alt="logo" />
-                    <ul className={styles.menu}>
-                        <li>
-                            <Link to={'/dashboard'} className={styles.menuBtn}>
-                                <img src={dashboardIcon} alt="to dashboard" />
-                            </Link>
-                        </li>
-                    </ul>
-                </div>
-
                 <div className={styles.topControls}>
                     <ThemeToggle
                         isLightTheme={isLightTheme}
                         onToggle={() => setIsLightTheme((isLight) => !isLight)}
                     />
-                    <DataRefreshed isLightTheme={isLightTheme} />
                 </div>
 
                 <div className={styles.notFoundContent}>

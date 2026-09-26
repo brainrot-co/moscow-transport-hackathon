@@ -5,7 +5,17 @@ import LoadedRoute from '../LoadedRoute/LoadedRoute'
 import { routeColors } from '../../data/routeColors'
 import { tramRoutes } from '../Map/routes'
 
-export default function TopLoadedRoutes({ rows }: { rows: ForecastRow[] }) {
+interface TopLoadedRoutesProps {
+    rows: ForecastRow[];
+    selectedRouteId: string | null;
+    onSelectRoute: (routeId: string) => void;
+}
+
+export default function TopLoadedRoutes({
+    rows,
+    selectedRouteId,
+    onSelectRoute,
+}: TopLoadedRoutesProps) {
     const totals = Array.from(
         rows.reduce((result, row) => {
             if (row.availability === 'unavailable' || row.availability === 'cold_start') {
@@ -25,7 +35,7 @@ export default function TopLoadedRoutes({ rows }: { rows: ForecastRow[] }) {
     return (
         <div className={styles.topLoadedRoutes}>
             <div className={styles.topLoadedTop}>
-                <h5>Топ-5 маршрутов по пассажиропотоку</h5>
+                <h5>Топ-5 маршрутов по пассажиропотоку за день</h5>
             </div>
 
             <div className={styles.loadedRoutes}>
@@ -37,9 +47,12 @@ export default function TopLoadedRoutes({ rows }: { rows: ForecastRow[] }) {
                         <LoadedRoute
                             key={routeId}
                             routeNum={String(routeId)}
-                            routeName={`${route?.name ?? 'Маршрут'} · ${Math.round(amount).toLocaleString('ru-RU')} пасс.`}
+                            routeName={route?.name ?? 'Маршрут'}
+                            passengerCount={Math.round(amount)}
                             loadPercentage={Math.max(1, Math.round((amount / maximum) * 100))}
                             progressColor={routeColors[String(routeId)] ?? '#f10624'}
+                            selected={selectedRouteId === String(routeId)}
+                            onSelect={() => onSelectRoute(String(routeId))}
                         />
                     );
                 })}

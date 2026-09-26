@@ -289,6 +289,46 @@
     }
 }
 
+.refreshDataButton {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    background: var(--surface-raised);
+    color: var(--text);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+    img {
+        width: 17px;
+        height: 17px;
+        object-fit: contain;
+    }
+
+    &:hover:not(:disabled) {
+        border-color: var(--border-hover);
+        background: var(--surface-hover);
+    }
+
+    &:focus-visible {
+        outline: 2px solid #D2092A;
+        outline-offset: 2px;
+    }
+
+    &:disabled {
+        opacity: 0.65;
+        cursor: wait;
+    }
+}
+
 .menuBottomInfo {
     box-sizing: border-box;
     border: 1px solid var(--border);
@@ -368,18 +408,11 @@
 }
 
 .topGreeting {
-    p {
-        font-weight: 400;
-        font-size: 13px;
-        color: var(--subtle);
-    }
-
     h4 {
+        margin: 0;
         font-weight: 700;
         font-size: 27px;
         color: var(--text);
-        margin-top: 7px;
-        margin-bottom: 1px;
     }
 
     display: flex;
@@ -396,8 +429,9 @@
 .topTimestamp {
     gap: 5px;
     display: flex;
-    align-items: flex-start;
+    align-items: flex-end;
     flex-direction: column;
+    text-align: right;
 
     p {
         font-weight: 400;
@@ -409,28 +443,15 @@
         font-weight: 700;
         font-size: 15px;
         color: var(--text);
-        width: 72px;
-        margin-left: 11px;
     }
 
-    .topOnline {
-        span {
-            background-color: #44C69F;
-            display: block;
-            width: 8px;
-            height: 8px;
-            border-radius: 1000px;
-        }
-
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
 }
 
 .topTime {
+    width: 100%;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
 }
 
 .dashboardTop {

@@ -71,12 +71,28 @@ const SCENARIO_OPTIONS: ScenarioOption[] = [
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
+const formatStopsCount = (count: number) => {
+    const lastTwoDigits = count % 100;
+    const lastDigit = count % 10;
+
+    if (lastTwoDigits >= 11 && lastTwoDigits <= 14) return `${count} остановок`;
+    if (lastDigit === 1) return `${count} остановка`;
+    if (lastDigit >= 2 && lastDigit <= 4) return `${count} остановки`;
+    return `${count} остановок`;
+};
+
 const rowAmount = (row: ForecastRow, field: 'model' | 'adjusted') => {
     if (row.source === 'actual') return row.value ?? 0;
     if (row.source === 'mixed') {
         return (row.value ?? 0) + (field === 'model' ? row.yhat_model ?? 0 : row.yhat ?? 0);
     }
     return field === 'model' ? row.yhat_model ?? 0 : row.yhat ?? 0;
+};
+
+const niceMaximum = (value: number) => {
+    const safeValue = Math.max(1, value);
+    const magnitude = 10 ** Math.floor(Math.log10(safeValue));
+    return Math.ceil(safeValue / magnitude) * magnitude;
 };
 
 const getChartData = (
@@ -86,6 +102,12 @@ const getChartData = (
 ): ChartDatum[] => rows.map((row) => {
     const timestamp = new Date(row.ts);
     const isHourly = period !== 'year' && granularity === 'hour';
+    const [, monthText] = row.ts.slice(0, 10).split('-');
+    const year = Number(row.ts.slice(0, 4));
+    const month = Number(monthText);
+    const bucketHours = period === 'year'
+        ? new Date(Date.UTC(year, month, 0)).getUTCDate() * 24
+        : isHourly ? 1 : 24;
     const label = isHourly
         ? timestamp.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' })
         : period === 'year'
@@ -94,10 +116,15 @@ const getChartData = (
     return {
         label,
         group: period === 'week' && isHourly
-            ? timestamp.toLocaleDateString('ru-RU', { weekday: 'short', timeZone: 'Europe/Moscow' })
+            ? timestamp.toLocaleDateString('ru-RU', {
+                weekday: 'short',
+                day: '2-digit',
+                month: '2-digit',
+                timeZone: 'Europe/Moscow',
+            })
             : undefined,
-        model: rowAmount(row, 'model'),
-        adjusted: rowAmount(row, 'adjusted'),
+        model: rowAmount(row, 'model') / bucketHours,
+        adjusted: rowAmount(row, 'adjusted') / bucketHours,
     };
 });
 
@@ -159,9 +186,13 @@ const makeSmoothPath = (points: { x: number; y: number }[]) => {
 function RouteLoadChart({
     data,
     forecastMode,
+    yMaximum,
+    showWeekStarts,
 }: {
     data: ChartDatum[];
     forecastMode: ForecastMode;
+    yMaximum: number;
+    showWeekStarts: boolean;
 }) {
     const width = 920;
     const height = 330;
@@ -169,9 +200,6 @@ function RouteLoadChart({
     const plotWidth = width - plot.left - plot.right;
     const plotHeight = height - plot.top - plot.bottom;
     const baseline = height - plot.bottom;
-    const maximum = Math.max(1, ...data.flatMap((datum) => [datum.model, datum.adjusted]));
-    const magnitude = 10 ** Math.floor(Math.log10(maximum));
-    const yMaximum = Math.ceil(maximum / magnitude) * magnitude;
     const [activeIndex, setActiveIndex] = useState(Math.min(8, data.length - 1));
     const safeActiveIndex = Math.min(activeIndex, data.length - 1);
 
@@ -195,8 +223,10 @@ function RouteLoadChart({
     const activeAdjustedPoint = adjustedPoints[safeActiveIndex];
     const activeDatum = data[safeActiveIndex];
     const adjustedValue = Math.round(adjustedValues[safeActiveIndex]);
-    const tooltipX = Math.min(Math.max(activeAdjustedPoint.x - 54, plot.left), width - plot.right - 108);
+    const tooltipWidth = 108;
+    const tooltipX = activeAdjustedPoint.x - tooltipWidth / 2;
     const tooltipY = Math.max(3, Math.min(activeAdjustedPoint.y, activeModelPoint.y) - 75);
+    const tooltipFits = tooltipX >= plot.left && tooltipX + tooltipWidth <= width - plot.right;
     const labelStep = data.length === 21 ? 1 : Math.max(1, Math.ceil(data.length / 7));
 
     const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
@@ -234,7 +264,7 @@ function RouteLoadChart({
             })}
 
             {data.map((datum, index) => {
-                if (index % labelStep !== 0 && index !== data.length - 1) {
+                if (index % labelStep !== 0 && (showWeekStarts || index !== data.length - 1)) {
                     return null;
                 }
 
@@ -244,26 +274,29 @@ function RouteLoadChart({
                             <text
                                 className={styles.weekdayText}
                                 x={modelPoints[index].x}
-                                y={height - 24}
+                                y={showWeekStarts ? height - 15 : height - 24}
                                 textAnchor="middle"
                             >
                                 {datum.group}
                             </text>
                         )}
-                        <text
-                            className={styles.axisText}
-                            x={modelPoints[index].x}
-                            y={datum.group ? height - 9 : height - 15}
-                            textAnchor="middle"
-                        >
-                            {datum.label}
-                        </text>
+                        {!showWeekStarts && (
+                            <text
+                                className={styles.axisText}
+                                x={modelPoints[index].x}
+                                y={datum.group ? height - 9 : height - 15}
+                                textAnchor="middle"
+                            >
+                                {datum.label}
+                            </text>
+                        )}
                     </g>
                 );
             })}
 
-            {data.length === 21 && data.map((_, index) => {
-                if (index === 0 || index % 3 !== 0) {
+            {(showWeekStarts || data.length === 21) && data.map((_, index) => {
+                const separatorStep = showWeekStarts ? 24 : 3;
+                if (index === 0 || index % separatorStep !== 0) {
                     return null;
                 }
 
@@ -286,12 +319,14 @@ function RouteLoadChart({
             <circle className={styles.modelPoint} cx={activeModelPoint.x} cy={activeModelPoint.y} r="5" />
             <circle className={styles.adjustedPoint} cx={activeAdjustedPoint.x} cy={activeAdjustedPoint.y} r="7" />
 
-            <g className={styles.chartTooltip} transform={`translate(${tooltipX} ${tooltipY})`}>
-                <rect width="108" height="65" rx="10" />
-                    <text x="12" y="19">{activeDatum.group ? `${activeDatum.group}, ${activeDatum.label}` : activeDatum.label}</text>
-                <text x="12" y="38" className={styles.tooltipModel}>Модель {Math.round(activeDatum.model).toLocaleString('ru-RU')}</text>
-                <text x="12" y="56" className={styles.tooltipAdjusted}>Итог {adjustedValue.toLocaleString('ru-RU')}</text>
-            </g>
+            {tooltipFits && (
+                <g className={styles.chartTooltip} transform={`translate(${tooltipX} ${tooltipY})`}>
+                    <rect width={tooltipWidth} height="65" rx="10" />
+                        <text x="12" y="19">{activeDatum.group ? `${activeDatum.group}, ${activeDatum.label}` : activeDatum.label}</text>
+                    <text x="12" y="38" className={styles.tooltipModel}>Модель {Math.round(activeDatum.model).toLocaleString('ru-RU')}</text>
+                    <text x="12" y="56" className={styles.tooltipAdjusted}>Итог {adjustedValue.toLocaleString('ru-RU')}</text>
+                </g>
+            )}
         </svg>
     );
 }
@@ -320,6 +355,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
     const [days, setDays] = useState<Scenario['days']>('all');
     const [hourFrom, setHourFrom] = useState(0);
     const [hourTo, setHourTo] = useState(23);
+    const [scenarioBuilderOpen, setScenarioBuilderOpen] = useState(false);
     const [savedFingerprint, setSavedFingerprint] = useState(() => JSON.stringify({
         holidayStrength: 1,
         schoolHolidayStrength: 1,
@@ -349,6 +385,10 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
     const currentFingerprint = JSON.stringify({ holidayStrength, schoolHolidayStrength, scenarios });
     const dirty = savedFingerprint !== currentFingerprint;
     const displayRows = meta?.available ? previewRows : rows;
+    const routeScaleMaximum = useMemo(() => niceMaximum(Math.max(
+        1,
+        ...rows.flatMap((row) => [rowAmount(row, 'model'), rowAmount(row, 'adjusted')]),
+    ) * 1.15), [route.id, rows]);
     const chartData = useMemo(
         () => getChartData(displayRows, period, granularity),
         [displayRows, granularity, period],
@@ -360,8 +400,6 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
         ? Math.round(chartData.reduce((sum, datum) => sum + datum.adjusted, 0) / chartData.length)
         : 0;
     const correctionMultiplier = modelAverage > 0 ? adjustedAverage / modelAverage : 1;
-    const routeUnavailable = rows.length === 0 || meta?.cold_start_routes.includes(Number(route.id));
-
     useEffect(() => {
         let cancelled = false;
         void getScenarios().then((stored) => {
@@ -633,11 +671,6 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                     <div>
                         <p className={styles.eyebrow}>Детали маршрута</p>
                         <h2 id="route-details-title">Маршрут №{route.id}: {route.name}</h2>
-                        <div className={styles.routeMeta}>
-                            <span><i />{routeUnavailable ? 'Нет данных для прогноза' : 'Прогноз доступен'}</span>
-                            <span>Остановок: <b>{directedStops.length}</b></span>
-                            {directedStops[0]?.sourceDate && <span>Данные: <b>{directedStops[0].sourceDate}</b></span>}
-                        </div>
                     </div>
                     <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Закрыть окно">×</button>
                 </header>
@@ -649,7 +682,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                 <p>Маршрут</p>
                                 <h3>Все остановки</h3>
                             </div>
-                            <span>{directedStops.length}</span>
+                            <span>{formatStopsCount(directedStops.length)}</span>
                         </div>
 
                         {directions.length > 1 && (
@@ -668,17 +701,12 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                             </div>
                         )}
 
-                        <p className={styles.directionName} title={directions.find(([id]) => id === directionId)?.[1]}>
-                            {directions.find(([id]) => id === directionId)?.[1]}
-                        </p>
-
                         <ol className={styles.stopsList}>
                             {directedStops.map((tramStop) => (
                                     <li key={tramStop.id}>
                                         <span className={styles.stopMarker}>{tramStop.sequence}</span>
                                         <div>
                                             <b>{tramStop.name}</b>
-                                            <small>Остановка маршрута №{route.id}</small>
                                         </div>
                                     </li>
                             ))}
@@ -711,7 +739,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                     <button type="button" className={forecastMode === 'adjusted' ? styles.toggleActive : ''} onClick={() => setForecastMode('adjusted')}>С поправками</button>
                                     <button type="button" className={forecastMode === 'model' ? styles.toggleActive : ''} onClick={() => setForecastMode('model')}>Модель</button>
                                 </div>
-                                {period !== 'year' && (
+                                {period === 'week' && (
                                     <label className={styles.hourToggle}>
                                         <input
                                             type="checkbox"
@@ -731,6 +759,8 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                             <RouteLoadChart
                                 data={chartData}
                                 forecastMode={forecastMode}
+                                yMaximum={routeScaleMaximum}
+                                showWeekStarts={period === 'week' && granularity === 'hour'}
                             />
                             {(previewLoading || previewError) && (
                                 <p className={`${styles.previewStatus} ${previewError ? styles.previewError : ''}`} role={previewError ? 'alert' : 'status'}>
@@ -742,11 +772,10 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                         <section className={styles.correctionsCard}>
                             <div className={styles.correctionsHeader}>
                                 <div>
-                                    <p className={styles.eyebrow}>Управление моделью</p>
-                                    <h3>Поправки к прогнозу</h3>
-                                    <span>Изменения сразу видны на графике, сохранение — отдельным действием.</span>
+                                    <p className={styles.eyebrow}>Общие настройки</p>
+                                    <h3>Поправки к прогнозу всех маршрутов</h3>
+                                    <span>Эти параметры применяются ко всей трамвайной сети.</span>
                                 </div>
-                                <div className={styles.previewBadge}>{dirty ? 'Предпросмотр · не сохранено' : 'Сохранено'}</div>
                             </div>
 
                             <div className={styles.factorGrid}>
@@ -761,13 +790,32 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                     <output>{schoolHolidayStrength.toFixed(1)}</output>
                                 </label>
                             </div>
+                        </section>
 
-                            <div className={styles.scenarioBuilder}>
-                                <div className={styles.builderHeading}>
-                                    <div><b>Добавить событие</b><span>погода, ремонт, перекрытие или мероприятие</span></div>
-                                    <strong>{formatEffect(scenarioMultiplier)}</strong>
+                        <section className={styles.correctionsCard}>
+                            <div className={styles.correctionsHeader}>
+                                <div>
+                                    <p className={styles.eyebrow}>Настройки маршрута</p>
+                                    <h3>Поправки к прогнозу маршрута №{route.id}</h3>
+                                    <span>События ниже влияют только на открытый маршрут.</span>
                                 </div>
-                                <div className={styles.formGrid}>
+                                <div className={styles.previewBadge}>{dirty ? 'Предпросмотр · не сохранено' : 'Сохранено'}</div>
+                            </div>
+
+                            <div className={`${styles.scenarioBuilder} ${scenarioBuilderOpen ? styles.scenarioBuilderOpen : ''}`}>
+                                <button
+                                    type="button"
+                                    className={styles.builderHeading}
+                                    onClick={() => setScenarioBuilderOpen((isOpen) => !isOpen)}
+                                    aria-expanded={scenarioBuilderOpen}
+                                >
+                                    <div><b>Создать событие</b><span>погода, ремонт, перекрытие или мероприятие</span></div>
+                                    <span className={styles.builderSummary}>
+                                        <strong>{formatEffect(scenarioMultiplier)}</strong>
+                                        <i aria-hidden="true">⌄</i>
+                                    </span>
+                                </button>
+                                {scenarioBuilderOpen && <div className={styles.formGrid}>
                                     <label className={styles.wideField}>Тип события
                                         <select value={scenarioType} onChange={(event) => updateScenarioType(event.target.value)}>
                                             {SCENARIO_OPTIONS.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
@@ -800,7 +848,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                         <input type="text" value={scenarioTitle} placeholder={selectedScenario.label} onChange={(event) => setScenarioTitle(event.target.value)} />
                                     </label>
                                     <button type="button" className={styles.addScenarioButton} onClick={addScenario}>Добавить</button>
-                                </div>
+                                </div>}
                             </div>
 
                             <div className={styles.scenarioList}>
