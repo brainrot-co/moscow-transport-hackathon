@@ -1,45 +1,46 @@
 .routeNum {
     font-weight: 700;
-    font-size: 0.68vw;
+    font-size: clamp(9px, 0.68vw, 13px);
     color: #fff;
-    width: 1.86vw;
-    height: 1.641vw;
+    width: clamp(30px, 2.05vw, 42px);
+    height: clamp(28px, 1.9vw, 38px);
     display: flex;
+    flex: 0 0 auto;
     align-items: center;
     justify-content: center;
     border-radius: 7px;
 }
 
-
-.routeRed {
-    background: #E30514;
-}
-
 .routeName {
+    min-width: 0;
+    overflow: hidden;
     font-weight: 500;
-    font-size: 0.567vw;
+    font-size: clamp(8px, 0.59vw, 11px);
     color: var(--text, #F0F5FC);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .loadPercentage {
+    flex: 0 0 auto;
     font-weight: 500;
-    font-size: 11px;
-    font-size: 0.624vw;
+    font-size: clamp(9px, 0.624vw, 12px);
     color: var(--text, #F0F5FC);
 }
 
 .routeStatsTop {
+    min-width: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
 }
 
 .progressBar {
     background: var(--progress-track, #1F2E40);
     width: 100%;
-    height: 0.283vw;
+    height: clamp(3px, 0.283vw, 5px);
     border-radius: 3px;
-
     overflow: hidden;
 }
 
@@ -50,25 +51,17 @@
 
 .routeStatsBlock {
     display: flex;
+    min-width: 0;
     width: 100%;
-    gap: 0.454vw;
+    gap: clamp(4px, 0.4vw, 7px);
     flex-direction: column;
 }
 
 .loadedRoute {
+    min-width: 0;
+    min-height: 0;
     display: flex;
+    flex: 1 1 0;
     align-items: center;
-    gap: 0.794vw;
-}
-
-.red {
-    background: #E30514;
-}
-
-.green {
-    background: #38D1A3;
-}
-
-.orange {
-    background: #FF9E38;
+    gap: clamp(8px, 0.794vw, 14px);
 }

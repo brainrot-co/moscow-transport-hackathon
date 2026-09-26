@@ -1,12 +1,10 @@
 import styles from './LoadedRoute.module.scss';
 
-type Color = 'red' | 'green' | 'orange';
-
 interface LoadedRouteProps {
     routeNum: string;
     routeName: string;
     loadPercentage: number;
-    progressColor: Color;
+    progressColor: string;
 }
 
 export default function LoadedRoute({
@@ -16,9 +14,13 @@ export default function LoadedRoute({
     progressColor,
 }: LoadedRouteProps) {
     return (
-        <div className={styles.loadedRoute}>
+        <div
+            className={styles.loadedRoute}
+            aria-label={`Маршрут ${routeNum}: ${routeName}, загрузка ${loadPercentage}%`}
+        >
             <span
-                className={`${styles.routeNum} ${styles[progressColor]}`}
+                className={styles.routeNum}
+                style={{ backgroundColor: progressColor }}
             >
                 {routeNum}
             </span>
@@ -36,9 +38,10 @@ export default function LoadedRoute({
 
                 <div className={styles.progressBar}>
                     <div
-                        className={`${styles.progressFill} ${styles[progressColor]}`}
+                        className={styles.progressFill}
                         style={{
                             width: `${loadPercentage}%`,
+                            backgroundColor: progressColor,
                         }}
                     />
                 </div>

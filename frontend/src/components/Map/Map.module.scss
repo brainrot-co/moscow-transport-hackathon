@@ -286,6 +286,7 @@
 .routeCardBody {
     min-width: 0;
     flex: 1;
+    padding-right: 38px;
 
     strong {
         display: block;
@@ -323,17 +324,57 @@
     }
 }
 
+.routeCardActions {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.openRouteDetails {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    width: 31px;
+    height: 31px;
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--border, #26384e);
+    border-radius: 8px;
+    background: var(--surface-raised, #101c2d);
+    color: var(--text, #f2f6fc);
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1;
+    pointer-events: auto;
+    transform: translateY(-50%);
+    cursor: pointer;
+    transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease;
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgba(241, 6, 36, 0.75);
+        background: rgba(241, 6, 36, 0.12);
+        color: #f10624;
+        transform: translate(2px, -50%);
+    }
+}
+
 .closeRouteCard {
-    width: 25px;
-    height: 25px;
+    position: absolute;
+    top: 8px;
+    right: 9px;
+    width: 22px;
+    height: 22px;
     display: grid;
     flex: 0 0 auto;
     place-items: center;
     border-radius: 7px;
     background: transparent;
     color: var(--muted, #9aabbe);
-    font-size: 22px;
+    font-size: 18px;
     line-height: 1;
+    pointer-events: auto;
     cursor: pointer;
     transition: color 160ms ease, background 160ms ease;
 

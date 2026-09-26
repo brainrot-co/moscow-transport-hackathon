@@ -4,23 +4,36 @@ import {
     Map as MapLibreMap,
     setWorkerUrl,
     type FilterSpecification,
+    type GeoJSONSource,
 } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import styles from './Map.module.scss';
 import { routeColors } from '../../data/routeColors';
+import RouteDetailsModal from '../RouteDetailsModal/RouteDetailsModal';
 import {
     findRoute,
-    routesGeoJson,
-    stopsGeoJson,
     tramRoutes,
 } from './routes';
+import {
+    fallbackRouteStops,
+    getUniqueStopOptions,
+    isRawStopsGeoJson,
+    normaliseRouteStops,
+    routesFromStops,
+    routeStopsToGeoJson,
+    type RouteStop,
+    type RoutesMapGeoJson,
+    type StopsMapGeoJson,
+} from './transitData';
 
 setWorkerUrl(workerUrl);
 
 const MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 const ALL_ROUTES = 'all';
+const INITIAL_ROUTES_GEOJSON = routesFromStops(fallbackRouteStops);
+const INITIAL_STOPS_GEOJSON = routeStopsToGeoJson(fallbackRouteStops);
 const DATA_LAYER_IDS = new Set([
     'route-glow',
     'route-inner-glow',
@@ -44,10 +57,26 @@ tramRoutes.forEach((route) => {
     route.coordinates.forEach((coordinate) => networkBounds.extend(coordinate));
 });
 
-const getRouteBounds = (routeId: string) => {
+const getRouteBounds = (routeId: string, stops: RouteStop[]) => {
     const bounds = new LngLatBounds();
+    const routeStops = stops.filter((tramStop) => tramStop.routeId === routeId);
 
-    findRoute(routeId).coordinates.forEach((coordinate) => bounds.extend(coordinate));
+    if (routeStops.length > 0) {
+        routeStops.forEach((tramStop) => bounds.extend(tramStop.coordinates));
+    } else {
+        findRoute(routeId).coordinates.forEach((coordinate) => bounds.extend(coordinate));
+    }
+
+    return bounds;
+};
+
+const getNetworkBounds = (stops: RouteStop[]) => {
+    if (stops.length === 0) {
+        return networkBounds;
+    }
+
+    const bounds = new LngLatBounds();
+    stops.forEach((tramStop) => bounds.extend(tramStop.coordinates));
 
     return bounds;
 };
@@ -144,19 +173,45 @@ export default function Map({ theme = 'dark' }: MapProps) {
     const [routeFilter, setRouteFilter] = useState(ALL_ROUTES);
     const [selectedStop, setSelectedStop] = useState(ALL_ROUTES);
     const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null);
+    const [detailsRouteId, setDetailsRouteId] = useState<string | null>(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const [routeStops, setRouteStops] = useState<RouteStop[]>(fallbackRouteStops);
+    const [mapRoutes, setMapRoutes] = useState<RoutesMapGeoJson>(INITIAL_ROUTES_GEOJSON);
+    const [mapStops, setMapStops] = useState<StopsMapGeoJson>(INITIAL_STOPS_GEOJSON);
 
     const focusedRoute = focusedRouteId ? findRoute(focusedRouteId) : null;
+    const detailsRoute = detailsRouteId ? findRoute(detailsRouteId) : null;
     const stopOptions = useMemo(() => {
-        const routes = routeFilter === ALL_ROUTES
-            ? tramRoutes
-            : tramRoutes.filter((route) => route.id === routeFilter);
+        const matchingStops = routeFilter === ALL_ROUTES
+            ? routeStops
+            : routeStops.filter((tramStop) => tramStop.routeId === routeFilter);
 
-        return routes.flatMap((route) => route.stops.map((tramStop) => ({
-            ...tramStop,
-            routeId: route.id,
-        })));
-    }, [routeFilter]);
+        return getUniqueStopOptions(matchingStops);
+    }, [routeFilter, routeStops]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        fetch('/data/route_stops.geojson')
+            .then((response) => response.json() as Promise<unknown>)
+            .then((stopsData) => {
+                if (cancelled || !isRawStopsGeoJson(stopsData)) {
+                    return;
+                }
+
+                const nextStops = normaliseRouteStops(stopsData);
+
+                setRouteStops(nextStops);
+                setMapStops(routeStopsToGeoJson(nextStops));
+                setMapRoutes(routesFromStops(nextStops));
+            }).catch(() => {
+                // The embedded prototype data remains available if the static files cannot be loaded.
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     useEffect(() => {
         if (!containerRef.current || mapRef.current) {
@@ -191,11 +246,11 @@ export default function Map({ theme = 'dark' }: MapProps) {
         map.on('load', () => {
             map.addSource('tram-routes', {
                 type: 'geojson',
-                data: routesGeoJson,
+                data: INITIAL_ROUTES_GEOJSON,
             });
             map.addSource('tram-stops', {
                 type: 'geojson',
-                data: stopsGeoJson,
+                data: INITIAL_STOPS_GEOJSON,
             });
 
             map.addLayer({
@@ -323,6 +378,25 @@ export default function Map({ theme = 'dark' }: MapProps) {
         map.on('mouseleave', 'route-hit-area', () => {
             map.getCanvas().style.cursor = '';
         });
+        map.on('click', 'tram-stops', (event) => {
+            const properties = event.features?.[0]?.properties;
+            const stopId = properties?.id;
+            const routeId = properties?.routeId;
+
+            if (typeof stopId === 'string') {
+                setSelectedStop(stopId);
+            }
+
+            if (typeof routeId === 'string') {
+                setFocusedRouteId(routeId);
+            }
+        });
+        map.on('mouseenter', 'tram-stops', () => {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+        map.on('mouseleave', 'tram-stops', () => {
+            map.getCanvas().style.cursor = '';
+        });
 
         return () => {
             map.remove();
@@ -347,6 +421,17 @@ export default function Map({ theme = 'dark' }: MapProps) {
             return;
         }
 
+        (map.getSource('tram-routes') as GeoJSONSource | undefined)?.setData(mapRoutes);
+        (map.getSource('tram-stops') as GeoJSONSource | undefined)?.setData(mapStops);
+    }, [mapReady, mapRoutes, mapStops]);
+
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || !mapReady) {
+            return;
+        }
+
         const routeExpression: FilterSpecification | null = routeFilter === ALL_ROUTES
             ? null
             : ['==', ['get', 'id'], routeFilter];
@@ -362,14 +447,14 @@ export default function Map({ theme = 'dark' }: MapProps) {
         });
 
         map.fitBounds(
-            routeFilter === ALL_ROUTES ? networkBounds : getRouteBounds(routeFilter),
+            routeFilter === ALL_ROUTES ? getNetworkBounds(routeStops) : getRouteBounds(routeFilter, routeStops),
             {
                 padding: { top: 58, right: 62, bottom: 58, left: 62 },
                 duration: 750,
                 maxZoom: routeFilter === ALL_ROUTES ? 11.2 : 13.5,
             },
         );
-    }, [mapReady, routeFilter]);
+    }, [mapReady, routeFilter, routeStops]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -428,7 +513,7 @@ export default function Map({ theme = 'dark' }: MapProps) {
     };
 
     const resetView = () => {
-        mapRef.current?.fitBounds(networkBounds, {
+        mapRef.current?.fitBounds(getNetworkBounds(routeStops), {
             padding: { top: 58, right: 62, bottom: 58, left: 62 },
             duration: 750,
             maxZoom: 11.2,
@@ -500,7 +585,7 @@ export default function Map({ theme = 'dark' }: MapProps) {
                             <option value={ALL_ROUTES}>Все остановки</option>
                             {stopOptions.map((tramStop) => (
                                 <option key={tramStop.id} value={tramStop.id}>
-                                    {tramStop.name}
+                                    {routeFilter === ALL_ROUTES ? `№${tramStop.routeId} · ` : ''}{tramStop.name}
                                 </option>
                             ))}
                         </select>
@@ -568,15 +653,26 @@ export default function Map({ theme = 'dark' }: MapProps) {
                                 <h3>Маршрут {focusedRoute.id}</h3>
                                 <p title={focusedRoute.name}>{focusedRoute.name}</p>
                             </div>
-                            <button
-                                type="button"
-                                className={styles.closeRouteCard}
-                                onClick={() => setFocusedRouteId(null)}
-                                aria-label={`Закрыть карточку маршрута ${focusedRoute.id}`}
-                                title="Закрыть"
-                            >
-                                ×
-                            </button>
+                            <div className={styles.routeCardActions}>
+                                <button
+                                    type="button"
+                                    className={styles.openRouteDetails}
+                                    onClick={() => setDetailsRouteId(focusedRoute.id)}
+                                    aria-label={`Открыть подробности маршрута ${focusedRoute.id}`}
+                                    title="Открыть подробности"
+                                >
+                                    ›
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.closeRouteCard}
+                                    onClick={() => setFocusedRouteId(null)}
+                                    aria-label={`Закрыть карточку маршрута ${focusedRoute.id}`}
+                                    title="Закрыть"
+                                >
+                                    ×
+                                </button>
+                            </div>
                         </div>
                         <div
                             className={styles.loadLine}
@@ -603,6 +699,15 @@ export default function Map({ theme = 'dark' }: MapProps) {
                 <span><i className={styles.medium} />Средняя</span>
                 <span><i className={styles.high} />Высокая</span>
             </div>
+
+            {detailsRoute && (
+                <RouteDetailsModal
+                    route={detailsRoute}
+                    stops={routeStops.filter((tramStop) => tramStop.routeId === detailsRoute.id)}
+                    theme={theme}
+                    onClose={() => setDetailsRouteId(null)}
+                />
+            )}
         </div>
     );
 }
