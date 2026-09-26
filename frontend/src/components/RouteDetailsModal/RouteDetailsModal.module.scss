@@ -61,38 +61,10 @@
 
 .eyebrow {
     color: #f10624;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-}
-
-.routeMeta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 11px 22px;
-    margin-top: 14px;
-    color: var(--modal-muted);
-    font-size: 12px;
-
-    span {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    i {
-        width: 8px;
-        height: 8px;
-        display: inline-block;
-        border-radius: 50%;
-        background: #38d1a3;
-        box-shadow: 0 0 10px rgba(56, 209, 163, 0.7);
-    }
-
-    b {
-        color: var(--modal-text);
-    }
 }
 
 .closeButton {
@@ -153,7 +125,7 @@
 
     p {
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 11px;
         text-transform: uppercase;
     }
 
@@ -173,8 +145,9 @@
         border-radius: 999px;
         background: rgba(241, 6, 36, 0.14);
         color: #f10624;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 700;
+        white-space: nowrap;
     }
 }
 
@@ -193,7 +166,7 @@
         border-radius: 7px;
         background: transparent;
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 600;
         cursor: pointer;
     }
@@ -202,16 +175,6 @@
         background: #f10624;
         color: #fff;
     }
-}
-
-.directionName {
-    margin: 10px 4px 0;
-    overflow: hidden;
-    color: var(--modal-muted);
-    font-size: 10px;
-    line-height: 1.4;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .stopsList {
@@ -243,25 +206,22 @@
 
         > div {
             min-width: 0;
-            padding: 2px 8px 13px 0;
+            height: 28px;
+            padding: 0 8px 0 0;
+            display: flex;
+            align-items: center;
         }
 
         b {
             display: block;
             overflow: hidden;
             color: var(--modal-text);
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 600;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
-        small {
-            display: block;
-            margin-top: 4px;
-            color: var(--modal-muted);
-            font-size: 9px;
-        }
     }
 }
 
@@ -277,7 +237,7 @@
     border-radius: 50%;
     background: var(--modal-surface);
     color: #f10624;
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 700;
 }
 
@@ -326,7 +286,7 @@
         border-radius: 999px;
         background: transparent;
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 12px;
         cursor: pointer;
         transition: color 160ms ease, background 160ms ease;
     }
@@ -360,7 +320,7 @@
     align-items: center;
     gap: 8px;
     color: var(--modal-muted);
-    font-size: 10px;
+    font-size: 12px;
     cursor: pointer;
 
     input {
@@ -409,7 +369,7 @@
         align-items: center;
         gap: 6px;
         color: var(--modal-muted);
-        font-size: 9px;
+        font-size: 11px;
     }
 
     i {
@@ -448,12 +408,12 @@
 .chartTooltip text {
     fill: var(--modal-muted);
     font-family: 'Montserrat', sans-serif;
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .weekdayText {
     fill: var(--modal-text);
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
 }
 
@@ -515,7 +475,7 @@
 
     text {
         fill: var(--modal-text);
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 700;
     }
 
@@ -533,7 +493,7 @@
         display: block;
         margin-top: 7px;
         color: var(--modal-muted);
-        font-size: 12px;
+        font-size: 14px;
     }
 
     h3 {
@@ -547,7 +507,7 @@
     border-radius: 999px;
     background: rgba(255, 183, 77, 0.1);
     color: #ffb74d;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -577,13 +537,13 @@
 
     b {
         color: var(--modal-text);
-        font-size: 13px;
+        font-size: 14px;
     }
 
     em {
         margin-top: 4px;
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 12px;
         font-style: normal;
     }
 
@@ -596,7 +556,7 @@
         border-radius: 7px;
         background: var(--modal-surface);
         color: var(--modal-text);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 700;
         text-align: center;
     }
@@ -611,10 +571,18 @@
 }
 
 .builderHeading {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
 
     b,
     span {
@@ -623,19 +591,56 @@
 
     b {
         color: var(--modal-text);
-        font-size: 14px;
+        font-size: 15px;
     }
 
     span {
         margin-top: 4px;
         color: var(--modal-muted);
-        font-size: 11px;
+        font-size: 13px;
     }
 
     strong {
         color: #f10624;
         font-size: 21px;
     }
+}
+
+.builderSummary {
+    display: flex !important;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 14px;
+    margin: 0 !important;
+
+    i {
+        display: inline-grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border: 1px solid var(--modal-border);
+        border-radius: 50%;
+        color: var(--modal-muted);
+        font-size: 18px;
+        font-style: normal;
+        line-height: 1;
+        transform: translateY(-2px);
+        transition: transform 180ms ease, color 180ms ease, border-color 180ms ease;
+    }
+}
+
+.builderHeading:hover .builderSummary i,
+.builderHeading:focus-visible .builderSummary i {
+    border-color: #f10624;
+    color: #f10624;
+}
+
+.builderHeading:focus-visible {
+    outline: none;
+}
+
+.scenarioBuilderOpen .builderSummary i {
+    transform: translateY(2px) rotate(180deg);
 }
 
 .formGrid {
@@ -649,7 +654,7 @@
         display: grid;
         gap: 7px;
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 12px;
         font-weight: 600;
         text-transform: uppercase;
     }
@@ -667,7 +672,7 @@
         background: var(--modal-surface);
         color: var(--modal-text);
         font-family: inherit;
-        font-size: 11px;
+        font-size: 13px;
 
         &:focus {
             border-color: #f10624;
@@ -677,7 +682,7 @@
     small {
         overflow: hidden;
         color: var(--modal-muted);
-        font-size: 10px;
+        font-size: 11px;
         font-weight: 400;
         text-overflow: ellipsis;
         text-transform: none;
@@ -714,7 +719,7 @@
 
     output {
         color: #f10624;
-        font-size: 12px;
+        font-size: 13px;
         text-align: right;
     }
 }
@@ -729,7 +734,7 @@
     border-radius: 8px;
     background: #f10624;
     color: #fff;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 700;
     cursor: pointer;
 }
@@ -775,20 +780,20 @@
 
         b {
             color: var(--modal-text);
-            font-size: 12px;
+            font-size: 14px;
         }
 
         span {
             // margin-top: 4px;
             color: var(--modal-muted);
-            font-size: 10px;
+            font-size: 12px;
         }
 
         label {
             display: grid;
             gap: 4px;
             color: var(--modal-muted);
-            font-size: 9px;
+            font-size: 11px;
             text-transform: uppercase;
         }
 
@@ -803,7 +808,7 @@
             background: var(--modal-surface);
             color: var(--modal-text);
             font-family: inherit;
-            font-size: 11px;
+            font-size: 13px;
         }
     }
 
@@ -862,7 +867,7 @@
     border: 1px dashed var(--modal-border);
     border-radius: 10px;
     color: var(--modal-muted);
-    font-size: 11px;
+    font-size: 13px;
     text-align: center;
 }
 
@@ -878,7 +883,7 @@
 
     p {
         color: var(--modal-muted);
-        font-size: 12px;
+        font-size: 14px;
     }
 
     b {
@@ -895,7 +900,7 @@
     a {
         padding: 11px 18px;
         border-radius: 8px;
-        font-size: 11px;
+        font-size: 13px;
         font-weight: 700;
         line-height: normal;
         cursor: pointer;
@@ -911,7 +916,7 @@
 
     output {
         color: #38d1a3;
-        font-size: 11px;
+        font-size: 13px;
     }
 }
 
@@ -958,13 +963,13 @@
     display: grid;
     place-items: center;
     color: var(--modal-muted);
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .previewStatus {
     margin: 6px 0 0;
     color: var(--modal-muted);
-    font-size: 11px;
+    font-size: 13px;
 }
 
 .previewError {

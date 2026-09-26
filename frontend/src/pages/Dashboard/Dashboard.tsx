@@ -4,7 +4,6 @@ import { useState } from 'react'
 import logoIcon from '../../assets/logo-icon.svg'
 import dashIcon from '../../assets/dashboard-icon.svg'
 import cogwheel from '../../assets/cogwheel.svg'
-import calendar from '../../assets/calendar.svg'
 
 import LoadGraph from '../../components/LoadGraph/LoadGraph'
 import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
@@ -52,15 +51,16 @@ const getCurrentDateTime = (now: Date) => {
 
 export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+    const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null)
     const { isLightTheme, setIsLightTheme } = useTheme()
-    const { rows, meta, loading, error } = useForecast(1)
+    const { rows, meta, loading, error, refresh } = useForecast(1)
     const navigate = useNavigate()
     const nowValue = meta?.now
         ? /(?:Z|[+-]\d{2}:?\d{2})$/.test(meta.now) ? meta.now : `${meta.now}+03:00`
         : null
     const now = nowValue ? new Date(nowValue) : new Date()
 
-    const { time } = getCurrentDateTime(now)
+    const { date, time } = getCurrentDateTime(now)
 
     const handleLogout = async () => {
         await logout()
@@ -117,16 +117,19 @@ export default function Dashboard() {
                                     <div className={styles.menuBottomInfo}>
                                         <div className={styles.statusOnline}>
                                             <span className={styles.onlineStatus}></span>
-                                            <p className={styles.whenRefreshed}>Данные обновлены<br />
-                                                {meta?.watermark
-                                                    ? new Date(`${meta.watermark}T00:00:00+03:00`).toLocaleDateString('ru-RU')
-                                                    : 'прогноз ещё не готов'}
+                                            <p className={styles.whenRefreshed}>Последнее обновление<br />
+                                                {loading ? 'Обновляем…' : `${date} · ${time}`}
                                             </p>
                                         </div>
-                                        <div className={styles.statusOnline}>
+                                        <button
+                                            type="button"
+                                            className={styles.refreshDataButton}
+                                            onClick={refresh}
+                                            disabled={loading}
+                                        >
                                             <img src={cogwheel} alt="" />
-                                            <p className={styles.whenRefreshed}>Система работает в штатном режиме</p>
-                                        </div>
+                                            <span>{loading ? 'Обновляем данные…' : 'Обновить данные'}</span>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -159,9 +162,7 @@ export default function Dashboard() {
                 <section className={styles.dashboardContent}>
                     <div className={styles.dashboardTop}>
                         <div className={styles.topGreeting}>
-                            <p>Доброе утро,</p>
                             <h4>Трамвайная сеть Москвы</h4>
-                            <p>Анализ загрузки и прогноз пассажиропотока</p>
                         </div>
 
                         <div className={styles.topControls}>
@@ -174,12 +175,7 @@ export default function Dashboard() {
                                     })}
                                 </p>
                                 <div className={styles.topTime}>
-                                    <img src={calendar} alt="calendar" />
                                     <h6>{loading ? '…' : time}</h6>
-                                    <div className={styles.topOnline}>
-                                        <span></span>
-                                        <p>{error ? 'Ошибка' : meta?.stale ? 'Устарели' : 'Онлайн'}</p>
-                                    </div>
                                 </div>
                             </div>
 
@@ -199,11 +195,21 @@ export default function Dashboard() {
                     <div className={styles.dashboardContentContainer}>
                         <div className={styles.dashboardColumnLeft}>
                             <div className={styles.mapContainer}>
-                                <Map theme={isLightTheme ? 'light' : 'dark'} rows={rows} meta={meta} />
+                                <Map
+                                    theme={isLightTheme ? 'light' : 'dark'}
+                                    rows={rows}
+                                    meta={meta}
+                                    focusedRouteId={focusedRouteId}
+                                    onFocusedRouteChange={setFocusedRouteId}
+                                />
                             </div>
                             <div className={styles.columnLeftBottom}>
                                 <LoadGraph rows={rows} />
-                                <TopLoadedRoutes rows={rows} />
+                                <TopLoadedRoutes
+                                    rows={rows}
+                                    selectedRouteId={focusedRouteId}
+                                    onSelectRoute={setFocusedRouteId}
+                                />
                             </div>
                         </div>
 

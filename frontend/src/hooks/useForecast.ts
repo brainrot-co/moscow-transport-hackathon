@@ -23,6 +23,7 @@ export function useForecast(days = 1): ForecastState {
 
     useEffect(() => {
         let cancelled = false;
+        setState((current) => ({ ...current, loading: true, error: null, refresh }));
         void (async () => {
             try {
                 const meta = await getForecastMeta();

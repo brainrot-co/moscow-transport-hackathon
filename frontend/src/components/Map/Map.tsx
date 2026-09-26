@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     LngLatBounds,
     Map as MapLibreMap,
+    Popup,
     setWorkerUrl,
-    type FilterSpecification,
+    type ExpressionSpecification,
     type GeoJSONSource,
+    type LngLatLike,
 } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -52,6 +54,8 @@ interface MapProps {
     theme?: MapTheme;
     rows?: ForecastRow[];
     meta?: ForecastMeta | null;
+    focusedRouteId: string | null;
+    onFocusedRouteChange: (routeId: string | null) => void;
 }
 
 const networkBounds = new LngLatBounds();
@@ -62,10 +66,10 @@ tramRoutes.forEach((route) => {
 
 const getRouteBounds = (routeId: string, stops: RouteStop[]) => {
     const bounds = new LngLatBounds();
-    const routeStops = stops.filter((tramStop) => tramStop.routeId === routeId);
+    const matchingStops = stops.filter((tramStop) => tramStop.routeId === routeId);
 
-    if (routeStops.length > 0) {
-        routeStops.forEach((tramStop) => bounds.extend(tramStop.coordinates));
+    if (matchingStops.length > 0) {
+        matchingStops.forEach((tramStop) => bounds.extend(tramStop.coordinates));
     } else {
         findRoute(routeId).coordinates.forEach((coordinate) => bounds.extend(coordinate));
     }
@@ -169,18 +173,50 @@ const RecenterIcon = () => (
     </svg>
 );
 
-export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps) {
+export default function Map({
+    theme = 'dark',
+    rows = [],
+    meta = null,
+    focusedRouteId,
+    onFocusedRouteChange,
+}: MapProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<MapLibreMap | null>(null);
+    const themeRef = useRef(theme);
+    const routeFilterRef = useRef(ALL_ROUTES);
+    const stopPopupRef = useRef<Popup | null>(null);
     const [mapReady, setMapReady] = useState(false);
+
+    themeRef.current = theme;
     const [routeFilter, setRouteFilter] = useState(ALL_ROUTES);
     const [selectedStop, setSelectedStop] = useState(ALL_ROUTES);
-    const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null);
     const [detailsRouteId, setDetailsRouteId] = useState<string | null>(null);
     const [filtersOpen, setFiltersOpen] = useState(false);
+    const [showStops, setShowStops] = useState(true);
+    const [showLoadColors, setShowLoadColors] = useState(false);
     const [routeStops, setRouteStops] = useState<RouteStop[]>(fallbackRouteStops);
     const [mapRoutes, setMapRoutes] = useState<RoutesMapGeoJson>(INITIAL_ROUTES_GEOJSON);
     const [mapStops, setMapStops] = useState<StopsMapGeoJson>(INITIAL_STOPS_GEOJSON);
+    const showStopPopup = (map: MapLibreMap, coordinates: LngLatLike, name: string) => {
+        stopPopupRef.current?.remove();
+
+        const popup = new Popup({
+            closeButton: false,
+            closeOnClick: true,
+            offset: 12,
+            className: styles.stopPopup,
+        })
+            .setLngLat(coordinates)
+            .setText(name)
+            .addTo(map);
+
+        popup.on('close', () => {
+            if (stopPopupRef.current === popup) {
+                stopPopupRef.current = null;
+            }
+        });
+        stopPopupRef.current = popup;
+    };
     const routeLoads = useMemo(() => {
         const totals = new globalThis.Map<string, number>();
         rows.forEach((row) => {
@@ -250,7 +286,7 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
             minZoom: 8,
             maxZoom: 17,
             renderWorldCopies: false,
-            attributionControl: { compact: true },
+            attributionControl: { compact: false },
         });
 
         mapRef.current = map;
@@ -384,14 +420,19 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                 },
             });
 
-            setMapReady(true);
+            applyMapTheme(map, themeRef.current);
+            window.requestAnimationFrame(() => {
+                window.requestAnimationFrame(() => setMapReady(true));
+            });
         });
 
         map.on('click', 'route-hit-area', (event) => {
             const routeId = event.features?.[0]?.properties?.id;
 
             if (typeof routeId === 'string') {
-                setFocusedRouteId(routeId);
+                setRouteFilter(routeId);
+                setSelectedStop(ALL_ROUTES);
+                onFocusedRouteChange(routeId);
             }
         });
         map.on('mouseenter', 'route-hit-area', () => {
@@ -404,14 +445,22 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
             const properties = event.features?.[0]?.properties;
             const stopId = properties?.id;
             const routeId = properties?.routeId;
+            const stopName = properties?.name;
 
-            if (typeof stopId === 'string') {
-                setSelectedStop(stopId);
+            if (
+                routeFilterRef.current === ALL_ROUTES
+                || routeId !== routeFilterRef.current
+                || typeof stopId !== 'string'
+            ) {
+                return;
             }
 
-            if (typeof routeId === 'string') {
-                setFocusedRouteId(routeId);
-            }
+            setSelectedStop(stopId);
+            showStopPopup(
+                map,
+                event.lngLat,
+                typeof stopName === 'string' ? stopName : 'Остановка',
+            );
         });
         map.on('mouseenter', 'tram-stops', () => {
             map.getCanvas().style.cursor = 'pointer';
@@ -421,10 +470,23 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
         });
 
         return () => {
+            stopPopupRef.current?.remove();
+            stopPopupRef.current = null;
             map.remove();
             mapRef.current = null;
         };
-    }, []);
+    }, [onFocusedRouteChange]);
+
+    useEffect(() => {
+        setRouteFilter(focusedRouteId ?? ALL_ROUTES);
+        setSelectedStop(ALL_ROUTES);
+    }, [focusedRouteId]);
+
+    useEffect(() => {
+        routeFilterRef.current = routeFilter;
+        stopPopupRef.current?.remove();
+        stopPopupRef.current = null;
+    }, [routeFilter]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -454,29 +516,24 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
             return;
         }
 
-        const routeExpression: FilterSpecification | null = routeFilter === ALL_ROUTES
-            ? null
-            : ['==', ['get', 'id'], routeFilter];
-        const stopExpression: FilterSpecification | null = routeFilter === ALL_ROUTES
-            ? null
-            : ['==', ['get', 'routeId'], routeFilter];
-
         ['route-glow', 'route-inner-glow', 'route-lines', 'route-hit-area'].forEach((layerId) => {
-            map.setFilter(layerId, routeExpression);
+            map.setFilter(layerId, null);
         });
         ['stop-glow', 'tram-stops'].forEach((layerId) => {
-            map.setFilter(layerId, stopExpression);
+            map.setFilter(layerId, null);
         });
 
         map.fitBounds(
-            routeFilter === ALL_ROUTES ? getNetworkBounds(routeStops) : getRouteBounds(routeFilter, routeStops),
+            focusedRouteId
+                ? getRouteBounds(focusedRouteId, routeStops)
+                : getNetworkBounds(routeStops),
             {
-                padding: { top: 58, right: 62, bottom: 58, left: 62 },
-                duration: 750,
-                maxZoom: routeFilter === ALL_ROUTES ? 11.2 : 13.5,
+            padding: { top: 58, right: 62, bottom: 58, left: 62 },
+            duration: 750,
+                maxZoom: focusedRouteId ? 13.5 : 11.2,
             },
         );
-    }, [mapReady, routeFilter, routeStops]);
+    }, [focusedRouteId, mapReady, routeStops]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -492,6 +549,24 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                 : ['==', ['get', 'id'], ''],
         );
     }, [focusedRouteId, mapReady]);
+
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || !mapReady) {
+            return;
+        }
+
+        const visibility = showStops ? 'visible' : 'none';
+        ['stop-glow', 'tram-stops', 'selected-stop'].forEach((layerId) => {
+            map.setLayoutProperty(layerId, 'visibility', visibility);
+        });
+
+        if (!showStops) {
+            stopPopupRef.current?.remove();
+            stopPopupRef.current = null;
+        }
+    }, [mapReady, showStops]);
 
     useEffect(() => {
         const map = mapRef.current;
@@ -518,10 +593,7 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
     const handleRouteChange = (routeId: string) => {
         setRouteFilter(routeId);
         setSelectedStop(ALL_ROUTES);
-
-        if (routeId !== ALL_ROUTES) {
-            setFocusedRouteId(routeId);
-        }
+        onFocusedRouteChange(routeId === ALL_ROUTES ? null : routeId);
     };
 
     const handleStopChange = (stopId: string) => {
@@ -530,7 +602,12 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
         const tramStop = stopOptions.find((item) => item.id === stopId);
 
         if (tramStop) {
-            setFocusedRouteId(tramStop.routeId);
+            onFocusedRouteChange(tramStop.routeId);
+            const map = mapRef.current;
+
+            if (map) {
+                showStopPopup(map, tramStop.coordinates, tramStop.name);
+            }
         }
     };
 
@@ -542,15 +619,15 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
         });
     };
 
-    const loadStatus = !focusedRoute
-        ? ''
-        : focusedLoad === null
-            ? 'Нет данных для прогноза'
-        : focusedLoad >= 75
-        ? 'Высокая загрузка'
-        : focusedLoad >= 55
-            ? 'Средняя загрузка'
-            : 'Низкая загрузка';
+    const clearRouteFocus = () => {
+        stopPopupRef.current?.remove();
+        stopPopupRef.current = null;
+        onFocusedRouteChange(null);
+        setRouteFilter(ALL_ROUTES);
+        setSelectedStop(ALL_ROUTES);
+        setShowLoadColors(false);
+    };
+
     const loadStatusColor = !focusedRoute
         ? '#38d1a3'
         : focusedLoad === null
@@ -561,9 +638,99 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                 ? '#ffb74d'
                 : '#38d1a3';
 
+    useEffect(() => {
+        const map = mapRef.current;
+
+        if (!map || !mapReady) {
+            return;
+        }
+
+        const routeColor: ExpressionSpecification = showLoadColors && focusedRouteId
+            ? [
+                'case',
+                ['==', ['get', 'id'], focusedRouteId],
+                loadStatusColor,
+                ['get', 'color'],
+            ]
+            : ['get', 'color'];
+        const stopColor: ExpressionSpecification = showLoadColors && focusedRouteId
+            ? [
+                'case',
+                ['==', ['get', 'routeId'], focusedRouteId],
+                loadStatusColor,
+                ['get', 'color'],
+            ]
+            : ['get', 'color'];
+        const stopFill: string | ExpressionSpecification = showLoadColors && focusedRouteId
+            ? [
+                'case',
+                ['==', ['get', 'routeId'], focusedRouteId],
+                loadStatusColor,
+                '#f3f7fd',
+            ]
+            : '#f3f7fd';
+
+        ['route-glow', 'route-inner-glow', 'route-lines', 'route-focus'].forEach((layerId) => {
+            map.setPaintProperty(layerId, 'line-color', routeColor);
+        });
+        map.setPaintProperty(
+            'route-glow',
+            'line-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'id'], focusedRouteId], 0.32, 0.008]
+                : 0.28,
+        );
+        map.setPaintProperty(
+            'route-inner-glow',
+            'line-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'id'], focusedRouteId], 0.56, 0.025]
+                : 0.52,
+        );
+        map.setPaintProperty(
+            'route-lines',
+            'line-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'id'], focusedRouteId], 1, 0.08]
+                : 1,
+        );
+        map.setPaintProperty('stop-glow', 'circle-color', stopColor);
+        map.setPaintProperty(
+            'stop-glow',
+            'circle-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'routeId'], focusedRouteId], 0.24, 0.01]
+                : 0.24,
+        );
+        map.setPaintProperty('tram-stops', 'circle-color', stopFill);
+        map.setPaintProperty(
+            'tram-stops',
+            'circle-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'routeId'], focusedRouteId], 0.96, 0.1]
+                : 0.96,
+        );
+        map.setPaintProperty(
+            'tram-stops',
+            'circle-stroke-opacity',
+            focusedRouteId
+                ? ['case', ['==', ['get', 'routeId'], focusedRouteId], 1, 0.1]
+                : 1,
+        );
+        map.setPaintProperty(
+            'tram-stops',
+            'circle-stroke-color',
+            showLoadColors && focusedRouteId ? '#ffffff' : stopColor,
+        );
+        map.setPaintProperty('selected-stop', 'circle-stroke-color', stopColor);
+    }, [focusedRouteId, loadStatusColor, mapReady, showLoadColors]);
+
     return (
         <div className={styles.mapShell}>
-            <div ref={containerRef} className={styles.mapCanvas} />
+            <div
+                ref={containerRef}
+                className={`${styles.mapCanvas} ${mapReady ? styles.mapCanvasReady : ''}`}
+            />
             <div className={styles.mapShade} aria-hidden="true" />
 
             {filtersOpen && (
@@ -659,9 +826,42 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                 </button>
             </div>
 
+            <div className={styles.mapToggles}>
+                <label className={styles.mapToggle}>
+                    <input
+                        type="checkbox"
+                        checked={showStops}
+                        onChange={(event) => setShowStops(event.target.checked)}
+                    />
+                    <span>Остановки</span>
+                </label>
+            </div>
+
+            {focusedRoute && (
+                <div className={styles.loadToggleRow}>
+                    <label className={styles.mapToggle}>
+                        <input
+                            type="checkbox"
+                            checked={showLoadColors}
+                            onChange={(event) => setShowLoadColors(event.target.checked)}
+                        />
+                        <span>Цвет загруженности</span>
+                    </label>
+                    {showLoadColors && (
+                        <div className={styles.legend}>
+                            <span><i className={styles.low} />Низкая</span>
+                            <span><i className={styles.medium} />Средняя</span>
+                            <span><i className={styles.high} />Высокая</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
             {focusedRoute && (
                 <div
-                    className={styles.routeCard}
+                    className={`${styles.routeCard} ${
+                        filtersOpen ? styles.routeCardBelowPanel : styles.routeCardBelowButton
+                    }`}
                     style={{ borderColor: `${routeColors[focusedRoute.id]}55` }}
                 >
                     <span
@@ -692,20 +892,13 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                                 <button
                                     type="button"
                                     className={styles.closeRouteCard}
-                                    onClick={() => setFocusedRouteId(null)}
+                                    onClick={clearRouteFocus}
                                     aria-label={`Закрыть карточку маршрута ${focusedRoute.id}`}
                                     title="Закрыть"
                                 >
                                     ×
                                 </button>
                             </div>
-                        </div>
-                        <div
-                            className={styles.loadLine}
-                            style={{ color: loadStatusColor }}
-                        >
-                            <span className={styles.loadDot} />
-                            <p>{loadStatus}</p>
                         </div>
                         <strong>{focusedLoad === null ? '—' : `${focusedLoad}%`}</strong>
                         <span className={styles.progressTrack}>
@@ -719,12 +912,6 @@ export default function Map({ theme = 'dark', rows = [], meta = null }: MapProps
                     </div>
                 </div>
             )}
-
-            <div className={styles.legend}>
-                <span><i className={styles.low} />Низкая</span>
-                <span><i className={styles.medium} />Средняя</span>
-                <span><i className={styles.high} />Высокая</span>
-            </div>
 
             {detailsRoute && (
                 <RouteDetailsModal

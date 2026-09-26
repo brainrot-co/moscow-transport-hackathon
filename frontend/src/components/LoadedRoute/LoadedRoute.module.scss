@@ -21,7 +21,7 @@
     white-space: nowrap;
 }
 
-.loadPercentage {
+.passengerCount {
     flex: 0 0 auto;
     font-weight: 500;
     font-size: clamp(9px, 0.624vw, 12px);
@@ -58,10 +58,32 @@
 }
 
 .loadedRoute {
+    width: 100%;
     min-width: 0;
     min-height: 0;
+    padding: 3px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    background: transparent;
     display: flex;
     flex: 1 1 0;
     align-items: center;
     gap: clamp(8px, 0.794vw, 14px);
+    color: inherit;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 150ms ease, border-color 150ms ease;
+
+    &:hover,
+    &:focus-visible {
+        border-color: var(--border-hover, #33465e);
+        background: var(--surface-hover, #121e2f);
+        outline: none;
+    }
+}
+
+.loadedRouteSelected {
+    border-color: rgba(241, 6, 36, 0.45);
+    background: rgba(241, 6, 36, 0.06);
 }

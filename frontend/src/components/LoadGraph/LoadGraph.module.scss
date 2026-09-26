@@ -27,35 +27,43 @@
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 13px;
-
-    img {
-        width: 21px;
-        height: 21px;
-        flex: 0 0 auto;
-    }
-
-    > div {
-        min-width: 0;
-    }
+    text-align: left;
 
     h6 {
         overflow: hidden;
-        color: var(--text, #f0f5fc);
-        font-size: clamp(11px, 0.85vw, 15px);
+        color: var(--text-strong, #ffffff);
+        font-size: clamp(12px, 0.95vw, 17px);
         font-weight: 700;
         line-height: 1.2;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
+}
 
-    span {
-        display: block;
-        margin-top: 3px;
-        color: var(--muted, #8c9eb8);
-        font-size: clamp(8px, 0.57vw, 10px);
-        line-height: 1.2;
-        white-space: nowrap;
+.graphControls {
+    min-width: 0;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+}
+
+.resetZoomButton {
+    min-height: 34px;
+    padding: 7px 11px;
+    border: 1px solid var(--border, #1f2e40);
+    border-radius: 1000px;
+    background: var(--surface-raised, #0f1828);
+    color: var(--muted, #8c9eb8);
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgba(241, 6, 36, 0.72);
+        color: var(--text, #f0f5fc);
     }
 }
 
@@ -93,6 +101,7 @@
         background: rgba(241, 6, 36, 0.16);
         color: #ff2944;
         font-size: 9px;
+        font-weight: 500;
     }
 
     span {
@@ -122,7 +131,7 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 310px;
+    width: 400px;
     max-width: calc(100vw - 48px);
     max-height: 254px;
     display: flex;
@@ -146,14 +155,14 @@
 
     b {
         color: var(--text, #f0f5fc);
-        font-size: 10px;
+        font-size: 11px;
         line-height: 1.2;
     }
 
     span {
         margin-top: 3px;
         color: var(--muted, #8c9eb8);
-        font-size: 8px;
+        font-size: 9px;
         line-height: 1.2;
     }
 }
@@ -189,10 +198,10 @@
     }
 
     > span {
-        overflow: hidden;
-        font-size: 9px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        font-size: 10px;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+        white-space: normal;
 
         b {
             margin-right: 7px;
@@ -229,18 +238,18 @@
 .routeLegend {
     min-width: 0;
     display: flex;
+    flex-wrap: wrap;
     gap: 7px;
     padding: 9px 20px 0;
 
     button {
-        min-width: 0;
-        max-width: 31%;
-        height: 29px;
+        min-width: 76px;
+        height: 36px;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 6px;
-        padding: 0 9px;
-        overflow: hidden;
+        padding: 0 8px 0 12px;
         border: 1px solid var(--border, #20324b);
         border-radius: 8px;
         background: var(--surface-raised, rgba(15, 24, 40, 0.86));
@@ -249,8 +258,8 @@
         cursor: pointer;
 
         > i {
-            width: 7px;
-            height: 7px;
+            width: 12px;
+            height: 12px;
             flex: 0 0 auto;
             border-radius: 50%;
         }
@@ -258,25 +267,29 @@
         > b {
             flex: 0 0 auto;
             color: var(--text-strong, #ffffff);
-            font-size: 9px;
+            font-size: 13px;
         }
 
         > span {
-            overflow: hidden;
-            font-size: 8px;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        > em {
+            width: 16px;
+            height: 16px;
+            display: grid;
             flex: 0 0 auto;
-            color: #72859f;
-            font-size: 11px;
-            font-style: normal;
+            place-items: center;
+            border-radius: 4px;
+            color: var(--muted, #8c9eb8);
+            font-size: 14px;
+            font-weight: 600;
+            line-height: 1;
         }
 
         &:hover:not(:disabled) {
             border-color: var(--border-hover, #40526b);
+
+            > span {
+                background: rgba(241, 6, 36, 0.12);
+                color: #f10624;
+            }
         }
 
         &:disabled {
@@ -295,6 +308,14 @@
     overflow: visible;
     touch-action: none;
     cursor: crosshair;
+}
+
+.chartZoomed {
+    cursor: grab;
+
+    &:active {
+        cursor: grabbing;
+    }
 }
 
 .horizontalGrid,
@@ -351,30 +372,88 @@
     stroke-width: 3.5;
 }
 
-.tooltip {
-    pointer-events: none;
-
-    rect {
-        fill: var(--surface-raised, #142137);
-        stroke: var(--border, #20324b);
-        stroke-width: 1;
-        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
-    }
+.tooltipForeignObject {
+    overflow: visible;
 }
 
-.tooltipTitle,
-.tooltipValue {
-    fill: var(--text, #f0f5fc);
+.tooltip {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 10px 7px 8px 12px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border, #20324b);
+    border-radius: 10px;
+    background: var(--surface-raised, #142137);
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.28);
+    color: var(--text, #f0f5fc);
     font-family: "Montserrat", sans-serif;
     font-weight: 600;
+    pointer-events: auto;
+}
+
+.tooltipScrollable {
+    padding-right: 13px;
 }
 
 .tooltipTitle {
-    font-size: 11px;
+    flex: 0 0 auto;
+    font-size: 13px;
+    line-height: 1.25;
 }
 
-.tooltipValue {
-    font-size: 10px;
+.tooltipList {
+    min-height: 0;
+    margin-top: 6px;
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+    }
+}
+
+.tooltipScrollbar {
+    position: absolute;
+    top: 38px;
+    right: 5px;
+    bottom: 10px;
+    width: 5px;
+    overflow: hidden;
+    border-radius: 1000px;
+    background: rgba(117, 137, 164, 0.22);
+    pointer-events: none;
+
+    > span {
+        width: 100%;
+        display: block;
+        border-radius: inherit;
+        background: var(--border-hover, #8495ab);
+        transition: transform 80ms linear;
+    }
+}
+
+.tooltipRow {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    line-height: 1.25;
+    white-space: nowrap;
+
+    > i {
+        width: 9px;
+        height: 9px;
+        flex: 0 0 auto;
+        border-radius: 50%;
+    }
 }
 
 @media (max-width: 1280px) {
@@ -388,12 +467,13 @@
     }
 
     .graphTitle {
-        gap: 8px;
+        min-width: 0;
+    }
 
-        img {
-            width: 17px;
-            height: 17px;
-        }
+    .resetZoomButton {
+        min-height: 30px;
+        padding: 6px 9px;
+        font-size: 9px;
     }
 
     .routePickerButton {
@@ -402,7 +482,7 @@
     }
 
     .routeMenu {
-        width: 280px;
+        width: 360px;
         max-height: 220px;
     }
 
@@ -411,8 +491,9 @@
         padding: 7px 14px 0;
 
         button {
-            height: 25px;
-            padding: 0 7px;
+            min-width: 54px;
+            height: 32px;
+            padding: 0 10px;
         }
     }
 }
