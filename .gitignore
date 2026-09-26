@@ -57,6 +57,7 @@ $RECYCLE.BIN/
 Session.vim
 .cursor/
 .aider*
+.claude/
 
 __pycache__/
 *.py[cod]
@@ -242,3 +243,5 @@ temp/
 *.bak
 *.orig
 *.rej
+ml/mlflow/
+/data/
