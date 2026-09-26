@@ -1,7 +1,8 @@
 import hashlib
 import logging
+import time
 from dataclasses import asdict, dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import partial
 from pathlib import Path
 from uuid import uuid4
@@ -17,6 +18,8 @@ from mtml.ingest.status import day_status, watermark
 from mtml.storage import Volume, write_atomic, write_json_atomic
 
 log = logging.getLogger(__name__)
+
+# TODO: не дописал комменты
 
 
 @dataclass
@@ -47,6 +50,7 @@ def file_sha256(path: Path):
 
 
 def read_journal(volume: Volume):
+    """Возвращает журнал загрузок, если его нет, то пустой фрейм"""
     if not volume.batches.exists():
         return pd.DataFrame(columns=list(BatchRecord.__dataclass_fields__))
     return pd.read_parquet(volume.batches)
@@ -77,12 +81,16 @@ def refresh_status(volume: Volume, settings: IngestSettings, now: datetime):
 
 
 def ingest_file(path: Path, volume: Volume, settings: IngestSettings, now: datetime):
+    """Основной цикл загрузки одного файла: проверка, чтение, запись сырых данных, обновление фактических посадок и статусов."""
+
+    # Собираем объект BatchRecode, batch_id должен быть уникальным.
     record = BatchRecord(
         batch_id=f"{now:%Y%m%dT%H%M%S}-{uuid4().hex[:8]}",
         file_name=path.name,
         sha256=file_sha256(path),
         received_at=now,
     )
+
     journal = read_journal(volume)
     loaded = journal.loc[journal["status"] == "ok", "sha256"]
     if record.sha256 in set(loaded):
@@ -92,6 +100,7 @@ def ingest_file(path: Path, volume: Volume, settings: IngestSettings, now: datet
         return record
 
     volume.spill.mkdir(parents=True, exist_ok=True)
+    started = time.perf_counter()
     con = duckdb.connect()
     con.execute("SET preserve_insertion_order = false")
     con.execute(f"SET memory_limit = '{settings.memory_limit}'")
@@ -115,7 +124,8 @@ def ingest_file(path: Path, volume: Volume, settings: IngestSettings, now: datet
         log.error("Не удалось загрузить %s: %s", path.name, error)
     finally:
         con.close()
-        record.finished_at = datetime.now()
+        # время в журнале — по часам системы, длительность — реальная
+        record.finished_at = now + timedelta(seconds=round(time.perf_counter() - started))
         append_journal(volume, record)
     if record.rows_unknown_route:
         log.warning(

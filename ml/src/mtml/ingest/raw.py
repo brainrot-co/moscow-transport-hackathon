@@ -40,6 +40,7 @@ def merge_raw(con: duckdb.DuckDBPyConnection, raw_dir: Path, batch_id: str):
         )
         if path.exists():
             fresh = f"SELECT *, 0 AS is_new FROM read_parquet('{path}') UNION ALL BY NAME {fresh}"
+
         # при повторе ключа остаётся уже сохранённая строка, чтобы batch_id не переписывался
         merged = (
             f"SELECT * EXCLUDE (is_new) FROM ({fresh}) "

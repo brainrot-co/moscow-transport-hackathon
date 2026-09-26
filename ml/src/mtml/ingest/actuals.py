@@ -9,7 +9,7 @@ from mtml.storage import write_atomic
 
 
 def hourly_from_raw(con: duckdb.DuckDBPyConnection, raw_dir: Path, days: list[date]):
-    """Посадки маршрут × час; внутри дня, где маршрут работал, час без посадок = 0."""
+    """Посадки маршрут на час (route, ts, boardings) по всем сырым данным за дни days."""
     files = ", ".join(f"'{day_path(raw_dir, day)}'" for day in days)
     return con.execute(f"""
         WITH hourly AS (

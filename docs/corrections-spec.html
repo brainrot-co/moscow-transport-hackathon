@@ -325,9 +325,9 @@ s { color: var(--muted); }
         <tbody>
           <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
           <tr><td class="col">date <span class="key">PK</span></td><td class="type">date32</td><td></td></tr>
-          <tr><td class="col">factor <span class="key">PK</span></td><td class="type">string</td><td>holiday, school_holiday</td></tr>
-          <tr><td class="col">log_effect</td><td class="type">float32</td><td>log(прогноз) − log(прогноз без фактора), усреднено по часам дня. Строк нет там, где фактор не действует: для этих дат эффект считается нулевым</td></tr>
-          <tr><td class="col">yhat_without</td><td class="type">float32</td><td>дневная сумма прогноза без фактора, для подписи «без праздника было бы 230 тыс.»</td></tr>
+          <tr><td class="col">factor <span class="key">PK</span></td><td class="type">string</td><td><code>holiday</code> — все отклонения производственного календаря от обычной недели: праздники, переносы, сокращённые и соседние с праздником дни (рабочая суббота 01.11 даёт положительный эффект к обычной субботе); <code>school_holiday</code> — школьные каникулы</td></tr>
+          <tr><td class="col">log_effect</td><td class="type">float64</td><td>log(1 + дневная сумма прогноза) − log(1 + дневная сумма без фактора); по дневным суммам, потому что контрольный прогон по отдельным часам шумный. Строки есть только на днях, где фактор отличает день от обычного</td></tr>
+          <tr><td class="col">yhat_without</td><td class="type">float64</td><td>дневная сумма прогноза без фактора, для подписи «без праздника было бы 230 тыс.»</td></tr>
         </tbody>
       </table></div>
 

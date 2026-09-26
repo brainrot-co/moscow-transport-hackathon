@@ -22,6 +22,7 @@ COLUMNS = (
     "bus_exit_no",
     "garage_number",
 )
+
 # будущее с запасом на расхождение часов валидатора и сервера
 FUTURE_TOLERANCE_HOURS = 1
 

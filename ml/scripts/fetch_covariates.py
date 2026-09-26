@@ -8,7 +8,8 @@ import pandas as pd
 
 from mtml.covariates import CALENDAR_PATH, WEATHER_PATH
 
-YEAR = 2025
+# краткосрочный прогноз с середины ноября и годовой всегда заходят в следующий год
+CALENDAR_YEARS = (2025, 2026)
 ISDAYOFF_URL = "https://isdayoff.ru/api/getdata?year={year}&pre=1&cc=ru"
 OPEN_METEO_URL = (
     "https://archive-api.open-meteo.com/v1/archive?latitude=55.7558&longitude=37.6173"
@@ -17,8 +18,8 @@ OPEN_METEO_URL = (
 )
 # погода нужна только как прошлая ковариата: история кончается 31 октября, а фактической
 # погоды ноября–декабря на момент прогноза не было, поэтому её не скачиваем вовсе
-WEATHER_START = dt.date(YEAR, 1, 1)
-WEATHER_END = dt.date(YEAR, 10, 31)
+WEATHER_START = dt.date(2025, 1, 1)
+WEATHER_END = dt.date(2025, 10, 31)
 
 
 def fetch_calendar(year: int):
@@ -62,7 +63,7 @@ def main():
     ).parse_args()
     CALENDAR_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    calendar = fetch_calendar(YEAR)
+    calendar = pd.concat([fetch_calendar(year) for year in CALENDAR_YEARS], ignore_index=True)
     calendar.to_csv(CALENDAR_PATH, index=False)
     holidays = calendar[calendar["is_holiday_weekday"] == 1]["date"].tolist()
     print(f"Календарь: {len(calendar)} дней, праздники в будни: {holidays} -> {CALENDAR_PATH}")

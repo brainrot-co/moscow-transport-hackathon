@@ -5,12 +5,14 @@ import pandas as pd
 
 from mtml.ingest.settings import IngestSettings
 
-# ожидаемый объём дня — медиана того же дня недели за столько предыдущих недель
+# медиана того же дня недели за столько предыдущих недель; ожидаемое значение
 EXPECTED_WEEKS = 4
 
 
 def day_status(actuals: pd.DataFrame, today: date, settings: IngestSettings):
-    """[route, date, status, observed, expected, anomaly] за все дни от первых данных до today."""
+    """
+    [route, date, status, observed, expected, anomaly] за все дни от первых данных до today.
+    """
     daily = actuals.groupby(["route", actuals["ts"].dt.normalize().rename("date")])[
         "boardings"
     ].sum()
@@ -23,6 +25,9 @@ def day_status(actuals: pd.DataFrame, today: date, settings: IngestSettings):
         .median()
         .reindex(index=dates, columns=routes)
     )
+
+    # возраст дня одинаков у всех маршрутов, но нужна таблица той же формы, что observed:
+    # дальше она сравнивается с ним поэлементно (matured, early)
     age = pd.DataFrame(
         np.repeat((pd.Timestamp(today) - dates).days.to_numpy()[:, None], len(routes), axis=1),
         index=dates,
@@ -30,13 +35,19 @@ def day_status(actuals: pd.DataFrame, today: date, settings: IngestSettings):
     )
     has_data = observed.notna()
     matured = age >= settings.finalize_after_days
+
     # досрочно полным считается только вчерашний и более ранний день, набравший почти весь объём
     early = has_data & (age >= 1) & (observed >= settings.completeness_ratio * expected)
+    # если в прошлые недели в этот день недели посадок не было (маршрут не ходит или ещё не
+    # запущен), ждать нечего: отсутствие данных сразу missing, иначе он держит водяной знак
+    nothing_expected = expected.isna() | (expected == 0)
     status = np.select(
-        [has_data & (matured | early), ~has_data & matured], ["final", "missing"], "partial"
+        [has_data & (matured | early), ~has_data & (matured | nothing_expected)],
+        ["final", "missing"],
+        "partial",
     )
-    # низкий объём — это флаг для лога и интерфейса, а не понижение статуса: ремонт на
-    # маршруте даёт настоящие почти пустые дни, и выкидывать их из контекста нельзя
+
+    # низкий объём флаг для лога и интерфейса, не понижение статуса
     anomaly = has_data & (observed < settings.anomaly_ratio * expected)
 
     frame = pd.DataFrame(
@@ -58,7 +69,10 @@ def day_status(actuals: pd.DataFrame, today: date, settings: IngestSettings):
 
 
 def watermark(status: pd.DataFrame):
-    """Последний день, до которого нет partial ни у одного маршрута и есть хотя бы один final."""
+    """
+    Последний день, до которого нет partial ни у одного маршрута и есть хотя бы один final.
+    Этот день опорный, от него считаем данные полными
+    """
     partial = status.loc[status["status"] == "partial", "date"]
     final = status.loc[status["status"] == "final", "date"]
     if not partial.empty:

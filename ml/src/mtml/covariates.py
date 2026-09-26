@@ -5,7 +5,7 @@ from mtml.data import MODEL_ROUTES, ROOT
 from mtml.geo import distance_to_route_m, load_stop_sequences
 
 EXTERNAL_DIR = ROOT / "dataset" / "external"
-CALENDAR_PATH = EXTERNAL_DIR / "calendar_2025.csv"
+CALENDAR_PATH = EXTERNAL_DIR / "calendar.csv"
 WEATHER_PATH = EXTERNAL_DIR / "weather_moscow_2025.csv"
 SCHOOL_PATH = EXTERNAL_DIR / "school_holidays_moscow.csv"
 # выгрузка событий KudaGo API v1.4 (https://docs.kudago.com/api/), location=msk
@@ -17,6 +17,8 @@ SCHOOL = ("school_holiday_modular", "school_holiday_quarter")
 EVENTS = ("events_near",)
 DAY_TYPE = ("day_type",)
 HOLIDAY_PROXIMITY = ("days_to_holiday", "days_after_holiday")
+# дальше недели близость к празднику уже не важна: такие дни получают это значение
+HOLIDAY_PROXIMITY_MAX = 7
 
 # событие «рядом с маршрутом» — до ближайшей остановки не дальше этого
 EVENT_RADIUS_M = 800
@@ -58,7 +60,6 @@ def load_day_features(calendar: pd.DataFrame):
                 day_type[j] = label
     day_type[(cal["is_shortened"] == 1) & (day_type == "workday")] = "pre_holiday"
 
-    horizon = 7  # дальше недели близость к празднику уже не важна
     idx = pd.Series(range(len(cal)), dtype=float)
     next_start = idx.where(starts).bfill()
     prev_end = idx.where(ends).ffill()
@@ -68,12 +69,12 @@ def load_day_features(calendar: pd.DataFrame):
             "day_type": day_type,
             "days_to_holiday": (next_start - idx)
             .where(~in_block, 0)
-            .fillna(horizon)
-            .clip(upper=horizon),
+            .fillna(HOLIDAY_PROXIMITY_MAX)
+            .clip(upper=HOLIDAY_PROXIMITY_MAX),
             "days_after_holiday": (idx - prev_end)
             .where(~in_block, 0)
-            .fillna(horizon)
-            .clip(upper=horizon),
+            .fillna(HOLIDAY_PROXIMITY_MAX)
+            .clip(upper=HOLIDAY_PROXIMITY_MAX),
         }
     )
 
@@ -127,7 +128,7 @@ def load_events_near_routes(hours: pd.DatetimeIndex, radius_m: float = EVENT_RAD
     return counts.reindex(index, fill_value=0).reset_index()
 
 
-def load_hourly_covariates(start: str = "2025-01-01", end: str = "2025-12-31"):
+def load_hourly_covariates(start: str = "2025-01-01", end: str = "2026-12-31"):
     """Погода есть только за историю, на горизонте прогноза она NaN."""
     hours = pd.date_range(pd.Timestamp(start), pd.Timestamp(end) + pd.Timedelta(hours=23), freq="h")
     days = pd.DataFrame({"ts": hours, "date": hours.normalize()})

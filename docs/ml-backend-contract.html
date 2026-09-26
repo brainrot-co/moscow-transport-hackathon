@@ -364,7 +364,7 @@ section:target h2 { color: var(--accent); }
           <thead><tr><th>Сервис</th><th>Роль</th><th>Запуск</th><th>Том</th><th>Ресурсы (оценка)</th></tr></thead>
           <tbody>
             <tr><td><b>ingest</b></td><td>Забирает файлы из <code>inbox/</code>, дедуплицирует валидации, пересчитывает агрегаты маршрут × час, определяет полноту дней и водяной знак</td><td>постоянно, опрос раз в <code>INGEST_POLL_SEC</code></td><td>rw</td><td>1 vCPU, 2 ГБ на начальную загрузку истории (DuckDB ограничен <code>INGEST_MEMORY_LIMIT</code>, излишек пишет на диск); суточный файл — десятки МБ</td></tr>
-            <tr><td><b>ml-worker</b></td><td>Считает краткосрочный и годовой прогнозы и эффекты факторов, проверяет качество, публикует run</td><td>постоянно, внутреннее расписание и реакция на сдвиг водяного знака</td><td>rw</td><td>2 vCPU, 3 ГБ; веса Chronos внутри образа</td></tr>
+            <tr><td><b>ml-worker</b></td><td>Считает краткосрочный и годовой прогнозы и эффекты факторов, проверяет качество, публикует run</td><td>постоянно, внутреннее расписание и реакция на сдвиг водяного знака</td><td>rw</td><td>2 vCPU, 3 ГБ; веса Chronos скачиваются с Hugging Face при первом запуске и кэшируются на томе</td></tr>
             <tr><td><b>backend</b></td><td>Держит активный run в памяти, склеивает факт и прогноз, применяет поправки, агрегирует, экспортирует CSV и XLSX</td><td>постоянно</td><td>ro</td><td>2–4 vCPU, до 1 ГБ</td></tr>
             <tr><td><b>frontend</b></td><td>Интерфейс: карта, графики, слайдеры поправок</td><td>постоянно</td><td>нет</td><td>статика</td></tr>
             <tr><td><b>mlflow</b></td><td>История экспериментов и бэктестов</td><td>только профиль <code>dev</code></td><td>нет</td><td>—</td></tr>
@@ -388,6 +388,7 @@ section:target h2 { color: var(--accent); }
 │   └── quarantine/&lt;batch_id&gt;.parquet   отбракованные строки с причиной
 ├── tmp/duckdb/                         сброс DuckDB на диск при больших файлах
 ├── state/watermark.json                последняя полностью загруженная дата
+├── state/clock.json                    общие часы системы (раздел 11)
 ├── reference/                          справочники и признаки (раздел 06)
 ├── runs/
 │   ├── &lt;run_id&gt;/                       опубликованный прогон
@@ -542,8 +543,8 @@ section:target h2 { color: var(--accent); }
         <tbody>
           <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
           <tr><td class="col">ts <span class="key">PK</span></td><td class="type">timestamp[s]</td><td>начало часа (short) или начало дня (year)</td></tr>
-          <tr><td class="col">yhat</td><td class="type">float32</td><td>медиана прогноза, ≥ 0</td></tr>
-          <tr><td class="col">q10, q90</td><td class="type">float32, nullable</td><td>границы 80%-интервала; null, если модель квантилей не даёт</td></tr>
+          <tr><td class="col">yhat</td><td class="type">float64</td><td>медиана прогноза, ≥ 0. float64, чтобы округление в сабмишене и экспорте совпадало с проверенным</td></tr>
+          <tr><td class="col">q10, q90</td><td class="type">float64, nullable</td><td>границы 80%-интервала; null, если модель квантилей не даёт или маршрут без истории</td></tr>
         </tbody>
       </table></div>
       <p>Объём: short — 10 × 1464 = 14 640 строк, year — 10 × 365 = 3 650 строк. Оба помещаются в память бэкенда целиком.</p>
@@ -557,8 +558,9 @@ section:target h2 { color: var(--accent); }
         <tbody>
           <tr><td class="col">route <span class="key">PK</span></td><td class="type">int16</td><td></td></tr>
           <tr><td class="col">date <span class="key">PK</span></td><td class="type">date32</td><td></td></tr>
-          <tr><td class="col">factor <span class="key">PK</span></td><td class="type">string</td><td>holiday / school_holiday</td></tr>
-          <tr><td class="col">log_effect</td><td class="type">float32</td><td>log(прогноз) − log(прогноз без фактора), усреднено по часам дня. Строки есть только там, где фактор активен</td></tr>
+          <tr><td class="col">factor <span class="key">PK</span></td><td class="type">string</td><td><code>holiday</code> — все отклонения производственного календаря от обычной недели: праздники, переносы, сокращённые и соседние с праздником дни (рабочая суббота 01.11 даёт положительный эффект к обычной субботе); <code>school_holiday</code> — школьные каникулы</td></tr>
+          <tr><td class="col">log_effect</td><td class="type">float64</td><td>log(1 + дневная сумма прогноза) − log(1 + дневная сумма без фактора); по дневным суммам, потому что контрольный прогон по отдельным часам шумный. Строки есть только на днях, где фактор отличает день от обычного</td></tr>
+          <tr><td class="col">yhat_without</td><td class="type">float64</td><td>дневная сумма прогноза без фактора, для подписи «без праздника было бы …»</td></tr>
         </tbody>
       </table></div>
 
@@ -585,7 +587,7 @@ section:target h2 { color: var(--accent); }
         <div class="cap">Переименование в пределах одного тома атомарно: бэкенд видит либо старый прогноз, либо новый целиком.</div>
       </div>
       <ul>
-        <li>Проверки качества: полная сетка маршрут × час, нет NaN и отрицательных значений, дневные суммы маршрута в пределах 0.3–3 от медианы последних четырёх недель, <code>data_cutoff</code> не старше предыдущего run.</li>
+        <li>Проверки качества: полная сетка маршрут × час, нет NaN и отрицательных значений, сумма за каждую полную неделю — в пределах 0.3–3 от медианы недель за последние 4 недели (неделя сглаживает режимы вроде «не ходит по выходным»), ни один день не больше трёх максимальных дней за 4 недели.</li>
         <li>Хранятся последние <code>KEEP_RUNS</code> прогонов. Откат — перезапись <code>active.json</code> на прежний <code>run_id</code>.</li>
         <li>Если <code>schema_version</code> не совпал, бэкенд остаётся на старом run и пишет ошибку. Несовместимые изменения схемы поднимают версию.</li>
       </ul>
@@ -716,7 +718,7 @@ section:target h2 { color: var(--accent); }
           <tr><td class="col">DATA_DIR</td><td>все</td><td class="col">/data</td><td>путь к тому</td></tr>
           <tr><td class="col">INGEST_POLL_SEC</td><td>ingest</td><td class="col">60</td><td>как часто проверять inbox</td></tr>
           <tr><td class="col">FINALIZE_AFTER_DAYS</td><td>ingest</td><td class="col">3</td><td>через сколько дней день считается полным в любом случае</td></tr>
-          <tr><td class="col">COMPLETENESS_RATIO</td><td>ingest</td><td class="col">0.97</td><td>доля ожидаемого объёма для досрочного final (к концу D+1 приходит в среднем 97.4%)</td></tr>
+          <tr><td class="col">COMPLETENESS_RATIO</td><td>ingest</td><td class="col">0.8</td><td>доля ожидаемого объёма для досрочного final. Ловит только грубую недогрузку (не выгрузился парк): обычный разброс спроса ±10–20% больше типичной недогрузки к D+1 (−2.6%), у 95% полных дней объём выше 0.8</td></tr>
           <tr><td class="col">ANOMALY_RATIO</td><td>ingest</td><td class="col">0.5</td><td>ниже этой доли ожидаемого день помечается anomaly</td></tr>
           <tr><td class="col">MIN_DATE</td><td>ingest</td><td class="col">2020-01-01</td><td>валидации раньше — битые даты, в карантин</td></tr>
           <tr><td class="col">ROUTES</td><td>ingest</td><td class="col">1,5,7,11,12,17,25,26,28,50</td><td>маршруты из справочника; остальные принимаются, но попадают в предупреждения</td></tr>
@@ -726,6 +728,9 @@ section:target h2 { color: var(--accent); }
           <tr><td class="col">RUN_ON_WATERMARK</td><td>ml-worker</td><td class="col">true</td><td>пересчитывать short при сдвиге водяного знака (не чаще раза в 30 минут)</td></tr>
           <tr><td class="col">YEAR_RUN_AT</td><td>ml-worker</td><td class="col">MON 04:00</td><td>еженедельный прогон year</td></tr>
           <tr><td class="col">KEEP_RUNS</td><td>ml-worker</td><td class="col">14</td><td>сколько прогонов хранить</td></tr>
+          <tr><td class="col">CLOCK_START</td><td>все</td><td class="col">не задано</td><td>виртуальное «сейчас» при первом запуске, например 2025-11-01T03:00:00; не задано — реальное московское время. Часы хранятся в <code>state/clock.json</code>, общие для всех сервисов; <b>системное время напрямую не используется</b></td></tr>
+          <tr><td class="col">CLOCK_SPEED</td><td>все</td><td class="col">0</td><td>скорость виртуальных часов: 0 — стоят, 1 — реальное время, 1440 — сутки за минуту</td></tr>
+          <tr><td class="col">CLOCK_END</td><td>все</td><td class="col">не задано</td><td>момент, на котором часы останавливаются (конец демо)</td></tr>
           <tr><td class="col">BACKEND_RELOAD_SEC</td><td>backend</td><td class="col">30</td><td>как часто проверять active.json</td></tr>
           <tr><td class="col">STALE_AFTER_DAYS</td><td>backend</td><td class="col">3</td><td>когда показывать предупреждение об устаревших данных</td></tr>
         </tbody>
@@ -737,7 +742,7 @@ section:target h2 { color: var(--accent); }
       <ol class="qs">
         <li><div><b>Откуда приходят данные в продакшене.</b> Контракт предполагает, что внешний процесс кладёт CSV в <code>inbox/</code>. Если источник — API или поток, в ingest нужен адаптер; формат дальше не меняется.</div></li>
         <li><div><b>Веса остановок.</b> Равные доли, или по близости к метро и точкам интереса? В любом случае ответ по остановке помечается как оценка.</div></li>
-        <li><div><b>Порог полноты.</b> <code>FINALIZE_AFTER_DAYS=3</code> и <code>COMPLETENESS_RATIO=0.97</code> подобраны по задержкам выгрузок за сентябрь 2025 (к D+3 приходит 97.7%). Кривую задержек стоит пересчитывать регулярно: к концу месяца выгрузки медленнее.</div></li>
+        <li><div><b>Порог полноты.</b> <code>FINALIZE_AFTER_DAYS=3</code> подобран по задержкам выгрузок за сентябрь 2025 (к D+3 приходит 97.7%), <code>COMPLETENESS_RATIO=0.8</code> — по разбросу объёма полных дней за 2025 год. Кривую задержек стоит пересчитывать регулярно: к концу месяца выгрузки медленнее.</div></li>
         <li><div><b>Маршрут 5.</b> Запущен 17 декабря 2025 года, истории почти нет. Держать его в cold_start с запасным методом, или скрывать до накопления данных?</div></li>
         <li><div><b>Сценарные поправки.</b> Нужна ли область действия по маршрутам и датам, или хватит слайдеров на весь город?</div></li>
         <li><div><b>Метрики в продакшене.</b> Считать ли фактическую точность прошлых прогонов (прогноз против факта по дням final) и показывать её в интерфейсе.</div></li>

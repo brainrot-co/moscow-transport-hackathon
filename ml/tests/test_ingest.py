@@ -178,9 +178,18 @@ def test_status_rules():
 
 def test_underfilled_recent_day_waits_for_uploads():
     days = {f"2025-08-{d:02d}": 1000 for d in range(1, 32)}
-    days |= {f"2025-09-{d:02d}": 1000 for d in range(1, 9)} | {"2025-09-09": 800}
+    days |= {f"2025-09-{d:02d}": 1000 for d in range(1, 9)} | {"2025-09-09": 700}
     status = day_status(daily_actuals(days), date(2025, 9, 10), IngestSettings(routes=(25,)))
 
     assert status_of(status, "2025-09-09")["status"] == "partial"
     assert not status_of(status, "2025-09-09")["anomaly"]
     assert watermark(status) == date(2025, 9, 8)
+
+
+def test_route_without_history_does_not_hold_watermark():
+    days = {f"2025-08-{d:02d}": 1000 for d in range(1, 32)}
+    days |= {f"2025-09-{d:02d}": 1000 for d in range(1, 10)}
+    status = day_status(daily_actuals(days), date(2025, 9, 10), IngestSettings(routes=(5, 25)))
+
+    assert status_of(status, "2025-09-09", route=5)["status"] == "missing"
+    assert watermark(status) == date(2025, 9, 9)
