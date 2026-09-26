@@ -39,9 +39,28 @@ const ThemeIcon = ({ isLight }: { isLight: boolean }) => (
     </svg>
 )
 
+const getCurrentDateTime = () => {
+    const now = new Date()
+
+    const date = now.toLocaleDateString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+    })
+
+    const time = now.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+    })
+
+    return { date, time }
+}
+
 export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const { isLightTheme, setIsLightTheme } = useTheme()
+
+    const { date, time } = getCurrentDateTime()
 
     return (
         <>
@@ -95,7 +114,7 @@ export default function Dashboard() {
                                         <div className={styles.statusOnline}>
                                             <span className={styles.onlineStatus}></span>
                                             <p className={styles.whenRefreshed}>Данные обновлены<br />
-                                                25.09.2026 14:32
+                                                {date} {time}
                                             </p>
                                         </div>
                                         <div className={styles.statusOnline}>
@@ -143,7 +162,13 @@ export default function Dashboard() {
 
                         <div className={styles.topControls}>
                             <div className={styles.topTimestamp}>
-                                <p className={styles.topDate}>25 сентября 2026</p>
+                                <p className={styles.topDate}>
+                                    {new Date().toLocaleDateString('ru-RU', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric',
+                                    })}
+                                </p>
                                 <div className={styles.topTime}>
                                     <img src={calendar} alt="calendar" />
                                     <h6>14:32</h6>
