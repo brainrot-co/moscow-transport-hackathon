@@ -43,3 +43,23 @@
     gap: 30px;
     justify-content: end;
 }
+
+.lightTheme {
+    .whenRefreshed {
+        color: #5f7086;
+    }
+
+    .separator {
+        background: #cbd5e1;
+    }
+
+    .userIcon {
+        border-color: #cbd5e1;
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 5px 18px rgba(29, 46, 68, 0.08);
+
+        img {
+            filter: brightness(0.48) saturate(0.72);
+        }
+    }
+}

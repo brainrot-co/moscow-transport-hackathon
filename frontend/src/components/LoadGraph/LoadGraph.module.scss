@@ -1,76 +1,418 @@
 .loadGraph {
-    width: fit-content;
-    background: #09111B;
-    border-radius: 14px;
-    border: 1px solid #1F2E40;
-    padding: 22px 22px 10px 22px;
-}
-
-.graphTitle {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-
-    h6 {
-        font-weight: 700;
-        font-size: 0.766vw;
-        color: #F0F5FC;
-    }
-}
-
-.timeRangePicker {
-    position: relative;
-
-    background: #0F1828;
-    border: 1px solid #1F2E40;
-    border-radius: 1000px;
-    width: fit-content;
-
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-}
-
-.selectedBackground {
-    position: absolute;
-    left: 0;
-    top: 0;
-
-    width: 33.333%;
+    width: 100%;
     height: 100%;
-
-    background: #F10624;
-    border-radius: 1000px;
-
-    transition: transform 0.3s ease;
-}
-
-.timeRangeItem {
-    position: relative;
-    z-index: 1;
-
-    padding: 8px 12px;
-
-    font-weight: 400;
-    font-size: 0.547vw;
-    color: #8C9EB8;
-
-    border: none;
-    background: transparent;
-    border-radius: 1000px;
-    cursor: pointer;
-
-    transition: color 0.2s ease, font-weight 0.2s ease;
-}
-
-.selected {
-    font-weight: 600;
-    color: #fff;
+    min-width: 0;
+    min-height: 0;
+    padding: 18px 0 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border, #1f2e40);
+    border-radius: 14px;
+    background: var(--surface, #09111b);
 }
 
 .graphTop {
-    gap: 1.632vw;
+    position: relative;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 18px;
+    padding: 0 20px;
+}
+
+.graphTitle {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+
+    img {
+        width: 21px;
+        height: 21px;
+        flex: 0 0 auto;
+    }
+
+    > div {
+        min-width: 0;
+    }
+
+    h6 {
+        overflow: hidden;
+        color: var(--text, #f0f5fc);
+        font-size: clamp(11px, 0.85vw, 15px);
+        font-weight: 700;
+        line-height: 1.2;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted, #8c9eb8);
+        font-size: clamp(8px, 0.57vw, 10px);
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+}
+
+.routePicker {
+    position: relative;
+    z-index: 20;
+    flex: 0 0 auto;
+}
+
+.routePickerButton {
+    min-width: 142px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 12px;
+    border: 1px solid var(--border, #1f2e40);
+    border-radius: 1000px;
+    background: var(--surface-raised, #0f1828);
+    color: var(--text, #f0f5fc);
+    font-family: inherit;
+    font-size: clamp(8px, 0.62vw, 11px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 160ms ease, background-color 160ms ease;
+
+    b {
+        display: grid;
+        min-width: 29px;
+        height: 20px;
+        padding: 0 5px;
+        box-sizing: border-box;
+        place-items: center;
+        border-radius: 1000px;
+        background: rgba(241, 6, 36, 0.16);
+        color: #ff2944;
+        font-size: 9px;
+    }
+
+    span {
+        color: var(--muted, #8c9eb8);
+        font-size: 13px;
+        line-height: 1;
+        transform: translateY(-1px);
+        transition: transform 160ms ease;
+    }
+
+    &:hover,
+    &:focus-visible {
+        border-color: rgba(241, 6, 36, 0.72);
+        background: var(--surface-hover, #121e2f);
+    }
+}
+
+.routePickerButtonOpen {
+    border-color: #f10624;
+
+    span {
+        transform: translateY(1px) rotate(180deg);
+    }
+}
+
+.routeMenu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 310px;
+    max-width: calc(100vw - 48px);
+    max-height: 254px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--border, #20324b);
+    border-radius: 12px;
+    background: var(--surface-raised, #0d1725);
+    box-shadow: var(--popover-shadow, 0 18px 42px rgba(0, 0, 0, 0.46));
+}
+
+.routeMenuHeader {
+    flex: 0 0 auto;
+    padding: 11px 13px 10px;
+    border-bottom: 1px solid var(--border, #20324b);
+
+    b,
+    span {
+        display: block;
+    }
+
+    b {
+        color: var(--text, #f0f5fc);
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    span {
+        margin-top: 3px;
+        color: var(--muted, #8c9eb8);
+        font-size: 8px;
+        line-height: 1.2;
+    }
+}
+
+.routeMenuList {
+    min-height: 0;
+    padding: 6px;
+    overflow-y: auto;
+    scrollbar-color: var(--border-hover, #33465e) transparent;
+    scrollbar-width: thin;
+}
+
+.routeOption {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr) 18px;
+    align-items: center;
+    gap: 9px;
+    padding: 8px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text, #f0f5fc);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    > i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 8px currentColor;
+    }
+
+    > span {
+        overflow: hidden;
+        font-size: 9px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+
+        b {
+            margin-right: 7px;
+            color: var(--text-strong, #ffffff);
+        }
+    }
+
+    > em {
+        color: var(--muted, #8c9eb8);
+        font-size: 11px;
+        font-style: normal;
+        text-align: center;
+    }
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+        background: var(--surface-hover, rgba(255, 255, 255, 0.055));
+    }
+
+    &:disabled {
+        opacity: 0.36;
+        cursor: not-allowed;
+    }
+}
+
+.routeOptionSelected {
+    background: rgba(241, 6, 36, 0.095);
+
+    > em {
+        color: #ff2944;
+    }
+}
+
+.routeLegend {
+    min-width: 0;
+    display: flex;
+    gap: 7px;
+    padding: 9px 20px 0;
+
+    button {
+        min-width: 0;
+        max-width: 31%;
+        height: 29px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 9px;
+        overflow: hidden;
+        border: 1px solid var(--border, #20324b);
+        border-radius: 8px;
+        background: var(--surface-raised, rgba(15, 24, 40, 0.86));
+        color: var(--muted, #8c9eb8);
+        font-family: inherit;
+        cursor: pointer;
+
+        > i {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+        }
+
+        > b {
+            flex: 0 0 auto;
+            color: var(--text-strong, #ffffff);
+            font-size: 9px;
+        }
+
+        > span {
+            overflow: hidden;
+            font-size: 8px;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        > em {
+            flex: 0 0 auto;
+            color: #72859f;
+            font-size: 11px;
+            font-style: normal;
+        }
+
+        &:hover:not(:disabled) {
+            border-color: var(--border-hover, #40526b);
+        }
+
+        &:disabled {
+            cursor: default;
+        }
+    }
+}
+
+.chart {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    display: block;
+    margin-top: 2px;
+    overflow: visible;
+    touch-action: none;
+    cursor: crosshair;
+}
+
+.horizontalGrid,
+.verticalGrid {
+    vector-effect: non-scaling-stroke;
+    stroke: var(--chart-grid, #16253a);
+    stroke-width: 1;
+}
+
+.horizontalGrid {
+    opacity: 0.9;
+}
+
+.verticalGrid {
+    opacity: 0.62;
+}
+
+.axisLabel {
+    fill: var(--muted, #8c9eb8);
+    font-family: "Montserrat", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    pointer-events: none;
+    user-select: none;
+}
+
+.seriesGlow,
+.seriesLine {
+    fill: none;
+    vector-effect: non-scaling-stroke;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.seriesGlow {
+    stroke-width: 7;
+    opacity: 0.3;
+}
+
+.seriesLine {
+    stroke-width: 2.7;
+}
+
+.activeGuide {
+    vector-effect: non-scaling-stroke;
+    stroke: rgba(205, 218, 237, 0.32);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+}
+
+.activePoint {
+    vector-effect: non-scaling-stroke;
+    fill: #ffffff;
+    stroke-width: 3.5;
+}
+
+.tooltip {
+    pointer-events: none;
+
+    rect {
+        fill: var(--surface-raised, #142137);
+        stroke: var(--border, #20324b);
+        stroke-width: 1;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28));
+    }
+}
+
+.tooltipTitle,
+.tooltipValue {
+    fill: var(--text, #f0f5fc);
+    font-family: "Montserrat", sans-serif;
+    font-weight: 600;
+}
+
+.tooltipTitle {
+    font-size: 11px;
+}
+
+.tooltipValue {
+    font-size: 10px;
+}
+
+@media (max-width: 1280px) {
+    .loadGraph {
+        padding: 14px 0 8px;
+    }
+
+    .graphTop {
+        gap: 10px;
+        padding: 0 14px;
+    }
+
+    .graphTitle {
+        gap: 8px;
+
+        img {
+            width: 17px;
+            height: 17px;
+        }
+    }
+
+    .routePickerButton {
+        min-width: 126px;
+        padding: 7px 10px;
+    }
+
+    .routeMenu {
+        width: 280px;
+        max-height: 220px;
+    }
+
+    .routeLegend {
+        gap: 5px;
+        padding: 7px 14px 0;
+
+        button {
+            height: 25px;
+            padding: 0 7px;
+        }
+    }
 }

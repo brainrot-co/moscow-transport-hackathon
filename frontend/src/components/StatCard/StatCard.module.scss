@@ -1,0 +1,132 @@
+.statCard {
+    width: 21.542vw;
+    background: #09111B;
+    border: 1px solid #1F2E40;
+    border-radius: 12px;
+    padding: 0.964vw 1.134vw 1.077vw 0.964vw;
+    display: flex;
+    align-items: center;
+}
+
+.statIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.551vw;
+    height: 2.551vw;
+    background: #313F51;
+    border-radius: 1000px;
+
+    img {
+        width: 1.19vw;
+        height: 1.19vw;
+    }
+}
+
+.statName {
+    font-weight: 500;
+    font-size: 0.737vw;
+    color: #8C9EB8;
+}
+
+.first {
+    h6 {
+        color: #fff;
+    }
+
+    .statIcon {
+        background-color: #63172B;
+    }
+}
+
+.statValue {
+    font-weight: 600;
+    font-size: 1.701vw;
+    color: #fff;
+    max-width: 8.05vw;
+}
+
+.margin {
+    p {
+        font-weight: 400;
+        color: #44C69F;
+        font-size: 0.737vw;
+    }
+
+    display: flex;
+    align-items: center;
+    gap: 0.567vw;
+}
+
+.versus {
+    color: #8C9EB8;
+    font-weight: 400;
+    font-size: 0.624vw;
+}
+
+.statComparison {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.17vw;
+}
+
+.statValues {
+    display: flex;
+    align-items: center;
+    gap: 1.247vw;
+}
+
+.statData {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.397vw;
+    margin-left: 0.794vw;
+}
+
+.graph {
+    margin-left: 2.891vw;
+    width: fit-content;
+    height: fit-content;
+
+    max-width: 4.989vw;
+    max-height: 2.778vw;
+}
+
+.routeValue {
+    font-weight: 600;
+    font-size: 1.701vw;
+    color: #fff;
+    max-width: 8.05vw;
+
+    span {
+        font-weight: 600;
+        color: #8C9EB8;
+        font-size: 1.134vw;
+    }
+}
+
+.routeWorking {
+    span {
+        display: block;
+        background: #44C69F;
+        border-radius: 1000px;
+        width: 0.34vw;
+        height: 0.34vw;
+    }
+
+    p {
+        color: #8C9EB8;
+        font-weight: 400;
+        font-size: 0.567vw;
+        margin-left: 0.283vw;
+    }
+
+    display: flex;
+    align-items: center;
+}
+
+.decreased {
+    transform: rotate(180deg);
+}
