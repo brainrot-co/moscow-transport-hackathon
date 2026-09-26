@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     cookie_samesite: Literal["lax", "strict", "none"] = "strict"
     demo_username: str | None = None
     demo_password: str | None = None
-    demo_email: str = "demo@transport.local"
+    demo_email: str = "demo@example.com"
 
     @field_validator("database_url")
     @classmethod
