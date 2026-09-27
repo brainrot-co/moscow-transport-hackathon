@@ -1,5 +1,6 @@
 from datetime import date
 
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -8,11 +9,13 @@ from app.auth.schemas import CurrentUser
 from app.crud import ScenarioCRUD
 from app.dependencies import get_db_session
 from app.dependencies.forecast import get_forecast_store
+from app.dependencies.redis import get_redis_client
 from app.dependencies.scenario import get_scenario_crud
 from app.enums import Role
 from app.ml import ForecastStore
 from app.models import Scenario
 from app.schemas.scenario import ScenarioCreate, ScenarioRead, ScenarioUpdate
+from app.services.scenario_version import bump_version
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
 
@@ -55,6 +58,7 @@ async def create_scenario(
     session: AsyncSession = Depends(get_db_session),
     crud: ScenarioCRUD = Depends(get_scenario_crud),
     store: ForecastStore = Depends(get_forecast_store),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> ScenarioRead:
     _check_reference(store, payload.kind, payload.factor, payload.value, payload.routes)
     scenario = Scenario(
@@ -62,7 +66,9 @@ async def create_scenario(
         source_url=str(payload.source_url) if payload.source_url else None,
         created_by=current_user.id,
     )
-    return ScenarioRead.from_model(await crud.create(session, scenario))
+    created = await crud.create(session, scenario)
+    await _commit_and_bump(session, redis_client)
+    return ScenarioRead.from_model(created)
 
 
 @router.get("/{scenario_id}", response_model=ScenarioRead)
@@ -86,6 +92,7 @@ async def update_scenario(
     session: AsyncSession = Depends(get_db_session),
     crud: ScenarioCRUD = Depends(get_scenario_crud),
     store: ForecastStore = Depends(get_forecast_store),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> ScenarioRead:
     scenario = await crud.get(session, scenario_id)
     if scenario is None:
@@ -99,6 +106,7 @@ async def update_scenario(
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(scenario, field, value)
     await session.flush()
+    await _commit_and_bump(session, redis_client)
     return ScenarioRead.from_model(scenario)
 
 
@@ -108,8 +116,17 @@ async def delete_scenario(
     _current_user: CurrentUser = Depends(RequireRole(Role.ADMIN)),
     session: AsyncSession = Depends(get_db_session),
     crud: ScenarioCRUD = Depends(get_scenario_crud),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> None:
     scenario = await crud.get(session, scenario_id)
     if scenario is None:
         raise HTTPException(status_code=404, detail="scenario_not_found")
     await crud.delete(session, scenario)
+    await _commit_and_bump(session, redis_client)
+
+
+async def _commit_and_bump(session: AsyncSession, redis_client: redis.Redis) -> None:
+    # версия растёт только после коммита: иначе соседний воркер успеет закэшировать
+    # старые поправки уже под новой версией
+    await session.commit()
+    await bump_version(redis_client)

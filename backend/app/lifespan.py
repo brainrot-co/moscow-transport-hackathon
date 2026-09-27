@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from app.core import get_settings
 from app.core.security import hash_password
@@ -35,7 +36,11 @@ async def _ensure_demo_user(app: FastAPI) -> None:
                     role=Role.ADMIN,
                 )
             )
-            await session.commit()
+            try:
+                await session.commit()
+            except IntegrityError:
+                # воркеры uvicorn стартуют одновременно: пользователя создал соседний
+                await session.rollback()
 
 
 @asynccontextmanager

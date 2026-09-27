@@ -116,7 +116,6 @@ class ForecastService:
         snapshot = self.snapshot
         if snapshot is None:
             return []
-        # сумма дня: факт за прошедшие часы плюс скорректированный прогноз за остальные
         rows = self.hourly(
             datetime.combine(day, time()),
             datetime.combine(day, time(23)),
@@ -126,28 +125,61 @@ class ForecastService:
             granularity="day",
             now=now,
         )
-        kind = self.day_kind(day)
+        return self.route_loads_from_rows(day, rows, settings)
+
+    def route_loads_from_rows(
+        self,
+        day: date,
+        rows: list[ResponseRow],
+        settings: LoadNormSettings,
+    ) -> list[RouteLoad]:
+        """rows — по одной дневной строке на маршрут (granularity="day")."""
         result: list[RouteLoad] = []
         for row in rows:
             value = (
                 (row.value or 0) + (row.yhat or 0) if row.source is not None else None
             )
-            norm = (
-                route_norm(
-                    snapshot.daily_actuals.get(row.route, {}),
-                    kind,
-                    snapshot.day_types,
-                    snapshot.watermark,
-                    settings,
-                )
-                if snapshot.watermark is not None
-                else None
-            )
-            level = (
-                norm.level(value) if norm is not None and value is not None else None
-            )
-            result.append(RouteLoad(row.route, value, level, norm))
+            result.append(self.route_load(day, row.route, value, settings))
         return result
+
+    def route_load(
+        self,
+        day: date,
+        route: int,
+        value: float | None,
+        settings: LoadNormSettings,
+    ) -> RouteLoad:
+        """Уровень загрузки по сумме посадок маршрута за день."""
+        norm = self._route_norm(route, self.day_kind(day), settings)
+        level = norm.level(value) if norm is not None and value is not None else None
+        return RouteLoad(route, value, level, norm)
+
+    def _route_norm(
+        self, route: int, kind: DayKind, settings: LoadNormSettings
+    ) -> LoadNorm | None:
+        snapshot = self.snapshot
+        if snapshot is None or snapshot.watermark is None:
+            return None
+        # норма зависит только от снапшота и настроек: считаем один раз на снапшот
+        cache_key = (
+            route,
+            kind,
+            snapshot.watermark,
+            settings.weeks,
+            settings.min_days,
+            settings.low_quantile,
+            settings.high_quantile,
+            settings.min_deviation,
+        )
+        if cache_key not in snapshot.norm_cache:
+            snapshot.norm_cache[cache_key] = route_norm(
+                snapshot.daily_actuals.get(route, {}),
+                kind,
+                snapshot.day_types,
+                snapshot.watermark,
+                settings,
+            )
+        return snapshot.norm_cache[cache_key]  # type: ignore[return-value]
 
 
 def as_api_rows(rows: list[ResponseRow]) -> list[dict[str, object]]:

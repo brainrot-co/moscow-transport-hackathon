@@ -71,16 +71,12 @@ def build_forecast_analytics(
         _build_hour(day, hour, rows_by_hour[hour], len(selected_routes))
         for hour in range(24)
     )
+    # уровень считается по сумме дня, как в /forecast/load, а не по отдельным часам
     loads = {
-        load.route: load
-        for load in service.route_loads(
-            day,
-            list(selected_routes),
-            settings,
-            model_factors=model_factors,
-            scenarios=scenarios,
-            now=now,
+        route: service.route_load(
+            day, route, _day_total(rows_by_route[route]), settings
         )
+        for route in selected_routes
     }
     route_analytics = tuple(
         _build_route(
@@ -169,6 +165,16 @@ def _build_route(
         norm_median=norm.median if norm is not None else None,
         norm_days=norm.days if norm is not None else 0,
     )
+
+
+def _day_total(rows: list[ResponseRow]) -> float | None:
+    parts = [_row_parts(row) for row in rows]
+    available = [
+        (actual or 0) + (forecast or 0)
+        for actual, forecast in parts
+        if actual is not None or forecast is not None
+    ]
+    return sum(available) if available else None
 
 
 def _row_parts(row: ResponseRow):

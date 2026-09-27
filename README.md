@@ -27,6 +27,7 @@ docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml up -d --bu
 | модель: устройство, эксперименты, артефакты, код | [docs/ml-artifacts/model.md](docs/ml-artifacts/model.md) |
 | внешние данные и их эффект на прогноз | [docs/external-data/external-data.md](docs/external-data/external-data.md) |
 | архитектура, область определения и адаптации модели | [docs/architecture-domain/architecture-domain.md](docs/architecture-domain/architecture-domain.md) |
+| производительность: нагрузочные тесты и замеры | [docs/load-tests/load-tests.md](docs/load-tests/load-tests.md) |
 | ограничения и план развития | [docs/limitations/limitations-roadmap.md](docs/limitations/limitations-roadmap.md) |
 
 ## Запуск

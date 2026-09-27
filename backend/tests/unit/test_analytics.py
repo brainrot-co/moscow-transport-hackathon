@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from app.ml.load import LoadNormSettings
 from app.ml.models import ActualRecord, ForecastRecord, ForecastSnapshot
@@ -68,3 +68,37 @@ def test_analytics_preserves_unavailable_hours():
     assert result.selected_routes == (7,)
     assert result.hours[12].total is None
     assert result.routes[0].hourly == (None,) * 24
+
+
+def test_analytics_load_level_uses_day_total_like_load_endpoint():
+    # сутки по часам: уровень считается по сумме дня, а не по последнему часу
+    day = date(2025, 11, 5)
+    # факт засчитывается до водяного знака включительно; история нормы — 8 недель до него
+    watermark = day
+    history = {
+        day - timedelta(days=offset): 40 if (
+            day - timedelta(days=offset)
+        ).weekday() >= 5 else 100
+        for offset in range(1, 57)
+    }
+    midnight = datetime(2025, 11, 5)
+    snapshot = ForecastSnapshot(
+        actuals={(7, midnight): ActualRecord(7, midnight, 30)},
+        short={
+            (7, midnight.replace(hour=hour)): ForecastRecord(
+                7, midnight.replace(hour=hour), 10
+            )
+            for hour in range(1, 24)
+        },
+        year={},
+        watermark=watermark,
+        daily_actuals={7: history},
+    )
+    service = ForecastService(snapshot)
+
+    [route] = build_forecast_analytics(service, day, [7], SETTINGS).routes
+    [load] = service.route_loads(day, [7], SETTINGS)
+
+    assert route.total == 30 + 23 * 10
+    assert route.load_level == load.level == "high"
+    assert route.norm_median == load.norm.median
