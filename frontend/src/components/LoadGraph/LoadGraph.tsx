@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import styles from './LoadGraph.module.scss';
 import type { ForecastRow } from '../../api/forecast';
 import { routeColors } from '../../data/routeColors';
+import InfoHint from '../InfoHint/InfoHint';
 import { tramRoutes, type TramRoute } from '../Map/routes';
 
 interface LoadPoint {
@@ -376,6 +377,11 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
             <div className={styles.graphTop}>
                 <div className={styles.graphTitle}>
                     <h6>Сравнение маршрутов за сегодня</h6>
+                    <InfoHint
+                        title="Сравнение маршрутов за сегодня"
+                        description="Каждая цветная линия показывает почасовой пассажиропоток отдельного маршрута за текущий операционный день. Для будущих часов используется доступный прогноз."
+                        usage="Наведите на график, чтобы сравнить точные значения в одном часу. Колесо меняет масштаб, после приближения график можно перетаскивать; кнопка «Сбросить масштаб» возвращает весь день."
+                    />
                 </div>
 
                 <div className={styles.graphControls}>
@@ -388,50 +394,57 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
                             Сбросить масштаб
                         </button>
                     )}
-                    <div className={styles.routePicker} ref={pickerRef}>
-                        <button
-                            type="button"
-                            className={clsx(styles.routePickerButton, routeMenuOpen && styles.routePickerButtonOpen)}
-                            onClick={() => setRouteMenuOpen((isOpen) => !isOpen)}
-                            aria-expanded={routeMenuOpen}
-                            aria-haspopup="true"
-                        >
-                            Маршруты <b>{effectiveSelectedRouteIds.length}</b>
-                            <span aria-hidden="true">⌄</span>
-                        </button>
+                    <div className={styles.routeControl}>
+                        <InfoHint
+                            title="Маршруты для сравнения"
+                            description="Определяет, какие маршруты представлены отдельными линиями на этом графике. Цвет линии совпадает с цветом номера маршрута."
+                            usage="Откройте список и добавьте или уберите маршруты. Выбранные номера показаны под заголовком; нажмите на номер там, чтобы быстро удалить линию."
+                        />
+                        <div className={styles.routePicker} ref={pickerRef}>
+                            <button
+                                type="button"
+                                className={clsx(styles.routePickerButton, routeMenuOpen && styles.routePickerButtonOpen)}
+                                onClick={() => setRouteMenuOpen((isOpen) => !isOpen)}
+                                aria-expanded={routeMenuOpen}
+                                aria-haspopup="true"
+                            >
+                                Маршруты <b>{effectiveSelectedRouteIds.length}</b>
+                                <span aria-hidden="true">⌄</span>
+                            </button>
 
-                        {routeMenuOpen && (
-                            <div className={styles.routeMenu} role="menu" aria-label="Выбор маршрутов для сравнения">
-                                <div className={styles.routeMenuHeader}>
-                                    <b>Выберите маршруты</b>
-                                    <span>Линии показаны за сегодня</span>
-                                </div>
-                                <div className={styles.routeMenuList}>
-                                    {tramRoutes.map((route) => {
-                                        const isSelected = effectiveSelectedRouteIds.includes(route.id);
-                                        const isUnavailable = !availableRouteIds.has(route.id);
-                                        const isDisabled = isUnavailable
-                                            || (isSelected && effectiveSelectedRouteIds.length === 1);
+                            {routeMenuOpen && (
+                                <div className={styles.routeMenu} role="menu" aria-label="Выбор маршрутов для сравнения">
+                                    <div className={styles.routeMenuHeader}>
+                                        <b>Выберите маршруты</b>
+                                        <span>Линии показаны за сегодня</span>
+                                    </div>
+                                    <div className={styles.routeMenuList}>
+                                        {tramRoutes.map((route) => {
+                                            const isSelected = effectiveSelectedRouteIds.includes(route.id);
+                                            const isUnavailable = !availableRouteIds.has(route.id);
+                                            const isDisabled = isUnavailable
+                                                || (isSelected && effectiveSelectedRouteIds.length === 1);
 
-                                        return (
-                                            <button
-                                                key={route.id}
-                                                type="button"
-                                                role="menuitemcheckbox"
-                                                aria-checked={isSelected}
-                                                className={clsx(styles.routeOption, isSelected && styles.routeOptionSelected)}
-                                                disabled={isDisabled}
-                                                onClick={() => toggleRoute(route.id)}
-                                            >
-                                                <i style={{ backgroundColor: routeColors[route.id] }} />
-                                                <span><b>№{route.id}</b>{route.name}</span>
-                                                <em>{isUnavailable ? '—' : isSelected ? '✓' : '+'}</em>
-                                            </button>
-                                        );
-                                    })}
+                                            return (
+                                                <button
+                                                    key={route.id}
+                                                    type="button"
+                                                    role="menuitemcheckbox"
+                                                    aria-checked={isSelected}
+                                                    className={clsx(styles.routeOption, isSelected && styles.routeOptionSelected)}
+                                                    disabled={isDisabled}
+                                                    onClick={() => toggleRoute(route.id)}
+                                                >
+                                                    <i style={{ backgroundColor: routeColors[route.id] }} />
+                                                    <span><b>№{route.id}</b>{route.name}</span>
+                                                    <em>{isUnavailable ? '—' : isSelected ? '✓' : '+'}</em>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
