@@ -227,7 +227,7 @@ def docker_diagram():
     s.text(rx + rw / 2 + 10, (backend_bottom + front_top) / 2 + 4, "HTTP API")
     s.arrow(f"M{rx + rw / 2},{front_bottom} V{disp_top}", both=True)
     s.set_height(max(hf_bottom, volume_bottom, disp_bottom) + 30)
-    s.save("img/docker-architecture.svg")
+    s.save("architecture-domain/docker-architecture.svg")
 
 
 def pipeline_diagram():
@@ -311,7 +311,7 @@ def pipeline_diagram():
         s.box(x, 964, bw, 70, title, lines, lead=True)
     s.arrow(f"M{xs[3] + bw / 2},852 V964", both=True)
     s.text(xs[3] + bw / 2 + 8, 912, "HTTP API")
-    s.save("img/pipeline.svg")
+    s.save("architecture-domain/pipeline.svg")
 
 
 def ensemble_diagram():

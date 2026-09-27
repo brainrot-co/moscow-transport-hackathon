@@ -20,15 +20,31 @@ docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml up -d --bu
 
 Краткосрочный прогноз на 61 день строит ансамбль из трёх вариантов предобученной модели [Chronos-2](https://huggingface.co/amazon/chronos-2) с производственным календарём и школьными каникулами. WAPE-score на закрытом тесте — **0.88359** при baseline организаторов 0.48. Прогноз до года строит сезонная регрессия по месяцам, типам дня и каникулам.
 
-## Документация
+## Материалы по требованиям задачи
 
-| что | где |
+| что требуется | где |
 |---|---|
-| модель: устройство, эксперименты, артефакты, код | [docs/ml-artifacts/model.md](docs/ml-artifacts/model.md) |
-| внешние данные и их эффект на прогноз | [docs/external-data/external-data.md](docs/external-data/external-data.md) |
-| архитектура, область определения и адаптации модели | [docs/architecture-domain/architecture-domain.md](docs/architecture-domain/architecture-domain.md) |
-| производительность: нагрузочные тесты и замеры | [docs/load-tests/load-tests.md](docs/load-tests/load-tests.md) |
-| ограничения и план развития | [docs/limitations/limitations-roadmap.md](docs/limitations/limitations-roadmap.md) |
+| 1. Артефакты ML-модели, код обучения и инференса, README с инструкцией запуска | [docs/ml-artifacts/model.md](docs/ml-artifacts/model.md), запуск — [ниже](#запуск) |
+| 2. Все внешние данные, использованные в решении | [docs/external-data/external-data.md](docs/external-data/external-data.md), файлы — [dataset/external/](dataset/external/) |
+| 3. Запускаемый веб-сервис: backend + frontend, точки входа API, инструкция для жюри | [запуск](#запуск), [API](#api) в этом README, `docker-compose.yml` и `compose.demo.yml` |
+| 4. Схема архитектуры и модулей, область определения и адаптации модели, зависимости от внешних данных | [docs/architecture-domain/architecture-domain.md](docs/architecture-domain/architecture-domain.md) |
+| 5. Производительность (замеры и нагрузочный тест) | [docs/load-tests/load-tests.md](docs/load-tests/load-tests.md), коротко — [ниже](#производительность) |
+| 5. Список реализованных дополнительных возможностей | [docs/load-tests/features.md](docs/load-tests/features.md) |
+| 6. Ограничения решения и план развития | [docs/limitations/limitations-roadmap.md](docs/limitations/limitations-roadmap.md) |
+
+## Производительность
+
+Нагрузку на API проверяли k6 на бэкенде с 2 воркерами uvicorn и лимитом контейнера 2 CPU и 2 ГБ (Apple M5, Docker Desktop):
+
+| тест | результат |
+|---|---|
+| смесь запросов как у дашборда, 100 RPS, 3 прогона по 60 с | 0% ошибок, p95 **37–42 мс**, CPU в среднем ~30% из 2 ядер, память ~0.5 ГБ |
+| та же смесь, когда рядом заняты 6 ядер | 0% ошибок, p95 77 мс |
+| `/forecast` на разных запросах, без помощи кэша | 50 RPS при p95 44 мс, потолок около 80 RPS |
+
+ML-контур: загрузка истории (62 млн строк) — 3 мин, пересчёт прогноза — 4 мин 20 с при пике памяти 1.34 ГБ, от `docker compose up` до прогноза на экране — ~7 с.
+
+Методика, окружение, таблицы по эндпоинтам, сырые результаты и как повторить: [docs/load-tests/load-tests.md](docs/load-tests/load-tests.md). Скрипты k6 лежат в [`tests/performance/`](tests/performance/).
 
 ## Запуск
 
