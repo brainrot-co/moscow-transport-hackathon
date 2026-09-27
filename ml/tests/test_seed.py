@@ -19,8 +19,8 @@ REAL = datetime(2026, 9, 27, 12, 0)
 def make_seed(root: Path, cutoff: str):
     ts = pd.date_range("2025-08-01", "2025-09-30 23:00", freq="h")
     actuals = pd.DataFrame({"route": 25, "ts": ts, "boardings": 100})
-    root.mkdir(parents=True)
-    actuals.to_parquet(root / "actuals_hourly.parquet", index=False)
+    Volume(root).actuals.parent.mkdir(parents=True)
+    actuals.to_parquet(Volume(root).actuals, index=False)
     pair = {"data_cutoff": cutoff, "schema_version": 1, "short": "short-a", "year": "year-a"}
     for run_id in ("short-a", "year-a"):
         (root / "runs" / run_id).mkdir(parents=True)
@@ -45,12 +45,15 @@ def test_seed_is_laid_out_on_empty_volume_and_worker_does_not_rerun(tmp_path: Pa
     assert rerun_reason(state, date(2025, 9, 30), later, REAL, WorkerSettings()) is None
 
 
-def test_seed_for_other_watermark_is_skipped_but_facts_are_copied(tmp_path: Path):
+def test_seed_for_other_watermark_is_skipped_but_facts_and_reference_are_copied(tmp_path: Path):
     volume = Volume(tmp_path / "data")
     seed = make_seed(tmp_path / "seed", "2025-08-31")
+    Volume(seed).correction_factors.parent.mkdir(parents=True)
+    Volume(seed).correction_factors.write_text('{"scenario_types": []}')
 
     assert apply_seed(volume, seed, SETTINGS, NOW, REAL) is None
     assert volume.actuals.exists()
+    assert volume.correction_factors.read_text() == '{"scenario_types": []}'
     assert not volume.active.exists()
     assert not volume.worker_state.exists()
 

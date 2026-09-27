@@ -21,17 +21,16 @@ def seed_dir():
 
 
 def apply_seed(volume: Volume, seed: Path, settings: IngestSettings, now: datetime, real: datetime):
-    """
-    На пустом томе раскладывает факты и пару прогонов, посчитанную на тот же водяной знак,
-    что даст ingest в момент now. Первый экран появляется без загрузки истории и расчёта.
-    Если пары на этот знак нет (сменили CLOCK_START), воркер посчитает прогноз сам.
-    """
+    """Раскладывает стартовый прогноз на пустой том; None, если том не пуст или пары нет."""
     manifest = seed / "pairs.json"
     if volume.active.exists() or not manifest.exists():
         return None
-    if not volume.actuals.exists():
-        volume.actuals.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(seed / "actuals_hourly.parquet", volume.actuals)
+    # календарь и справочник поправок бэкенд читает сразу, воркер перепишет их при своём старте
+    for path in ("actuals", "calendar", "correction_factors"):
+        source, target = getattr(Volume(seed), path), getattr(volume, path)
+        if source.exists() and not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
 
     # знак считается тем же правилом, что в refresh_status, но в файл пока не пишется:
     # воркер не должен увидеть знак раньше, чем state/worker.json от стартового прогноза

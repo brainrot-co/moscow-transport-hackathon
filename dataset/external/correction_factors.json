@@ -1,0 +1,223 @@
+{
+  "schema_version": 1,
+  "sources_doc": "docs/correction-factors-sources.md",
+  "model_factors": [
+    {
+      "factor": "holiday",
+      "label": "Праздники",
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1,
+      "default": 1.0,
+      "estimate": "1.0 — эффект, который заложила модель; 0 — день как обычный"
+    },
+    {
+      "factor": "school_holiday",
+      "label": "Школьные каникулы",
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.1,
+      "default": 1.0,
+      "estimate": "1.0 — эффект, который заложила модель; 0 — без каникул"
+    }
+  ],
+  "scenario_types": [
+    {
+      "type": "heavy_rain",
+      "label": "Сильный дождь (≥ 5 мм за сутки)",
+      "scope": "city",
+      "default_multiplier": 0.96,
+      "min": 0.5,
+      "max": 1.2,
+      "estimate": "Париж, 2026: трамвай −4% в будни с осадками ≥ 5 мм",
+      "sources": [
+        {
+          "title": "L'Institut Paris Region, Mobilité sous pression climatique, 2026",
+          "url": "https://www.institutparisregion.fr/fileadmin/NewEtudes/000pack5/Etude_3172/NR_1060_web.pdf",
+          "finding": "будни с осадками ≥ 5 мм (6–22 ч): трамвай и автобус −4%, RER −2%, метро без эффекта"
+        },
+        {
+          "title": "Lepage & Morency, Transportation Research Record, 2021",
+          "url": "https://journals.sagepub.com/doi/abs/10.1177/0361198120966326",
+          "finding": "Монреаль, дождливый рабочий день: метро −1,1%, автобус −1,2%"
+        }
+      ],
+      "local_check": [
+        {
+          "name": "дни с осадками ≥ 5 мм за 6–22 ч, как у L'Institut Paris Region",
+          "effect": null,
+          "ci": null,
+          "n": 4,
+          "unit": "дней"
+        },
+        {
+          "name": "часы с дождём 0,5–2 мм/ч, 6–22 ч",
+          "effect": -0.0469,
+          "ci": [
+            -0.0662,
+            -0.0298
+          ],
+          "n": 49,
+          "unit": "часов"
+        }
+      ]
+    },
+    {
+      "type": "heavy_snow",
+      "label": "Снегопад",
+      "scope": "city",
+      "default_multiplier": 0.95,
+      "min": 0.5,
+      "max": 1.2,
+      "estimate": "литература: от 0% (Париж, трамвай) до −11% (автобус в городе без снежной зимы)",
+      "sources": [
+        {
+          "title": "L'Institut Paris Region, Mobilité sous pression climatique, 2026",
+          "url": "https://www.institutparisregion.fr/fileadmin/NewEtudes/000pack5/Etude_3172/NR_1060_web.pdf",
+          "finding": "снегопад 05.01.2026: трамваи с перебоями, но на валидациях эффекта не видно"
+        },
+        {
+          "title": "Stover & McCormack, Journal of Public Transportation, 2012",
+          "url": "https://digitalcommons.usf.edu/jpt/vol15/iss1/6/",
+          "finding": "округ Пирс (США): снег −11% автобусных поездок зимой"
+        },
+        {
+          "title": "Zhou & Long, Findings, 2026",
+          "url": "https://findingspress.org/article/162965-mobility-responses-to-snowfall-in-the-greater-toronto-area",
+          "finding": "Торонто, снегопад ≥ 5 см: поездок −1,7% (автомобили, город привык к снегу)"
+        }
+      ],
+      "local_check": [
+        {
+          "name": "дни со снегом ≥ 2 см",
+          "effect": null,
+          "ci": null,
+          "n": 1,
+          "unit": "дней"
+        }
+      ]
+    },
+    {
+      "type": "extreme_snow",
+      "label": "Экстремальный снегопад, призыв не выезжать",
+      "scope": "city",
+      "default_multiplier": 0.7,
+      "min": 0.3,
+      "max": 1.0,
+      "estimate": "Париж, 07.01.2026: трамвай −32% при официальном призыве ограничить поездки",
+      "sources": [
+        {
+          "title": "L'Institut Paris Region, Mobilité sous pression climatique, 2026",
+          "url": "https://www.institutparisregion.fr/fileadmin/NewEtudes/000pack5/Etude_3172/NR_1060_web.pdf",
+          "finding": "07.01.2026, власти призвали ограничить поездки, школы на удалёнке: трамвай −32%, RER −31%, метро −11%"
+        }
+      ],
+      "local_check": [
+        {
+          "name": "дни со снегом ≥ 10 см",
+          "effect": null,
+          "ci": null,
+          "n": 0,
+          "unit": "дней"
+        }
+      ]
+    },
+    {
+      "type": "mass_event",
+      "label": "Крупное мероприятие у остановки",
+      "scope": "routes",
+      "default_multiplier": 1.2,
+      "min": 1.0,
+      "max": 2.0,
+      "estimate": "Монреаль: у станции рядом с площадкой +30…+120%; на весь маршрут в часы окончания — около +20%",
+      "sources": [
+        {
+          "title": "Lepage & Morency, Transportation Research Record, 2021",
+          "url": "https://journals.sagepub.com/doi/abs/10.1177/0361198120966326",
+          "finding": "станция метро у площадки: концерт +58%, хоккей +75%, фестиваль +57%, футбол +121%"
+        },
+        {
+          "title": "Lepage, магистерская диссертация, Polytechnique Montréal, 2019",
+          "url": "https://publications.polymtl.ca/4074/1/Lepage_Simon_2019.pdf",
+          "finding": "таблица 6-4: эффекты по 10 категориям мероприятий для метро, автобуса, такси и велопроката"
+        }
+      ],
+      "local_check": [
+        {
+          "name": "концерты, фестивали, спорт в 600 м от остановки (KudaGo)",
+          "effect": null,
+          "ci": null,
+          "n": 0,
+          "unit": "дней"
+        }
+      ]
+    },
+    {
+      "type": "route_shortened",
+      "label": "Маршрут укорочен",
+      "scope": "routes",
+      "default_multiplier": 0.45,
+      "min": 0.1,
+      "max": 1.0,
+      "estimate": "наша история 2025: медиана −55% в дни частичных сбоев; если известна доля отрезанного участка, задайте вручную",
+      "sources": [
+        {
+          "title": "Yap & Cats, TU Delft (arXiv:2209.03732)",
+          "url": "https://arxiv.org/pdf/2209.03732",
+          "finding": "плановые закрытия трамвая в Амстердаме: эластичность по времени поездки −0,99, 33% затронутых уходят из ОТ; готового числа для укорочения нет"
+        }
+      ],
+      "local_check": [
+        {
+          "name": "аномальные дни не в праздники, посадок 10–90% от ожидаемого",
+          "effect": -0.5475,
+          "iqr": [
+            -0.679,
+            -0.521
+          ],
+          "n": 18,
+          "unit": "дней",
+          "routes": [
+            7,
+            11,
+            17,
+            50
+          ]
+        }
+      ]
+    },
+    {
+      "type": "route_closed",
+      "label": "Маршрут не ходит",
+      "scope": "routes",
+      "default_multiplier": 0.0,
+      "min": 0.0,
+      "max": 0.2,
+      "estimate": "по определению: посадки маршрута считаются только на нём самом",
+      "sources": [],
+      "local_check": [
+        {
+          "name": "аномальные дни не в праздники, посадок меньше 10% от ожидаемого",
+          "effect": -0.9856,
+          "n": 8,
+          "unit": "дней",
+          "routes": [
+            17,
+            50
+          ]
+        }
+      ]
+    },
+    {
+      "type": "custom",
+      "label": "Другое",
+      "scope": "routes",
+      "default_multiplier": 1.0,
+      "min": 0.0,
+      "max": 2.0,
+      "estimate": "задаёт диспетчер",
+      "sources": [],
+      "local_check": null
+    }
+  ]
+}

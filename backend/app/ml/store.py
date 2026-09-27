@@ -8,6 +8,11 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from pydantic import ValidationError
+
+from app.core.logger import logger
+from app.schemas.correction_factors import CorrectionFactorsRead
+
 from .models import (
     ActualRecord,
     ForecastRecord,
@@ -27,6 +32,7 @@ class ForecastStore:
         self.last_error: str | None = None
         self._active: dict[str, Any] = {}
         self._clock: dict[str, Any] = {}
+        self.correction_factors: CorrectionFactorsRead | None = None
 
     @property
     def snapshot(self) -> ForecastSnapshot | None:
@@ -56,6 +62,8 @@ class ForecastStore:
         return min(current, virtual_end) if virtual_end else current
 
     async def load(self) -> bool:
+        # справочник не зависит от прогноза: интерфейсу он нужен и без снапшота
+        self._load_correction_factors()
         try:
             snapshot = self._load_from_disk()
         except (OSError, ValueError, KeyError, SnapshotError, ImportError) as exc:
@@ -100,6 +108,18 @@ class ForecastStore:
         self._active = active
         self._clock = clock
         return snapshot
+
+    def _load_correction_factors(self) -> None:
+        path = self.data_dir / "reference/correction_factors.json"
+        if not path.exists():
+            return
+        try:
+            self.correction_factors = CorrectionFactorsRead.model_validate_json(
+                path.read_text(encoding="utf-8")
+            )
+        except (OSError, ValidationError) as exc:
+            # битый файл не сбрасывает уже загруженный справочник
+            logger.warning("reference/correction_factors.json не прочитан: %s", exc)
 
     def _read_meta(self, run_id: str) -> RunMetadata:
         raw = self._read_json(f"runs/{run_id}/meta.json")

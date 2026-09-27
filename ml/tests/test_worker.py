@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from mtml.storage import Volume
-from mtml.worker.publish import publish_calendar, publish_run
+from mtml.worker.publish import publish_reference, publish_run
 from mtml.worker.quality import QualityError, check_forecast
 
 START, END = pd.Timestamp("2025-11-01"), pd.Timestamp("2025-11-14")
@@ -70,11 +70,25 @@ def test_failed_publish_leaves_no_staging_and_keeps_pointer(tmp_path: Path):
     assert [p.name for p in volume.runs.iterdir()] == ["short-20251101T030000-a"]
 
 
-def test_calendar_marks_november_holidays(tmp_path: Path):
+def test_reference_marks_november_holidays(tmp_path: Path):
     volume = Volume(tmp_path)
-    publish_calendar(volume)
+    publish_reference(volume)
 
     calendar = pd.read_parquet(volume.calendar).set_index("date")["day_type"]
     assert calendar[pd.Timestamp("2025-11-04")] == "holiday"
     assert calendar[pd.Timestamp("2025-11-05")] == "post_holiday"
     assert calendar[pd.Timestamp("2025-11-08")] == "saturday"
+
+
+def test_reference_publishes_consistent_correction_factors(tmp_path: Path):
+    volume = Volume(tmp_path)
+    publish_reference(volume)
+
+    factors = json.loads(volume.correction_factors.read_text())
+    types = [scenario["type"] for scenario in factors["scenario_types"]]
+    assert len(types) == len(set(types))
+    for item in factors["scenario_types"]:
+        assert item["scope"] in ("city", "routes")
+        assert item["min"] <= item["default_multiplier"] <= item["max"]
+    for item in factors["model_factors"]:
+        assert item["min"] <= item["default"] <= item["max"]

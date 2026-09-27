@@ -7,12 +7,32 @@ from app.auth.permissions import RequireRole
 from app.auth.schemas import CurrentUser
 from app.crud import ScenarioCRUD
 from app.dependencies import get_db_session
+from app.dependencies.forecast import get_forecast_store
 from app.dependencies.scenario import get_scenario_crud
 from app.enums import Role
+from app.ml import ForecastStore
 from app.models import Scenario
 from app.schemas.scenario import ScenarioCreate, ScenarioRead, ScenarioUpdate
 
 router = APIRouter(prefix="/scenarios", tags=["Scenarios"])
+
+
+def _check_reference(
+    store: ForecastStore,
+    kind: str,
+    factor: str,
+    value: float,
+    routes: list[int] | None,
+    check_scope: bool = True,
+) -> None:
+    # пока воркер не опубликовал справочник, сценарии принимаются без проверки
+    if store.correction_factors is None:
+        return
+    error = store.correction_factors.validate_scenario(
+        kind, factor, value, routes, check_scope
+    )
+    if error is not None:
+        raise HTTPException(status_code=422, detail=error)
 
 
 @router.get("", response_model=list[ScenarioRead])
@@ -34,7 +54,9 @@ async def create_scenario(
     current_user: CurrentUser = Depends(RequireRole(Role.ADMIN)),
     session: AsyncSession = Depends(get_db_session),
     crud: ScenarioCRUD = Depends(get_scenario_crud),
+    store: ForecastStore = Depends(get_forecast_store),
 ) -> ScenarioRead:
+    _check_reference(store, payload.kind, payload.factor, payload.value, payload.routes)
     scenario = Scenario(
         **payload.model_dump(exclude={"source_url"}),
         source_url=str(payload.source_url) if payload.source_url else None,
@@ -63,10 +85,17 @@ async def update_scenario(
     _current_user: CurrentUser = Depends(RequireRole(Role.ADMIN)),
     session: AsyncSession = Depends(get_db_session),
     crud: ScenarioCRUD = Depends(get_scenario_crud),
+    store: ForecastStore = Depends(get_forecast_store),
 ) -> ScenarioRead:
     scenario = await crud.get(session, scenario_id)
     if scenario is None:
         raise HTTPException(status_code=404, detail="scenario_not_found")
+    value = payload.value if payload.value is not None else scenario.value
+    # маршруты PATCH не меняет: старые сценарии с другой областью действия
+    # можно править и выключать
+    _check_reference(
+        store, scenario.kind, scenario.factor, value, scenario.routes, check_scope=False
+    )
     for field, value in payload.model_dump(exclude_unset=True).items():
         setattr(scenario, field, value)
     await session.flush()

@@ -1,13 +1,3 @@
-"""
-Собирает ml/seed: факты и стартовые прогнозы, которые ingest раскладывает на пустой том.
-
-Прогнозы считаются кодом воркера на тот водяной знак, который ingest получит при старте:
-демо — «сейчас» из CLOCK_START в compose.demo.yml, прод — реальное время. Пересобирать при
-смене модели, календаря, правил статусов дней или CLOCK_START демо.
-
-    uv run --group worker python ml/scripts/build_seed.py
-"""
-
 import json
 import logging
 import re
@@ -22,7 +12,7 @@ from mtml.ingest.pipeline import refresh_status
 from mtml.ingest.settings import IngestSettings
 from mtml.storage import Volume
 from mtml.worker.context import build_context
-from mtml.worker.publish import SCHEMA_VERSION, write_run
+from mtml.worker.publish import SCHEMA_VERSION, publish_reference, write_run
 from mtml.worker.settings import WorkerSettings
 from mtml.worker.short import build_short
 from mtml.worker.year import build_year
@@ -60,14 +50,17 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     actuals = Volume.from_env().actuals
     settings = WorkerSettings.from_env()
+    seed = Volume(SEED)
     shutil.rmtree(SEED, ignore_errors=True)
-    (SEED / "runs").mkdir(parents=True)
-    shutil.copy2(actuals, SEED / "actuals_hourly.parquet")
+    seed.runs.mkdir(parents=True)
+    seed.actuals.parent.mkdir(parents=True)
+    shutil.copy2(actuals, seed.actuals)
+    publish_reference(seed)
 
     pairs = []
     for label, now in (("демо", demo_start()), ("прод", real_now())):
         log.info("Стартовый прогноз для режима %s, сейчас %s", label, now)
-        pair = build_pair(actuals, now, settings, SEED / "runs")
+        pair = build_pair(actuals, now, settings, seed.runs)
         pairs.append(pair)
     (SEED / "pairs.json").write_text(json.dumps(pairs, ensure_ascii=False, indent=2), "utf-8")
     log.info("Готово: %s", ", ".join(p["data_cutoff"] for p in pairs))

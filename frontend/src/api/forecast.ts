@@ -90,6 +90,44 @@ export function getForecast(
     return apiRequest<ForecastResponse>(`/forecast?${params.toString()}`);
 }
 
+export interface FactorSource {
+    title: string;
+    url: string;
+    finding: string;
+}
+
+export interface ScenarioTypeInfo {
+    type: string;
+    label: string;
+    scope: 'city' | 'routes';
+    default_multiplier: number;
+    min: number;
+    max: number;
+    estimate: string;
+    sources: FactorSource[];
+}
+
+export interface ModelFactorInfo {
+    factor: string;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    default: number;
+    estimate: string;
+}
+
+export interface CorrectionFactors {
+    schema_version: number;
+    sources_doc: string;
+    model_factors: ModelFactorInfo[];
+    scenario_types: ScenarioTypeInfo[];
+}
+
+export function getCorrectionFactors() {
+    return apiRequest<CorrectionFactors>('/correction-factors');
+}
+
 export interface ScenarioDraft {
     kind: 'model_factor' | 'scenario';
     factor: string;

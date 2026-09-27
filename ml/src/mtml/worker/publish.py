@@ -5,10 +5,11 @@ import shutil
 
 import pandas as pd
 
-from mtml.covariates import load_calendar, load_day_features
+from mtml.covariates import EXTERNAL_DIR, load_calendar, load_day_features
 from mtml.storage import Volume, write_atomic, write_json_atomic
 
 SCHEMA_VERSION = 1
+CORRECTION_FACTORS_PATH = EXTERNAL_DIR / "correction_factors.json"
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +65,10 @@ def prune_runs(volume: Volume, kind: str, keep_runs: int):
         shutil.rmtree(old)
 
 
-def publish_calendar(volume: Volume):
+def publish_reference(volume: Volume):
     calendar = load_calendar()
     features = calendar.merge(load_day_features(calendar), on="date")
     write_atomic(volume.calendar, lambda tmp: features.to_parquet(tmp, index=False))
+    write_atomic(
+        volume.correction_factors, lambda tmp: shutil.copyfile(CORRECTION_FACTORS_PATH, tmp)
+    )

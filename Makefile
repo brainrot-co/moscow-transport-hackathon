@@ -46,9 +46,9 @@ prod-status: ## часы, водяной знак, активный прогон
 load-history: ## полная загрузка train.csv + test.csv в том прода (~3 мин)
 	$(PROD) run --rm ingest python -m mtml.ingest load /dataset/train.csv /dataset/test.csv
 
-# ---------- демо: виртуальные часы 01.10.2025 → 04.11.2025, см. compose.demo.yml ----------
+# ---------- демо: виртуальные часы 28.10.2025 → 04.11.2025, см. compose.demo.yml ----------
 
-demo: prod-down ## демо с нуля: сбросить тома демо, часы пойдут с 01.10.2025 03:00
+demo: prod-down ## демо с нуля: сбросить тома демо, часы пойдут с 28.10.2025 03:00
 	$(DEMO) down -v
 	$(DEMO) up -d --build
 	@echo "frontend http://localhost:3000   swagger http://localhost:8000/docs"

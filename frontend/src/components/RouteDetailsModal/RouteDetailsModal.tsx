@@ -6,12 +6,15 @@ import type { RouteStop } from '../Map/transitData';
 import {
     createScenario as createScenarioRequest,
     deleteScenario as deleteScenarioRequest,
+    getCorrectionFactors,
     getScenarios,
     previewForecast,
     updateScenario as updateScenarioRequest,
     type ForecastMeta,
+    type FactorSource,
     type ForecastRow,
     type ScenarioDraft,
+    type ScenarioTypeInfo,
 } from '../../api/forecast';
 import styles from './RouteDetailsModal.module.scss';
 
@@ -40,6 +43,10 @@ interface ScenarioOption {
     label: string;
     multiplier: number;
     estimate: string;
+    scope: 'city' | 'routes';
+    min: number;
+    max: number;
+    source?: FactorSource;
 }
 
 interface Scenario extends ScenarioOption {
@@ -60,14 +67,17 @@ const PERIODS: { id: Period; label: string }[] = [
     { id: 'year', label: 'Год' },
 ];
 
-const SCENARIO_OPTIONS: ScenarioOption[] = [
-    { type: 'heavy_rain', label: 'Сильный дождь (> 5 мм)', multiplier: 0.96, estimate: 'по исследованию, около −4%' },
-    { type: 'heavy_snow', label: 'Сильный снегопад', multiplier: 0.95, estimate: 'экспертная оценка, −5%' },
-    { type: 'route_shortened', label: 'Маршрут укорочен', multiplier: 0.7, estimate: 'экспертная оценка, −30%' },
-    { type: 'route_closed', label: 'Маршрут не ходит', multiplier: 0, estimate: 'по определению, −100%' },
-    { type: 'mass_event', label: 'Крупное мероприятие', multiplier: 1.2, estimate: 'экспертная оценка, +20%' },
-    { type: 'custom', label: 'Другое', multiplier: 1, estimate: 'задаётся диспетчером' },
-];
+// значения по умолчанию и источники приходят из reference/correction_factors.json
+const toScenarioOption = (info: ScenarioTypeInfo): ScenarioOption => ({
+    type: info.type,
+    label: info.label,
+    multiplier: info.default_multiplier,
+    estimate: info.estimate,
+    scope: info.scope,
+    min: info.min,
+    max: info.max,
+    source: info.sources[0],
+});
 
 const clamp = (value: number, min = 0, max = 100) => Math.min(max, Math.max(min, value));
 
@@ -154,7 +164,7 @@ const scenarioPayload = (scenario: Scenario, routeId: number): ScenarioDraft => 
     kind: 'scenario',
     factor: scenario.type,
     value: scenario.multiplier,
-    routes: [routeId],
+    routes: scenario.scope === 'city' ? null : [routeId],
     date_from: scenario.dateFrom,
     date_to: scenario.dateTo,
     days: scenario.days,
@@ -331,6 +341,114 @@ function RouteLoadChart({
     );
 }
 
+interface ScenarioBuilderProps {
+    options: ScenarioOption[];
+    today: string;
+    idPrefix: string;
+    subtitle: string;
+    onAdd: (scenario: Scenario) => void;
+    onError: (message: string) => void;
+}
+
+function ScenarioBuilder({ options, today, idPrefix, subtitle, onAdd, onError }: ScenarioBuilderProps) {
+    const [open, setOpen] = useState(false);
+    const [type, setType] = useState('');
+    const [multiplier, setMultiplier] = useState<number | null>(null);
+    const [title, setTitle] = useState('');
+    const [dateFrom, setDateFrom] = useState(today);
+    const [dateTo, setDateTo] = useState(today);
+    const [days, setDays] = useState<Scenario['days']>('all');
+    const [hourFrom, setHourFrom] = useState(0);
+    const [hourTo, setHourTo] = useState(23);
+    const selected = options.find((option) => option.type === type) ?? options[0];
+    const value = multiplier ?? selected?.multiplier ?? 1;
+
+    if (!selected) return null;
+
+    const selectType = (nextType: string) => {
+        setType(nextType);
+        setMultiplier(null);
+    };
+
+    const add = () => {
+        if (dateTo < dateFrom) {
+            onError('Дата окончания не может быть раньше даты начала');
+            return;
+        }
+        if (hourTo < hourFrom) {
+            onError('Час окончания не может быть раньше часа начала');
+            return;
+        }
+        onAdd({
+            ...selected,
+            id: `${idPrefix}-${Date.now()}`,
+            multiplier: value,
+            title: title.trim() || selected.label.replace(/\s*\(.+\)$/, ''),
+            dateFrom,
+            dateTo,
+            days,
+            hourFrom,
+            hourTo,
+            active: true,
+        });
+        setTitle('');
+    };
+
+    return (
+        <div className={`${styles.scenarioBuilder} ${open ? styles.scenarioBuilderOpen : ''}`}>
+            <button
+                type="button"
+                className={styles.builderHeading}
+                onClick={() => setOpen((isOpen) => !isOpen)}
+                aria-expanded={open}
+            >
+                <div><b>Создать событие</b><span>{subtitle}</span></div>
+                <span className={styles.builderSummary}>
+                    {open && <strong>{formatEffect(value)}</strong>}
+                    <i aria-hidden="true">⌄</i>
+                </span>
+            </button>
+            {open && <div className={styles.formGrid}>
+                <label className={styles.wideField}>Тип события
+                    <select value={selected.type} onChange={(event) => selectType(event.target.value)}>
+                        {options.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
+                    </select>
+                    <small>
+                        Подсказка: {selected.estimate}
+                        {selected.source && <> · <a href={selected.source.url} target="_blank" rel="noreferrer">{selected.source.title}</a></>}
+                    </small>
+                </label>
+                <label>С
+                    <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
+                </label>
+                <label>По
+                    <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
+                </label>
+                <label>Дни
+                    <select value={days} onChange={(event) => setDays(event.target.value as Scenario['days'])}>
+                        <option value="all">Все дни</option>
+                        <option value="weekdays">Только будни</option>
+                        <option value="weekends">Только выходные</option>
+                    </select>
+                </label>
+                <label>Часы с
+                    <input type="number" min="0" max="23" value={hourFrom} onChange={(event) => setHourFrom(Number(event.target.value))} />
+                </label>
+                <label>до
+                    <input type="number" min="0" max="23" value={hourTo} onChange={(event) => setHourTo(Number(event.target.value))} />
+                </label>
+                <label className={styles.multiplierField}>Коэффициент
+                    <div><input type="range" min={selected.min} max={selected.max} step="0.01" value={value} onChange={(event) => setMultiplier(Number(event.target.value))} /><output>×{value.toFixed(2)}</output></div>
+                </label>
+                <label className={styles.titleField}>Название
+                    <input type="text" value={title} placeholder={selected.label} onChange={(event) => setTitle(event.target.value)} />
+                </label>
+                <button type="button" className={styles.addScenarioButton} onClick={add}>Добавить</button>
+            </div>}
+        </div>
+    );
+}
+
 export default function RouteDetailsModal({ route, stops, theme, rows, meta, onClose }: RouteDetailsModalProps) {
     const dialogRef = useRef<HTMLDivElement>(null);
     const persistedScenarioIds = useRef(new Set<number>());
@@ -347,15 +465,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
     const [holidayStrength, setHolidayStrength] = useState(1);
     const [schoolHolidayStrength, setSchoolHolidayStrength] = useState(1);
     const [scenarios, setScenarios] = useState<Scenario[]>([]);
-    const [scenarioType, setScenarioType] = useState(SCENARIO_OPTIONS[0].type);
-    const [scenarioMultiplier, setScenarioMultiplier] = useState(SCENARIO_OPTIONS[0].multiplier);
-    const [scenarioTitle, setScenarioTitle] = useState('');
-    const [dateFrom, setDateFrom] = useState(today);
-    const [dateTo, setDateTo] = useState(today);
-    const [days, setDays] = useState<Scenario['days']>('all');
-    const [hourFrom, setHourFrom] = useState(0);
-    const [hourTo, setHourTo] = useState(23);
-    const [scenarioBuilderOpen, setScenarioBuilderOpen] = useState(false);
+    const [scenarioTypes, setScenarioTypes] = useState<ScenarioOption[]>([]);
     const [savedFingerprint, setSavedFingerprint] = useState(() => JSON.stringify({
         holidayStrength: 1,
         schoolHolidayStrength: 1,
@@ -381,7 +491,8 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
         return [...uniqueStops.values()]
             .sort((first, second) => first.sequence - second.sequence);
     }, [directionId, stops]);
-    const selectedScenario = SCENARIO_OPTIONS.find((option) => option.type === scenarioType) ?? SCENARIO_OPTIONS[0];
+    const cityTypes = scenarioTypes.filter((option) => option.scope === 'city');
+    const routeTypes = scenarioTypes.filter((option) => option.scope === 'routes');
     const currentFingerprint = JSON.stringify({ holidayStrength, schoolHolidayStrength, scenarios });
     const dirty = savedFingerprint !== currentFingerprint;
     const displayRows = meta?.available ? previewRows : rows;
@@ -402,8 +513,17 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
     const correctionMultiplier = modelAverage > 0 ? adjustedAverage / modelAverage : 1;
     useEffect(() => {
         let cancelled = false;
-        void getScenarios().then((stored) => {
+        void Promise.all([
+            getScenarios(),
+            // без справочника карточка работает, но новые события создать нельзя
+            getCorrectionFactors().catch(() => null),
+        ]).then(([stored, reference]) => {
             if (cancelled) return;
+            const types = reference?.scenario_types.map(toScenarioOption) ?? [];
+            setScenarioTypes(types);
+            if (types.length === 0) {
+                setSaveMessage('Справочник поправок недоступен: новые события добавить нельзя');
+            }
             const holiday = stored.find((item) => item.kind === 'model_factor' && item.factor === 'holiday');
             const school = stored.find((item) => item.kind === 'model_factor' && item.factor === 'school_holiday');
             if (holiday) factorIds.current.holiday = holiday.id;
@@ -413,8 +533,16 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
             const nextScenarios = stored
                 .filter((item) => item.kind === 'scenario' && (!item.routes || item.routes.includes(Number(route.id))))
                 .map((item): Scenario => {
-                    const option = SCENARIO_OPTIONS.find((candidate) => candidate.type === item.factor)
-                        ?? { type: item.factor, label: item.title ?? item.factor, multiplier: item.value, estimate: 'сохранённый сценарий' };
+                    const option = types.find((candidate) => candidate.type === item.factor)
+                        ?? {
+                            type: item.factor,
+                            label: item.title ?? item.factor,
+                            multiplier: item.value,
+                            estimate: 'сохранённый сценарий',
+                            scope: item.routes ? 'routes' : 'city',
+                            min: 0,
+                            max: 2,
+                        };
                     return {
                         ...option,
                         id: String(item.id),
@@ -510,43 +638,39 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
         }
     };
 
-    const updateScenarioType = (nextType: string) => {
-        const option = SCENARIO_OPTIONS.find((item) => item.type === nextType) ?? SCENARIO_OPTIONS[0];
-
-        setScenarioType(option.type);
-        setScenarioMultiplier(option.multiplier);
-    };
-
-    const addScenario = () => {
-        const fallbackTitle = selectedScenario.label.replace(/\s*\(.+\)$/, '');
-
-        if (dateTo < dateFrom) {
-            setSaveMessage('Дата окончания не может быть раньше даты начала');
-            return;
-        }
-        if (hourTo < hourFrom) {
-            setSaveMessage('Час окончания не может быть раньше часа начала');
-            return;
-        }
-
-        setScenarios((current) => [
-            ...current,
-            {
-                ...selectedScenario,
-                id: `${route.id}-${Date.now()}`,
-                multiplier: scenarioMultiplier,
-                title: scenarioTitle.trim() || fallbackTitle,
-                dateFrom,
-                dateTo,
-                days,
-                hourFrom,
-                hourTo,
-                active: true,
-            },
-        ]);
-        setScenarioTitle('');
+    const addScenario = (scenario: Scenario) => {
+        setScenarios((current) => [...current, scenario]);
         setSaveMessage('');
     };
+
+    const renderScenarioList = (items: Scenario[]) => (
+        <div className={styles.scenarioList}>
+            {items.length === 0 && <p className={styles.emptyScenarios}>Активных событий нет.</p>}
+            {items.map((scenario) => (
+                <article key={scenario.id} className={scenario.active ? '' : styles.inactiveScenario}>
+                    <button
+                        type="button"
+                        role="switch"
+                        aria-checked={scenario.active}
+                        className={styles.scenarioSwitch}
+                        onClick={() => setScenarios((current) => current.map((item) => item.id === scenario.id ? { ...item, active: !item.active } : item))}
+                    ><span /></button>
+                    <div><b>{scenario.title}</b><span>{scenario.dateFrom} — {scenario.dateTo} · {scenario.hourFrom}:00–{scenario.hourTo}:00</span></div>
+                    <label>Коэфф.
+                        <input
+                            type="number"
+                            min={scenario.min}
+                            max={scenario.max}
+                            step="0.01"
+                            value={scenario.multiplier}
+                            onChange={(event) => setScenarios((current) => current.map((item) => item.id === scenario.id ? { ...item, multiplier: Number(event.target.value) } : item))}
+                        />
+                    </label>
+                    <button type="button" className={styles.deleteScenario} onClick={() => setScenarios((current) => current.filter((item) => item.id !== scenario.id))} aria-label={`Удалить ${scenario.title}`}>×</button>
+                </article>
+            ))}
+        </div>
+    );
 
     const resetCorrections = () => {
         setHolidayStrength(1);
@@ -621,7 +745,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
             });
             setScenarios(nextScenarios);
             setSavedFingerprint(nextFingerprint);
-            setSaveMessage('Поправки сохранены для маршрута');
+            setSaveMessage('Поправки сохранены');
         } catch (error) {
             setSaveMessage(error instanceof Error ? `Не удалось сохранить: ${error.message}` : 'Не удалось сохранить поправки');
         } finally {
@@ -774,7 +898,7 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                 <div>
                                     <p className={styles.eyebrow}>Общие настройки</p>
                                     <h3>Поправки к прогнозу всех маршрутов</h3>
-                                    <span>Эти параметры применяются ко всей трамвайной сети.</span>
+                                    <span>Эти параметры применяются ко всей трамвайной сети и сохраняются кнопкой внизу карточки.</span>
                                 </div>
                             </div>
 
@@ -790,6 +914,16 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                     <output>{schoolHolidayStrength.toFixed(1)}</output>
                                 </label>
                             </div>
+
+                            <ScenarioBuilder
+                                options={cityTypes}
+                                today={today}
+                                idPrefix="city"
+                                subtitle="погода и другие события на всю сеть"
+                                onAdd={addScenario}
+                                onError={setSaveMessage}
+                            />
+                            {renderScenarioList(scenarios.filter((scenario) => scenario.scope === 'city'))}
                         </section>
 
                         <section className={styles.correctionsCard}>
@@ -797,86 +931,20 @@ export default function RouteDetailsModal({ route, stops, theme, rows, meta, onC
                                 <div>
                                     <p className={styles.eyebrow}>Настройки маршрута</p>
                                     <h3>Поправки к прогнозу маршрута №{route.id}</h3>
-                                    <span>События ниже влияют только на открытый маршрут.</span>
+                                    <span>События ниже влияют только на маршрут №{route.id}.</span>
                                 </div>
                                 <div className={styles.previewBadge}>{dirty ? 'Предпросмотр · не сохранено' : 'Сохранено'}</div>
                             </div>
 
-                            <div className={`${styles.scenarioBuilder} ${scenarioBuilderOpen ? styles.scenarioBuilderOpen : ''}`}>
-                                <button
-                                    type="button"
-                                    className={styles.builderHeading}
-                                    onClick={() => setScenarioBuilderOpen((isOpen) => !isOpen)}
-                                    aria-expanded={scenarioBuilderOpen}
-                                >
-                                    <div><b>Создать событие</b><span>погода, ремонт, перекрытие или мероприятие</span></div>
-                                    <span className={styles.builderSummary}>
-                                        <strong>{formatEffect(scenarioMultiplier)}</strong>
-                                        <i aria-hidden="true">⌄</i>
-                                    </span>
-                                </button>
-                                {scenarioBuilderOpen && <div className={styles.formGrid}>
-                                    <label className={styles.wideField}>Тип события
-                                        <select value={scenarioType} onChange={(event) => updateScenarioType(event.target.value)}>
-                                            {SCENARIO_OPTIONS.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
-                                        </select>
-                                        <small>Подсказка: {selectedScenario.estimate}</small>
-                                    </label>
-                                    <label>С
-                                        <input type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} />
-                                    </label>
-                                    <label>По
-                                        <input type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
-                                    </label>
-                                    <label>Дни
-                                        <select value={days} onChange={(event) => setDays(event.target.value as Scenario['days'])}>
-                                            <option value="all">Все дни</option>
-                                            <option value="weekdays">Только будни</option>
-                                            <option value="weekends">Только выходные</option>
-                                        </select>
-                                    </label>
-                                    <label>Часы с
-                                        <input type="number" min="0" max="23" value={hourFrom} onChange={(event) => setHourFrom(Number(event.target.value))} />
-                                    </label>
-                                    <label>до
-                                        <input type="number" min="0" max="23" value={hourTo} onChange={(event) => setHourTo(Number(event.target.value))} />
-                                    </label>
-                                    <label className={styles.multiplierField}>Коэффициент
-                                        <div><input type="range" min="0" max="2" step="0.01" value={scenarioMultiplier} onChange={(event) => setScenarioMultiplier(Number(event.target.value))} /><output>×{scenarioMultiplier.toFixed(2)}</output></div>
-                                    </label>
-                                    <label className={styles.titleField}>Название
-                                        <input type="text" value={scenarioTitle} placeholder={selectedScenario.label} onChange={(event) => setScenarioTitle(event.target.value)} />
-                                    </label>
-                                    <button type="button" className={styles.addScenarioButton} onClick={addScenario}>Добавить</button>
-                                </div>}
-                            </div>
-
-                            <div className={styles.scenarioList}>
-                                {scenarios.length === 0 && <p className={styles.emptyScenarios}>Активных событий нет.</p>}
-                                {scenarios.map((scenario) => (
-                                    <article key={scenario.id} className={scenario.active ? '' : styles.inactiveScenario}>
-                                        <button
-                                            type="button"
-                                            role="switch"
-                                            aria-checked={scenario.active}
-                                            className={styles.scenarioSwitch}
-                                            onClick={() => setScenarios((current) => current.map((item) => item.id === scenario.id ? { ...item, active: !item.active } : item))}
-                                        ><span /></button>
-                                        <div><b>{scenario.title}</b><span>{scenario.dateFrom} — {scenario.dateTo} · {scenario.hourFrom}:00–{scenario.hourTo}:00</span></div>
-                                        <label>Коэфф.
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="2"
-                                                step="0.01"
-                                                value={scenario.multiplier}
-                                                onChange={(event) => setScenarios((current) => current.map((item) => item.id === scenario.id ? { ...item, multiplier: Number(event.target.value) } : item))}
-                                            />
-                                        </label>
-                                        <button type="button" className={styles.deleteScenario} onClick={() => setScenarios((current) => current.filter((item) => item.id !== scenario.id))} aria-label={`Удалить ${scenario.title}`}>×</button>
-                                    </article>
-                                ))}
-                            </div>
+                            <ScenarioBuilder
+                                options={routeTypes}
+                                today={today}
+                                idPrefix={route.id}
+                                subtitle="ремонт, перекрытие или мероприятие"
+                                onAdd={addScenario}
+                                onError={setSaveMessage}
+                            />
+                            {renderScenarioList(scenarios.filter((scenario) => scenario.scope === 'routes'))}
 
                             <div className={styles.correctionsFooter}>
                                 <div className={styles.footerStatus}>

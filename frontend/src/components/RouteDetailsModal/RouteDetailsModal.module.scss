@@ -652,6 +652,8 @@
     label {
         min-width: 0;
         display: grid;
+        // у поля типа события под списком подсказка: без этого соседние поля растягиваются по её высоте
+        align-content: start;
         gap: 7px;
         color: var(--modal-muted);
         font-size: 12px;

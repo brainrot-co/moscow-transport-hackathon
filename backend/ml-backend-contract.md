@@ -305,7 +305,7 @@ active.json
 | Вид | Примеры | Значение по умолчанию | Смысл слайдера |
 | --- | --- | --- | --- |
 | **model** | праздник, школьные каникулы | 1.0 | сила эффекта относительно модели: 0 — без фактора, 1 — как считает модель, 2 — вдвое сильнее |
-| **scenario** | погода, событие, режим маршрута | 1.0 (выключено) | множитель на выбранные даты и маршруты, например 0.96 для сильного дождя |
+| **scenario** | погода, событие, режим маршрута | из справочника `correction_factors.json` | множитель на выбранные даты и маршруты, например 0.96 для сильного дождя |
 
 yhat\_adj = yhat
 × Π\_model exp(log\_effect(route, date, f) × (k\_f − 1))
@@ -315,24 +315,38 @@ yhat\_adj = yhat
 
 reference/correction\_factors.json
 
-пишут инженерычитает backend, отдаёт frontend
+Источник правды — `dataset/external/correction_factors.json` в репозитории, правится вручную. Воркер копирует его на том при старте, в стартовом прогнозе тоже есть копия. Бэкенд перечитывает файл вместе со снапшотом, но независимо от него: справочник доступен, даже если прогноза ещё нет. Откуда взяты числа — `docs/correction-factors-sources.md`.
 
 ```
-[
-  { "factor": "holiday", "kind": "model", "label": "Праздники",
-    "default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "scope": "city",
-    "description": "Сила эффекта праздничных дней относительно модели" },
-  { "factor": "school_holiday", "kind": "model", "label": "Школьные каникулы",
-    "default": 1.0, "min": 0.0, "max": 2.0, "step": 0.1, "scope": "city" },
-  { "factor": "rain", "kind": "scenario", "label": "Сильный дождь",
-    "default": 1.0, "suggested": 0.96, "min": 0.8, "max": 1.0, "step": 0.01,
-    "scope": "city_dates",
-    "source": "исследование Берлина: осадки > 5 мм, около −4% для трамвая и автобуса" },
-  { "factor": "route_regime", "kind": "scenario", "label": "Режим маршрута",
-    "default": 1.0, "min": 0.0, "max": 1.5, "step": 0.05, "scope": "route_dates",
-    "description": "Ремонт, укорочение или усиление маршрута на выбранные даты" }
-]
+{
+  "schema_version": 1,
+  "sources_doc": "docs/correction-factors-sources.md",
+  "model_factors": [
+    { "factor": "holiday", "label": "Праздники", "min": 0.0, "max": 2.0, "step": 0.1,
+      "default": 1.0, "estimate": "1.0 — эффект, который заложила модель; 0 — день как обычный" }
+  ],
+  "scenario_types": [
+    { "type": "heavy_rain", "label": "Сильный дождь (≥ 5 мм за сутки)", "scope": "city",
+      "default_multiplier": 0.96, "min": 0.5, "max": 1.2,
+      "estimate": "Париж, 2026: трамвай −4% в будни с осадками ≥ 5 мм",
+      "sources": [{ "title": "...", "url": "...", "finding": "..." }],
+      "local_check": [{ "name": "...", "effect": -0.0469, "ci": [-0.0662, -0.0298], "n": 49, "unit": "часов" }] }
+  ]
+}
 ```
+
+Типы событий: `heavy_rain`, `heavy_snow`, `extreme_snow` (scope `city`); `mass_event`, `route_shortened`, `route_closed`, `custom` (scope `routes`). `local_check` пересчитывает `ml/scripts/check_correction_factors.py`, `null` — проверки нет.
+
+**API.** `GET /api/v1/correction-factors` (роль USER) отдаёт файл как есть, 503 `correction_factors_unavailable`, пока его нет на томе. `POST /scenarios` отклоняет с 422 сценарий, который противоречит справочнику:
+
+| код | когда |
+| --- | --- |
+| `unknown_scenario_type`, `unknown_model_factor` | типа нет в справочнике |
+| `city_scenario_cannot_target_routes` | у типа `scope: city`, а `routes` задан |
+| `route_scenario_requires_routes` | у типа `scope: routes`, а `routes` пустой |
+| `value_out_of_reference_range` | значение вне `min`–`max` типа |
+
+`PATCH /scenarios/{id}` проверяет только тип и диапазон: маршруты он не меняет, и старые сценарии с другой областью действия можно править и выключать. Пока справочника на томе нет, сценарии принимаются без проверки.
 
 ## Замена модели
 

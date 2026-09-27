@@ -18,7 +18,8 @@ COPY ml/src ml/src
 
 # Справочники пока зашиты в образ
 # TODO: вынести в отдельный том, чтобы не пересобирать образ при их обновлении
-COPY dataset/external/calendar.csv dataset/external/school_holidays_moscow.csv dataset/external/
+COPY dataset/external/calendar.csv dataset/external/school_holidays_moscow.csv \
+    dataset/external/correction_factors.json dataset/external/
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --group worker
 
 CMD ["python", "-m", "mtml.worker", "run"]

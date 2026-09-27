@@ -17,3 +17,4 @@ dataset/*
 dataset/external/*
 !dataset/external/calendar.csv
 !dataset/external/school_holidays_moscow.csv
+!dataset/external/correction_factors.json

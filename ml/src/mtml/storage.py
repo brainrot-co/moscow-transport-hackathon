@@ -87,6 +87,11 @@ class Volume:
         return self.root / "reference" / "calendar.parquet"
 
     @property
+    def correction_factors(self):
+        """Справочник поправок: типы событий, множители по умолчанию, источники; отдаёт бэкенд."""
+        return self.root / "reference" / "correction_factors.json"
+
+    @property
     def runs(self):
         """Опубликованные прогоны: runs/<run_id>/ с прогнозом и meta.json."""
         return self.root / "runs"
