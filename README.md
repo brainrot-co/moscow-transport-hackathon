@@ -112,3 +112,32 @@ poetry run ruff check app tests
 Прогнозный snapshot читается из `DATA_DIR` и обновляется каждые `BACKEND_RELOAD_SEC`. Новый run принимается только после проверки схемы, маршрутов, шага, timezone и `data_cutoff` short/year.
 
 Подробный backlog реализации: [docs/ml-backend-implementation-plan.md](docs/ml-backend-implementation-plan.md).
+
+## Нагрузочное тестирование
+
+Набор k6-сценариев находится в `tests/performance` и разделён по задачам:
+
+```powershell
+# Benchmark основного forecast endpoint с управлением RPS
+k6 run .\tests\performance\forecast.js
+
+# Реалистичная смешанная нагрузка: 70% forecast, 15% load,
+# 10% analytics и 5% preview; по умолчанию 300 RPS суммарно
+k6 run .\tests\performance\mixed-load.js
+
+# Короткий smoke-вариант mixed workload
+$env:K6_MIXED_DURATION = "30s"
+$env:K6_FORECAST_RPS = "1"
+$env:K6_LOAD_RPS = "1"
+$env:K6_ANALYTICS_RPS = "1"
+$env:K6_PREVIEW_RPS = "1"
+k6 run .\tests\performance\mixed-load.js
+
+# Длительная проверка стабильности
+k6 run .\tests\performance\soak.js
+```
+
+Для capacity-тестов login выполняется один раз в `setup()`. При необходимости
+можно передать заранее полученный token через `K6_TOKEN`, а credentials задать
+через `K6_USERNAME` и `K6_PASSWORD`. Во время теста фиксируйте RPS, p50/p95/p99,
+error rate, dropped iterations, CPU и RAM через `docker stats`.
