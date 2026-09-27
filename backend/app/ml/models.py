@@ -84,6 +84,9 @@ class ForecastSnapshot:
     watermark: date | None = None
     day_types: dict[date, str] = field(default_factory=dict)
     daily_actuals: dict[int, dict[date, int]] = field(default_factory=dict)
+    norm_cache: dict[tuple[object, ...], object] = field(
+        default_factory=dict, compare=False, repr=False
+    )
 
     def __post_init__(self) -> None:
         self._validate_runs()

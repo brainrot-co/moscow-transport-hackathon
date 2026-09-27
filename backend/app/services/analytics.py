@@ -73,13 +73,10 @@ def build_forecast_analytics(
     )
     loads = {
         load.route: load
-        for load in service.route_loads(
+        for load in service.route_loads_from_rows(
             day,
-            list(selected_routes),
+            [row for row in rows if row.route in selected_routes],
             settings,
-            model_factors=model_factors,
-            scenarios=scenarios,
-            now=now,
         )
     }
     route_analytics = tuple(

@@ -116,7 +116,6 @@ class ForecastService:
         snapshot = self.snapshot
         if snapshot is None:
             return []
-        # сумма дня: факт за прошедшие часы плюс скорректированный прогноз за остальные
         rows = self.hourly(
             datetime.combine(day, time()),
             datetime.combine(day, time(23)),
@@ -126,27 +125,50 @@ class ForecastService:
             granularity="day",
             now=now,
         )
+        return self.route_loads_from_rows(day, rows, settings)
+
+    def route_loads_from_rows(
+        self,
+        day: date,
+        rows: list[ResponseRow],
+        settings: LoadNormSettings,
+    ) -> list[RouteLoad]:
+        snapshot = self.snapshot
+        if snapshot is None:
+            return []
         kind = self.day_kind(day)
         result: list[RouteLoad] = []
         for row in rows:
             value = (
                 (row.value or 0) + (row.yhat or 0) if row.source is not None else None
             )
-            norm = (
-                route_norm(
-                    snapshot.daily_actuals.get(row.route, {}),
-                    kind,
-                    snapshot.day_types,
-                    snapshot.watermark,
-                    settings,
-                )
-                if snapshot.watermark is not None
-                else None
+            cache_key = (
+                row.route,
+                kind,
+                snapshot.watermark,
+                settings.weeks,
+                settings.min_days,
+                settings.low_quantile,
+                settings.high_quantile,
+                settings.min_deviation,
             )
+            if cache_key not in snapshot.norm_cache:
+                snapshot.norm_cache[cache_key] = (
+                    route_norm(
+                        snapshot.daily_actuals.get(row.route, {}),
+                        kind,
+                        snapshot.day_types,
+                        snapshot.watermark,
+                        settings,
+                    )
+                    if snapshot.watermark is not None
+                    else None
+                )
+            norm = snapshot.norm_cache[cache_key]
             level = (
                 norm.level(value) if norm is not None and value is not None else None
             )
-            result.append(RouteLoad(row.route, value, level, norm))
+            result.append(RouteLoad(row.route, value, level, norm))  # type: ignore[arg-type]
         return result
 
 
