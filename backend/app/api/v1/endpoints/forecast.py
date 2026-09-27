@@ -2,6 +2,7 @@ from datetime import date, datetime, time
 from time import monotonic
 from typing import Any
 
+import redis.asyncio as redis
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +12,7 @@ from app.core import Settings, get_settings
 from app.crud import ScenarioCRUD
 from app.dependencies import get_db_session
 from app.dependencies.forecast import get_forecast_store
+from app.dependencies.redis import get_redis_client
 from app.dependencies.scenario import get_scenario_crud
 from app.enums import Role
 from app.ml import ForecastStore
@@ -30,17 +32,23 @@ from app.schemas.forecast import (
 )
 from app.services.analytics import build_forecast_analytics
 from app.services.forecast import ForecastService, as_api_rows
+from app.services.scenario_version import current_version
 
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
+# ключи кэшей, зависящих от сохранённых поправок, включают их версию из Redis;
+# key None — версия неизвестна (Redis недоступен), кэш не используется
 _corrections_cache: dict[
-    tuple[date, date], tuple[float, tuple[dict[str, float], list[CorrectionScenario]]]
+    tuple[int, date, date],
+    tuple[float, tuple[dict[str, float], list[CorrectionScenario]]],
 ] = {}
 _CORRECTIONS_CACHE_TTL = 2.0
 _response_cache: dict[tuple[Any, ...], tuple[float, Any]] = {}
 _RESPONSE_CACHE_TTL = 1.0
 
 
-def _cached_response(key: tuple[Any, ...]) -> Any | None:
+def _cached_response(key: tuple[Any, ...] | None) -> Any | None:
+    if key is None:
+        return None
     cached = _response_cache.get(key)
     if cached is None:
         return None
@@ -50,7 +58,9 @@ def _cached_response(key: tuple[Any, ...]) -> Any | None:
     return cached[1]
 
 
-def _store_response(key: tuple[Any, ...], value: Any) -> Any:
+def _store_response(key: tuple[Any, ...] | None, value: Any) -> Any:
+    if key is None:
+        return value
     _response_cache[key] = (monotonic(), value)
     if len(_response_cache) > 128:
         oldest = min(_response_cache, key=lambda item: _response_cache[item][0])
@@ -85,6 +95,7 @@ async def forecast(
     session: AsyncSession = Depends(get_db_session),
     scenario_crud: ScenarioCRUD = Depends(get_scenario_crud),
     settings: Settings = Depends(get_settings),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> ForecastResponse:
     if granularity not in {"hour", "day", "week", "month"}:
         raise HTTPException(
@@ -98,12 +109,17 @@ async def forecast(
         )
     if store.snapshot is None:
         raise HTTPException(status_code=503, detail="forecast_unavailable")
-    cache_key = ("forecast", date_from, date_to, tuple(routes or ()), granularity)
+    version = await current_version(redis_client)
+    cache_key = (
+        None
+        if version is None
+        else ("forecast", version, date_from, date_to, tuple(routes or ()), granularity)
+    )
     cached = _cached_response(cache_key)
     if cached is not None:
         return cached
     model_factors, scenarios = await _saved_corrections(
-        session, scenario_crud, date_from, date_to
+        session, scenario_crud, date_from, date_to, version
     )
     service = ForecastService(store.snapshot)
     rows = service.hourly(
@@ -142,11 +158,13 @@ async def route_load(
     session: AsyncSession = Depends(get_db_session),
     scenario_crud: ScenarioCRUD = Depends(get_scenario_crud),
     settings: Settings = Depends(get_settings),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> RouteLoadResponse:
     if store.snapshot is None:
         raise HTTPException(status_code=503, detail="forecast_unavailable")
     day = day or store.now().date()
-    cache_key = ("load", day, tuple(routes or ()))
+    version = await current_version(redis_client)
+    cache_key = None if version is None else ("load", version, day, tuple(routes or ()))
     cached = _cached_response(cache_key)
     if cached is not None:
         return cached
@@ -155,6 +173,7 @@ async def route_load(
         scenario_crud,
         datetime.combine(day, time()),
         datetime.combine(day, time(23)),
+        version,
     )
     service = ForecastService(store.snapshot)
     loads = service.route_loads(
@@ -217,11 +236,15 @@ async def forecast_analytics(
     session: AsyncSession = Depends(get_db_session),
     scenario_crud: ScenarioCRUD = Depends(get_scenario_crud),
     settings: Settings = Depends(get_settings),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ):
     if store.snapshot is None:
         raise HTTPException(status_code=503, detail="forecast_unavailable")
     day = day or store.now().date()
-    cache_key = ("analytics", day, tuple(routes or ()))
+    version = await current_version(redis_client)
+    cache_key = (
+        None if version is None else ("analytics", version, day, tuple(routes or ()))
+    )
     cached = _cached_response(cache_key)
     if cached is not None:
         return cached
@@ -230,6 +253,7 @@ async def forecast_analytics(
         scenario_crud,
         datetime.combine(day, time()),
         datetime.combine(day, time(23)),
+        version,
     )
     service = ForecastService(store.snapshot)
     result = build_forecast_analytics(
@@ -357,9 +381,12 @@ async def _saved_corrections(
     crud: ScenarioCRUD,
     date_from: datetime,
     date_to: datetime,
+    version: int | None,
 ) -> tuple[dict[str, float], list[CorrectionScenario]]:
-    cache_key = (date_from.date(), date_to.date())
-    cached = _corrections_cache.get(cache_key)
+    cache_key = (
+        None if version is None else (version, date_from.date(), date_to.date())
+    )
+    cached = _corrections_cache.get(cache_key) if cache_key is not None else None
     if cached is not None and monotonic() - cached[0] < _CORRECTIONS_CACHE_TTL:
         return cached[1]
     stored = await crud.list(
@@ -390,6 +417,8 @@ async def _saved_corrections(
             )
         )
     result = (model_factors, scenarios)
+    if cache_key is None:
+        return result
     _corrections_cache[cache_key] = (monotonic(), result)
     if len(_corrections_cache) > 32:
         oldest = min(_corrections_cache, key=lambda key: _corrections_cache[key][0])
