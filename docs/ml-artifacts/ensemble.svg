@@ -29,15 +29,15 @@
 <text x="768" y="158" font-size="12.5" fill="#5f686c">holiday / pre_holiday /</text>
 <text x="768" y="176" font-size="12.5" fill="#5f686c">post_holiday</text>
 <rect x="992" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
-<text x="1006" y="118" font-size="14" font-weight="600" fill="#1f2426">Chronos-2 (Hugging Face)</text>
+<text x="1006" y="118" font-size="14" font-weight="600" fill="#1f2426">Chronos-2</text>
 <text x="1006" y="140" font-size="12.5" fill="#5f686c">amazon/chronos-2, zero-shot</text>
 <text x="1006" y="158" font-size="12.5" fill="#5f686c">без дообучения</text>
-<text x="1006" y="176" font-size="12.5" fill="#5f686c">одна копия весов</text>
+<text x="1006" y="176" font-size="12.5" fill="#5f686c">веса в образе воркера</text>
 <rect x="1230" y="92" width="216" height="104" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
 <text x="1244" y="118" font-size="14" font-weight="600" fill="#1f2426">Погода (не входит)</text>
 <text x="1244" y="140" font-size="12.5" fill="#5f686c">только эксперименты</text>
 <text x="1244" y="158" font-size="12.5" fill="#5f686c">_wx / _pwx</text>
-<text x="1244" y="176" font-size="12.5" fill="#5f686c">прирост ≤ +0.0007</text>
+<text x="1244" y="176" font-size="12.5" fill="#5f686c">бэктест: −0.003…−0.006</text>
 <rect x="16" y="226" width="1448" height="560" rx="12" fill="#e8f1f1"/>
 <text x="34" y="252" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">УЧАСТНИКИ АНСАМБЛЯ · каждый получает историю, свою часть ковариат и общие веса</text>
 <rect x="40" y="262" width="300" height="506" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
@@ -91,13 +91,13 @@
 <text x="714" y="512" font-size="12.5" fill="#5f686c">раб. суббота → (Пт + Сб) / 2</text>
 <rect x="947" y="392" width="230" height="156" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
 <text x="961" y="418" font-size="13" font-weight="600" fill="#1f2426">Chronos-2: суммы за день</text>
-<text x="961" y="440" font-size="12.5" fill="#5f686c">10 рядов — по маршруту</text>
+<text x="961" y="440" font-size="12.5" fill="#5f686c">9 рядов — по маршруту</text>
 <text x="961" y="458" font-size="12.5" fill="#5f686c">горизонт 61 день</text>
 <text x="961" y="476" font-size="12.5" fill="#5f686c">ковариат нет</text>
 <text x="961" y="494" font-size="12.5" fill="#5f686c">медиана</text>
 <rect x="1194" y="392" width="230" height="156" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
 <text x="1208" y="418" font-size="13" font-weight="600" fill="#1f2426">Chronos-2: суммы + календарь</text>
-<text x="1208" y="440" font-size="12.5" fill="#5f686c">10 рядов — по маршруту</text>
+<text x="1208" y="440" font-size="12.5" fill="#5f686c">9 рядов — по маршруту</text>
 <text x="1208" y="458" font-size="12.5" fill="#5f686c">на горизонте:</text>
 <text x="1208" y="476" font-size="12.5" fill="#5f686c">is_non_working,</text>
 <text x="1208" y="494" font-size="12.5" fill="#5f686c">is_holiday_weekday, dow</text>

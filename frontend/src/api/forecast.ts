@@ -164,7 +164,6 @@ export interface ModelFactorInfo {
 
 export interface CorrectionFactors {
     schema_version: number;
-    sources_doc: string;
     model_factors: ModelFactorInfo[];
     scenario_types: ScenarioTypeInfo[];
 }

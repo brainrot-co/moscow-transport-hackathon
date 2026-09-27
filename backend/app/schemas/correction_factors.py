@@ -44,7 +44,6 @@ class ScenarioTypeRead(BaseModel):
 
 class CorrectionFactorsRead(BaseModel):
     schema_version: int
-    sources_doc: str
     model_factors: list[ModelFactorRead]
     scenario_types: list[ScenarioTypeRead]
 

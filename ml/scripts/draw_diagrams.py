@@ -1,10 +1,11 @@
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-OUT = Path("/Users/tomatocoder/Desktop/moscow-transport-hackathon/docs/img")
+DOCS = Path(__file__).resolve().parents[2] / "docs"
 INK, MUTED, BORDER, BG = "#1f2426", "#5f686c", "#737b7f", "#f5f5f5"
 WRITE, READ = "#b3302a", "#2c6a6e"
 FONT = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
+MONO = "'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace"
 
 
 class Svg:
@@ -28,12 +29,43 @@ class Svg:
             f'<text x="34" y="{y + 26}" font-size="13" font-weight="700" letter-spacing="1" fill="{MUTED}">{escape(label)}</text>'
         )
 
-    def box(self, x: int, y: int, w: int, h: int, title: str, lines: list[str] = (), dashed: bool = False, stroke: str = BORDER, fill: str = "#ffffff", title_size: int = 15):
+    def box(self, x: int, y: int, w: int, h: int, title: str, lines: list[str] = (), dashed: bool = False, stroke: str = BORDER, fill: str = "#ffffff", title_size: int = 15, lead: bool = False):
         dash = ' stroke-dasharray="7 5"' if dashed else ""
         self.parts.append(f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="9" fill="{fill}" stroke="{stroke}" stroke-width="2"{dash}/>')
         self.parts.append(f'<text x="{x + 14}" y="{y + 26}" font-size="{title_size}" font-weight="600" fill="{INK}">{escape(title)}</text>')
         for i, line in enumerate(lines):
-            self.parts.append(f'<text x="{x + 14}" y="{y + 48 + 18 * i}" font-size="12.5" fill="{MUTED}">{escape(line)}</text>')
+            # lead: первая строка — что делает блок, темнее остальных
+            style = f'fill="{INK}" font-weight="500"' if lead and i == 0 else f'fill="{MUTED}"'
+            self.parts.append(f'<text x="{x + 14}" y="{y + 48 + 18 * i}" font-size="12.5" {style}>{escape(line)}</text>')
+
+    def card(self, x: int, y: int, w: int, title: str, items: list[tuple], dashed: bool = False, stroke: str = BORDER, fill: str = "#ffffff", title_size: int = 15):
+        """Блок с высотой по содержимому; возвращает нижнюю границу.
+        items: ("lead", текст) — что и зачем; ("group", подпись) — заголовок группы;
+        ("line", текст); ("code", команда); ("row", путь, пояснение, отступ колонки); ("gap",)."""
+        body, cy = [], y + 26
+        for item in items:
+            kind = item[0]
+            if kind == "gap":
+                cy += 8
+                continue
+            cy += 22 if kind == "group" else 19
+            if kind == "lead":
+                body.append(f'<text x="{x + 14}" y="{cy}" font-size="13" font-weight="600" fill="{INK}">{escape(item[1])}</text>')
+            elif kind == "group":
+                body.append(f'<text x="{x + 14}" y="{cy}" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="{MUTED}">{escape(item[1].upper())}</text>')
+            elif kind == "line":
+                body.append(f'<text x="{x + 14}" y="{cy}" font-size="12.5" fill="{MUTED}">{escape(item[1])}</text>')
+            elif kind == "code":
+                body.append(f'<text x="{x + 14}" y="{cy}" font-size="12" font-family="{MONO}" fill="{INK}">{escape(item[1])}</text>')
+            elif kind == "row":
+                _, path, note, offset = item
+                body.append(f'<text x="{x + 14}" y="{cy}" font-size="12" font-family="{MONO}" fill="{INK}">{escape(path)}</text>')
+                note_x = x + 14 + offset if offset else x + 14 + 8 * len(path) + 12
+                body.append(f'<text x="{note_x}" y="{cy}" font-size="12.5" fill="{MUTED}">{escape(note)}</text>')
+        h = cy - y + 16
+        self.box(x, y, w, h, title, [], dashed=dashed, stroke=stroke, fill=fill, title_size=title_size)
+        self.parts.extend(body)
+        return y + h
 
     def text(self, x: float, y: float, value: str, color: str = MUTED, size: float = 12, anchor: str = "start", weight: int = 400):
         self.parts.append(f'<text x="{x}" y="{y}" font-size="{size}" font-weight="{weight}" fill="{color}" text-anchor="{anchor}">{escape(value)}</text>')
@@ -44,177 +76,242 @@ class Svg:
         dash = ' stroke-dasharray="6 5"' if dashed else ""
         self.parts.append(f'<path d="{path}" fill="none" stroke="{color}" stroke-width="2"{dash} marker-end="url(#a-{kind})"{start}/>')
 
-    def save(self, name: str):
-        (OUT / name).write_text("\n".join([*self.parts, "</svg>"]), encoding="utf-8")
+    def set_height(self, height: int):
+        old = f'height="{self.h}"'
+        self.parts = [
+            part.replace(f'0 0 {self.w} {self.h}', f'0 0 {self.w} {height}').replace(old, f'height="{height}"')
+            if part.startswith(("<svg", "<rect width")) else part
+            for part in self.parts
+        ]
+        self.h = height
+
+    def save(self, path: str):
+        (DOCS / path).write_text("\n".join([*self.parts, "</svg>"]), encoding="utf-8")
 
 
 def docker_diagram():
-    s = Svg(1400, 900, "Логика Docker: контейнеры и общий том")
+    s = Svg(1440, 1060, "Логика Docker: контейнеры и общий том")
+    lx, lw = 40, 340
+    vx, vw = 480, 520
+    sx, sw = vx + 20, vw - 40
+    rx, rw = 1080, 320
 
-    s.box(40, 90, 300, 62, "Источник выгрузок", ["CSV валидаций, настраивают инженеры"], dashed=True)
-    s.box(40, 170, 300, 62, "./dataset (только чтение)", ["история для начальной загрузки"], dashed=True, title_size=13)
-    s.box(40, 250, 300, 190, "ingest", [
-        "образ tram-forecast/ingest · 172 МБ",
-        "лимит: 1 CPU · 2 ГБ",
-        "python -m mtml.ingest run",
-        "опрос inbox/ раз в 60 с",
-        "разбор → сырой слой → факты",
-        "→ статусы дней → водяной знак",
+    s.card(lx, 84, lw, "Источник выгрузок", [
+        ("lead", "Откуда приходят данные"),
+        ("line", "CSV валидаций → inbox/ на томе"),
+    ], dashed=True, title_size=14)
+    s.card(lx, 190, lw, "./dataset", [
+        ("lead", "История для начальной загрузки"),
+        ("line", "train.csv и test.csv, только чтение"),
+        ("line", "нужна только для make load-history"),
+    ], dashed=True, title_size=14)
+    ingest_bottom = s.card(lx, 314, lw, "ingest", [
+        ("lead", "Приём данных: CSV → почасовой факт"),
+        ("group", "как работает"),
+        ("line", "1. раз в 60 с проверяет inbox/"),
+        ("line", "2. разбор → сырой слой → факт маршрут × час"),
+        ("line", "3. статусы дней → водяной знак"),
+        ("line", "4. пустой том → стартовый прогноз ml/seed/"),
+        ("gap",),
+        ("line", "образ ~0.7 ГБ"),
+        ("line", "лимит 1 CPU и 2 ГБ памяти"),
+        ("code", "python -m mtml.ingest run"),
     ], stroke=WRITE)
-    s.box(40, 500, 300, 210, "ml-worker", [
-        "образ tram-forecast/ml-worker · 428 МБ",
-        "torch CPU · лимит: 2 CPU · 3 ГБ",
-        "python -m mtml.worker run",
-        "пересчёт: сдвиг водяного знака",
-        "или ночь 03:00 (не чаще раза в 60 мин)",
-        "краткосрочный 61 д + эффекты",
-        "+ годовой + мониторинг точности",
+    worker_top = ingest_bottom + 90
+    worker_bottom = s.card(lx, worker_top, lw, "ml-worker", [
+        ("lead", "Прогноз: факт → прогноз на 61 день и год"),
+        ("group", "как работает"),
+        ("line", "1. ждёт сдвига водяного знака или ночи 03:00"),
+        ("line", "2. краткосрочный ансамбль Chronos-2 + эффекты"),
+        ("line", "3. годовая сезонная модель"),
+        ("line", "4. проверка качества → публикация → мониторинг"),
+        ("gap",),
+        ("line", "образ ~2.9 ГБ с весами модели внутри"),
+        ("line", "лимит 2 CPU и 3 ГБ памяти"),
+        ("code", "python -m mtml.worker run"),
     ], stroke=WRITE)
-    s.box(40, 760, 300, 58, "Hugging Face", ["веса Chronos-2, скачиваются один раз"], dashed=True, title_size=13)
+    hf_top = worker_bottom + 50
+    hf_bottom = s.card(lx, hf_top, lw, "Hugging Face", [
+        ("lead", "Веса Chronos-2"),
+        ("line", "скачиваются только при сборке образа"),
+    ], dashed=True, title_size=14)
 
-    s.box(470, 80, 450, 700, "Том tram-data  (/data)", [], dashed=True, stroke=READ, fill="#eef4f4", title_size=17)
-    s.box(492, 128, 406, 196, "пишет ingest", [
-        "inbox/  ← новые CSV, processed/, failed/",
-        "raw/validations/  посадки по дням",
-        "actuals/actuals_hourly.parquet  факт маршрут × час",
-        "actuals/day_status.parquet  final / partial / missing",
-        "ingestion/  журнал загрузок, карантин",
-        "state/watermark.json  до какой даты данные полные",
-        "tmp/duckdb/  сброс памяти при больших файлах",
+    volume_at = len(s.parts)
+    s.text(vx + 14, 120, "единственная связь между сервисами: ML пишет, бэкенд читает", color=READ, size=12.5)
+    col = 250
+    ing_vol_bottom = s.card(sx, 138, sw, "пишет ingest", [
+        ("lead", "Входящие данные и факт"),
+        ("group", "приём"),
+        ("row", "inbox/ → processed/ или failed/", "новые CSV", col),
+        ("row", "ingestion/", "журнал загрузок, карантин", col),
+        ("group", "данные"),
+        ("row", "raw/validations/", "посадки по дням, без дублей", col),
+        ("row", "actuals/actuals_hourly.parquet", "факт маршрут × час", col),
+        ("row", "actuals/day_status.parquet", "final, partial или missing", col),
+        ("row", "state/watermark.json", "последний полный день", col),
+        ("group", "служебное"),
+        ("row", "tmp/duckdb/", "сброс памяти на больших файлах", col),
     ], fill="#fbeeed", stroke=WRITE, title_size=14)
-    s.box(492, 346, 406, 196, "пишет ml-worker", [
-        "runs/<run_id>/forecasts.parquet  прогноз",
-        "runs/<run_id>/effects.parquet  эффекты для слайдеров",
-        "runs/<run_id>/meta.json  модель, данные, проверки",
-        "active.json  какие прогоны актуальны",
-        "monitoring/accuracy.parquet  реальная точность",
-        "state/worker.json  последний прогон, ошибка",
-        "hf/  кэш весов Chronos-2",
+    wrk_vol_top = ing_vol_bottom + 24
+    wrk_vol_bottom = s.card(sx, wrk_vol_top, sw, "пишет ml-worker", [
+        ("lead", "Прогнозы и справочники"),
+        ("group", "прогон: новая папка на каждый пересчёт"),
+        ("row", "runs/<id>/forecasts.parquet", "прогноз и интервал", col),
+        ("row", "runs/<id>/effects.parquet", "эффекты для слайдеров", col),
+        ("row", "runs/<id>/meta.json", "модель, данные, проверки", col),
+        ("group", "указатели и состояние"),
+        ("row", "active.json", "какие прогоны сейчас актуальны", col),
+        ("row", "state/worker.json", "последний прогон, ошибка", col),
+        ("group", "для бэкенда"),
+        ("row", "monitoring/accuracy.parquet", "точность прошлых прогонов", col),
+        ("row", "reference/", "календарь, справочник поправок", col),
     ], fill="#fbeeed", stroke=WRITE, title_size=14)
-    s.box(492, 564, 406, 88, "общее для всех сервисов", [
-        "state/clock.json  «сейчас» системы",
-        "(в демо — 01.11.2025 03:00; системное время не использовать)",
-    ], fill="#ffffff", title_size=14)
-    s.text(695, 700, "бэкенд подключает том только на чтение (:ro)", color=READ, size=12.5, anchor="middle", weight=600)
+    clock_top = wrk_vol_bottom + 24
+    clock_bottom = s.card(sx, clock_top, sw, "общее для всех сервисов", [
+        ("row", "state/clock.json", "«сейчас» системы", col),
+        ("line", "в проде реальное время, а в демо с 28.10.2025 и в 750 раз быстрее"),
+    ], title_size=14)
+    s.text(vx + vw / 2, clock_bottom + 36, "бэкенд подключает том только на чтение (:ro)", color=READ, size=12.5, anchor="middle", weight=600)
+    volume_bottom = clock_bottom + 60
+    s.box(vx, 76, vw, volume_bottom - 76, "Том tram-data (/data)", [], dashed=True, stroke=READ, fill="#eef4f4", title_size=17)
+    s.parts[volume_at:volume_at] = s.parts[-2:]
+    del s.parts[-2:]
 
-    s.box(1050, 90, 310, 70, "БД бэкенда", ["сценарии и поправки диспетчера"], dashed=True, title_size=14)
-    s.box(1050, 250, 310, 200, "backend", [
-        "команда бэкенда · FastAPI",
-        "том только на чтение",
-        "держит прогноз в памяти,",
-        "перечитывает active.json раз в 30 с",
-        "склейка: факт → short → year",
-        "поправки, API, экспорт CSV / XLSX",
+    s.card(rx, 84, rw, "PostgreSQL + Redis", [
+        ("lead", "Данные пользователей"),
+        ("line", "учётные записи, сценарии, поправки"),
+    ], dashed=True, title_size=14)
+    backend_top = 250
+    backend_bottom = s.card(rx, backend_top, rw, "backend", [
+        ("lead", "API: отдаёт прогноз фронтенду"),
+        ("group", "как работает"),
+        ("line", "1. раз в 30 с проверяет active.json"),
+        ("line", "2. новый прогон → в память, без простоя"),
+        ("line", "3. склейка: факт → краткосрочный → годовой"),
+        ("line", "4. поправки, агрегация, уровень загрузки"),
+        ("gap",),
+        ("line", "FastAPI, том подключён только на чтение"),
     ], stroke=READ)
-    s.box(1050, 530, 310, 150, "frontend", [
-        "команда фронтенда",
-        "только HTTP к backend",
-        "сутки и неделя по часам,",
-        "месяц и год по дням, карта, слайдеры",
+    front_top = backend_bottom + 80
+    front_bottom = s.card(rx, front_top, rw, "frontend", [
+        ("lead", "Дашборд диспетчера"),
+        ("line", "карта MapLibre: линии и остановки"),
+        ("line", "графики: сутки, неделя, месяц, год"),
+        ("line", "поправки с превью, экспорт CSV"),
+        ("gap",),
+        ("line", "React и nginx, к backend ходит только по HTTP"),
     ])
-    s.box(1050, 760, 310, 58, "Диспетчер", ["браузер"], dashed=True, title_size=14)
+    disp_top = front_bottom + 60
+    disp_bottom = s.card(rx, disp_top, rw, "Диспетчер", [("line", "браузер")], dashed=True, title_size=14)
 
-    s.arrow("M340,121 C 410,121 420,160 492,160")
-    s.text(350, 112, "CSV → inbox/")
-    s.arrow("M190,232 V250")
-    s.arrow("M340,300 H492", "w", both=True)
-    s.text(350, 292, "чтение и запись", color=WRITE)
-    s.arrow("M492,250 C 420,250 420,520 340,520", "r")
-    s.text(60, 474, "читает факты, статусы и водяной знак", color=READ)
-    s.arrow("M340,560 C 420,560 420,445 492,445", "w")
-    s.text(350, 590, "пишет прогнозы", color=WRITE)
-    s.arrow("M190,760 V710")
-    s.arrow("M920,350 H1050", "r")
-    s.text(930, 342, "только чтение", color=READ)
-    s.arrow("M1205,160 V250", both=True)
-    s.arrow("M1205,450 V530", both=True)
-    s.text(1215, 495, "HTTP API")
-    s.arrow("M1205,680 V760", both=True)
-    s.save("docker-architecture.svg")
+    # источник → inbox
+    s.arrow(f"M{lx + lw},118 C {lx + lw + 60},118 {sx - 50},170 {sx},170")
+    s.text(lx + lw + 10, 108, "CSV → inbox/")
+    s.arrow(f"M{lx + lw / 2},{190 + 88} V314")
+    # ingest ↔ том
+    s.arrow(f"M{lx + lw},350 H{sx}", "w", both=True)
+    s.text(lx + lw + 10, 342, "чтение и запись", color=WRITE)
+    # worker читает факты
+    s.arrow(f"M{sx},{ing_vol_bottom - 14} C {sx - 60},{ing_vol_bottom - 14} {lx + lw + 40},{worker_top + 40} {lx + lw},{worker_top + 40}", "r")
+    s.text(lx + 14, ingest_bottom + 50, "читает факты, статусы и водяной знак", color=READ)
+    # worker пишет прогнозы
+    s.arrow(f"M{lx + lw},{worker_top + 150} C {lx + lw + 60},{worker_top + 150} {sx - 60},{wrk_vol_top + 60} {sx},{wrk_vol_top + 60}", "w")
+    s.text(lx + lw + 10, worker_top + 180, "пишет прогнозы", color=WRITE)
+    s.arrow(f"M{lx + lw / 2},{hf_top} V{worker_bottom}")
+    # том → backend
+    s.arrow(f"M{vx + vw},{backend_top + 60} H{rx}", "r")
+    s.text(vx + vw + 8, backend_top + 50, "только", color=READ)
+    s.text(vx + vw + 8, backend_top + 80, "чтение", color=READ)
+    s.arrow(f"M{rx + rw / 2},{84 + 88} V{backend_top}", both=True)
+    s.arrow(f"M{rx + rw / 2},{backend_bottom} V{front_top}", both=True)
+    s.text(rx + rw / 2 + 10, (backend_bottom + front_top) / 2 + 4, "HTTP API")
+    s.arrow(f"M{rx + rw / 2},{front_bottom} V{disp_top}", both=True)
+    s.set_height(max(hf_bottom, volume_bottom, disp_bottom) + 30)
+    s.save("img/docker-architecture.svg")
 
 
 def pipeline_diagram():
-    s = Svg(1480, 1080, "Пайплайн: от прихода данных до бэкенда и фронтенда")
+    s = Svg(1480, 1110, "Пайплайн: от прихода данных до бэкенда и фронтенда")
     xs = [200, 450, 700, 950, 1200]
     bw = 230
 
-    s.band(64, 110, "ПРИХОД", "#ececec")
-    s.box(xs[0], 82, bw, 74, "Источник выгрузок", ["CSV валидаций", "настраивают инженеры"], dashed=True)
-    s.box(xs[1], 82, bw, 74, "inbox/*.csv", ["файл кладётся как .part", "и переименовывается в .csv"])
-    s.box(xs[4], 82, bw, 74, "state/clock.json", ["«сейчас» для всех сервисов", "в демо: 01.11.2025 03:00"], dashed=True)
-    s.arrow(f"M{xs[0] + bw},119 H{xs[1]}")
+    s.band(64, 118, "ПРИХОД", "#ececec")
+    s.box(xs[0], 82, bw, 84, "Источник выгрузок", ["откуда приходят данные", "CSV валидаций от инженеров"], dashed=True, lead=True)
+    s.box(xs[1], 82, bw, 84, "inbox/*.csv", ["папка приёма на томе", "пишется как .part, затем .csv"], lead=True)
+    s.box(xs[4], 82, bw, 84, "state/clock.json", ["«сейчас» для всех сервисов", "в демо с 28.10.2025 03:00"], dashed=True, lead=True)
+    s.arrow(f"M{xs[0] + bw},124 H{xs[1]}")
 
-    s.band(196, 140, "INGEST", "#fbeeed")
+    s.band(204, 140, "INGEST", "#fbeeed")
     ingest = [
-        ("Разбор", ["заголовок, типы (TRY_CAST)", "отказы → только счёт", "битые строки → карантин"]),
-        ("Сырой слой", ["файл на каждый день", "без дублей по ключу", "(device, tran_no, время)"]),
-        ("Факты", ["маршрут × час", "затронутые дни", "пересчитываются целиком"]),
-        ("Статусы дней", ["final / partial / missing", "по возрасту дня", "+ флаг anomaly (ремонт)"]),
+        ("Разбор", ["проверить и привести типы", "отказы только считаются,", "битые строки в карантин"]),
+        ("Сырой слой", ["посадки по дням без дублей", "ключ: устройство, транзакция", "и время валидации"]),
+        ("Факты", ["посадки маршрут × час", "затронутые дни", "пересчитываются целиком"]),
+        ("Статусы дней", ["полные ли данные за день", "final, partial или missing", "и флаг anomaly (ремонт)"]),
         ("Водяной знак", ["последний полный день", "state/watermark.json"]),
     ]
     for x, (title, lines) in zip(xs, ingest, strict=True):
-        s.box(x, 222, bw, 98, title, lines, stroke=WRITE)
+        s.box(x, 230, bw, 98, title, lines, stroke=WRITE, lead=True)
     for a, b in zip(xs, xs[1:]):
-        s.arrow(f"M{a + bw},271 H{b}", "w")
-    s.arrow(f"M{xs[1] + bw / 2},156 V222", "w")
-    s.arrow(f"M{xs[4] + bw / 2},156 V222", dashed=True)
-    s.text(xs[4] + bw / 2 + 8, 196, "возраст дня")
+        s.arrow(f"M{a + bw},279 H{b}", "w")
+    s.arrow(f"M{xs[1] + bw / 2},166 V230", "w")
+    s.arrow(f"M{xs[4] + bw / 2},166 V230", dashed=True)
+    s.text(xs[4] + bw / 2 + 8, 200, "возраст дня")
 
-    s.band(358, 330, "ML-WORKER", "#e8f1f1")
+    s.band(366, 340, "ML-WORKER", "#e8f1f1")
     worker = [
-        ("Расписание", ["знак сдвинулся или ночь 03:00", "не чаще MIN_RERUN_MINUTES", "state/worker.json"]),
-        ("Контекст", ["история до водяного знака", "плотная сетка маршрут × час", "cold start → 0"]),
-        ("Краткосрочный", ["ансамбль RH + RHD + V2", "61 день почасово", "календарь, каникулы, тип дня"]),
-        ("Эффекты", ["контрольные прогоны без", "праздников и без каникул", "→ effects.parquet"]),
-        ("Проверки → публикация", ["сетка, NaN, недельные суммы", "runs/<id>/ → active.json", "плохой прогноз не публикуется"]),
+        ("Расписание", ["когда пересчитывать", "сдвиг водяного знака или 03:00", "не чаще MIN_RERUN_MINUTES"]),
+        ("Контекст", ["история для модели", "факт до водяного знака", "маршрут без посадок: cold start"]),
+        ("Краткосрочный", ["прогноз на 61 день по часам", "ансамбль RH, RHD и V2", "календарь, каникулы, тип дня"]),
+        ("Эффекты", ["сила праздников и каникул", "прогоны без фактора", "и запись в effects.parquet"]),
+        ("Проверки и публикация", ["публикуется только хороший", "сетка, пропуски, суммы недель", "runs/<id>/, затем active.json"]),
     ]
     for x, (title, lines) in zip(xs, worker, strict=True):
-        s.box(x, 384, bw, 98, title, lines, stroke=READ)
+        s.box(x, 392, bw, 98, title, lines, stroke=READ, lead=True)
     for a, b in zip(xs, xs[1:]):
-        s.arrow(f"M{a + bw},433 H{b}", "r")
-    s.box(xs[2], 512, bw, 84, "Годовой", ["сезонная модель, 365 дней", "месяц × тип дня × каникулы"], stroke=READ)
-    s.box(xs[0], 512, bw, 122, "Входы моделей", ["календарь 2025–26, каникулы", "(зашиты в образ)", "веса Chronos-2: Hugging Face", "→ кэш /data/hf"], dashed=True, title_size=14)
-    s.box(xs[4], 598, bw, 72, "Мониторинг", ["прогнозы против фактов", "monitoring/accuracy.parquet"], stroke=READ)
-    s.arrow(f"M{xs[1] + bw / 2},482 V554 H{xs[2]}", "r")
-    s.arrow(f"M{xs[2] + bw},554 H{xs[4] + bw / 2 - 30} V482", "r")
-    s.arrow(f"M{xs[0] + bw},530 C {xs[1] + 120},530 {xs[2] - 20},510 {xs[2] + 40},482", dashed=True)
-    s.arrow(f"M{xs[0] + bw},590 H{xs[2]}", dashed=True)
-    s.arrow(f"M{xs[4] + bw / 2 + 40},482 V598", "r")
-    s.text(xs[4] + bw / 2 + 48, 548, "факты пришли", color=READ)
-    s.arrow(f"M{xs[4] + bw / 2},320 V340 H{xs[0] + bw / 2} V384", "r")
-    s.text(xs[1] + 20, 336, "водяной знак сдвинулся", color=READ)
-    s.arrow(f"M{xs[2] + bw / 2},320 V350 H{xs[1] + bw / 2} V384", "r")
-    s.text(xs[1] + bw / 2 + 8, 366, "факты и статусы", color=READ)
+        s.arrow(f"M{a + bw},441 H{b}", "r")
+    s.box(xs[2], 520, bw, 84, "Годовой", ["прогноз до 365 дней", "месяц, тип дня и каникулы"], stroke=READ, lead=True)
+    s.box(xs[0], 520, bw, 120, "Входы моделей", ["справочники и веса", "календарь 2025–26 и каникулы", "веса Chronos-2 в образе,", "сеть при работе не нужна"], dashed=True, title_size=14, lead=True)
+    s.box(xs[4], 606, bw, 84, "Мониторинг", ["точность прошлых прогонов", "monitoring/accuracy.parquet"], stroke=READ, lead=True)
+    s.arrow(f"M{xs[1] + bw / 2},490 V562 H{xs[2]}", "r")
+    s.arrow(f"M{xs[2] + bw},562 H{xs[4] + bw / 2 - 30} V490", "r")
+    s.arrow(f"M{xs[0] + bw},538 C {xs[1] + 120},538 {xs[2] - 20},518 {xs[2] + 40},490", dashed=True)
+    s.arrow(f"M{xs[0] + bw},598 H{xs[2]}", dashed=True)
+    s.arrow(f"M{xs[4] + bw / 2 + 40},490 V606", "r")
+    s.text(xs[4] + bw / 2 + 48, 556, "факты пришли", color=READ)
+    s.arrow(f"M{xs[4] + bw / 2},328 V348 H{xs[0] + bw / 2} V392", "r")
+    s.text(xs[1] + 20, 344, "водяной знак сдвинулся", color=READ)
+    s.arrow(f"M{xs[2] + bw / 2},328 V358 H{xs[1] + bw / 2} V392", "r")
+    s.text(xs[1] + bw / 2 + 8, 374, "факты и статусы", color=READ)
 
-    s.band(706, 170, "BACKEND", "#f0ecf6")
+    s.band(724, 186, "BACKEND", "#f0ecf6")
     backend = [
-        ("Чтение тома", ["active.json раз в 30 с,", "прогноз и эффекты в памяти"]),
-        ("Склейка", ["факт до водяного знака,", "short до 61 дня, дальше year"]),
-        ("Поправки", ["effects × k (слайдеры),", "сценарии × m"]),
-        ("API и экспорт", ["маршрут, остановка, интервал,", "горизонт; CSV / XLSX"]),
-        ("БД бэкенда", ["сценарии и поправки", "диспетчера"]),
+        ("Чтение тома", ["прогноз в памяти", "active.json раз в 30 с"]),
+        ("Склейка", ["один ряд из трёх источников", "факт, затем short до 61 дня,", "затем year"]),
+        ("Поправки", ["правки диспетчера", "слайдеры: сила эффекта k", "сценарии: множитель m"]),
+        ("API", ["ответ фронтенду", "маршруты, интервал и шаг,", "уровень загрузки"]),
+        ("PostgreSQL", ["данные пользователей", "сценарии и поправки"]),
     ]
     for x, (title, lines) in zip(xs, backend, strict=True):
-        s.box(x, 736, bw, 84, title, lines, dashed=title == "БД бэкенда")
+        s.box(x, 754, bw, 98, title, lines, dashed=title == "PostgreSQL", lead=True)
     for a, b in zip(xs[:3], xs[1:4]):
-        s.arrow(f"M{a + bw},778 H{b}")
-    s.arrow(f"M{xs[4]},778 H{xs[3] + bw}", both=True)
-    s.arrow(f"M{xs[4] + bw},433 H{xs[4] + bw + 22} V718 H{xs[0] + bw / 2} V736", "r")
-    s.text(xs[1] + 20, 712, "active.json → новый прогноз (том только на чтение)", color=READ)
+        s.arrow(f"M{a + bw},803 H{b}")
+    s.arrow(f"M{xs[4]},803 H{xs[3] + bw}", both=True)
+    s.arrow(f"M{xs[4] + bw},441 H{xs[4] + bw + 22} V736 H{xs[0] + bw / 2} V754", "r")
+    s.text(xs[1] + 20, 730, "active.json → новый прогноз (том только на чтение)", color=READ)
 
-    s.band(894, 164, "FRONTEND", "#fbf4e4")
+    s.band(928, 164, "FRONTEND", "#fbf4e4")
     front = [
         ("Сутки", ["по часам"]),
         ("Неделя", ["по дням и часам"]),
         ("Месяц и год", ["по дням, неделям, месяцам"]),
-        ("Поправки и события", ["слайдеры, форма события"]),
-        ("Карта и экспорт", ["остановки, CSV / XLSX"]),
+        ("Поправки и события", ["слайдеры и форма события"]),
+        ("Карта и экспорт", ["линии, остановки и CSV"]),
     ]
     for x, (title, lines) in zip(xs, front, strict=True):
-        s.box(x, 930, bw, 70, title, lines)
-    s.arrow(f"M{xs[3] + bw / 2},820 V930", both=True)
-    s.text(xs[3] + bw / 2 + 8, 880, "HTTP API")
-    s.save("pipeline.svg")
+        s.box(x, 964, bw, 70, title, lines, lead=True)
+    s.arrow(f"M{xs[3] + bw / 2},852 V964", both=True)
+    s.text(xs[3] + bw / 2 + 8, 912, "HTTP API")
+    s.save("img/pipeline.svg")
 
 
 def ensemble_diagram():
@@ -227,8 +324,8 @@ def ensemble_diagram():
         ("calendar.csv · isDayOff", ["is_non_working", "is_holiday_weekday", "is_shortened · 2025–2026"], False),
         ("Школьные каникулы", ["school_holiday_modular", "school_holiday_quarter", "источники в CSV"], False),
         ("Тип дня (covariates.py)", ["workday / saturday / sunday", "holiday / pre_holiday /", "post_holiday"], False),
-        ("Chronos-2 (Hugging Face)", ["amazon/chronos-2, zero-shot", "без дообучения", "одна копия весов"], False),
-        ("Погода (не входит)", ["только эксперименты", "_wx / _pwx", "прирост ≤ +0.0007"], True),
+        ("Chronos-2", ["amazon/chronos-2, zero-shot", "без дообучения", "веса в образе воркера"], False),
+        ("Погода (не входит)", ["только эксперименты", "_wx / _pwx", "бэктест: −0.003…−0.006"], True),
     ]
     for x, (title, lines, dashed) in zip(xs, inputs, strict=True):
         s.box(x, 92, bw, 104, title, lines, dashed=dashed, title_size=14)
@@ -265,10 +362,10 @@ def ensemble_diagram():
         "праздник → как воскресенье", "раб. суббота → (Пт + Сб) / 2",
     ], title_size=13)
     s.box(vx[1], 392, vw, 156, "Chronos-2: суммы за день", [
-        "10 рядов — по маршруту", "горизонт 61 день", "ковариат нет", "медиана",
+        "9 рядов — по маршруту", "горизонт 61 день", "ковариат нет", "медиана",
     ], stroke=READ, title_size=13)
     s.box(vx[2], 392, vw, 156, "Chronos-2: суммы + календарь", [
-        "10 рядов — по маршруту", "на горизонте:", "is_non_working,", "is_holiday_weekday, dow", "медиана",
+        "9 рядов — по маршруту", "на горизонте:", "is_non_working,", "is_holiday_weekday, dow", "медиана",
     ], stroke=READ, title_size=13)
     for x in vx:
         s.arrow(f"M{x + vw / 2},372 V392")
@@ -312,7 +409,7 @@ def ensemble_diagram():
     s.arrow("M260,942 V1016", "w")
     s.arrow("M730,942 V1016", "w")
     s.arrow("M900,942 V980 H1210 V1016", "w")
-    s.save("ensemble.svg")
+    s.save("ml-artifacts/ensemble.svg")
 
 
 docker_diagram()

@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1480 1110" width="1480" height="1110" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3302a"/></marker>
+<marker id="a-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2c6a6e"/></marker>
+<marker id="a-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5f686c"/></marker>
+</defs>
+<rect width="1480" height="1110" fill="#f5f5f5"/>
+<text x="740.0" y="44" text-anchor="middle" font-size="22" font-weight="600" fill="#1f2426">Пайплайн: от прихода данных до бэкенда и фронтенда</text>
+<rect x="16" y="64" width="1448" height="118" rx="12" fill="#ececec"/>
+<text x="34" y="90" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">ПРИХОД</text>
+<rect x="200" y="82" width="230" height="84" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="214" y="108" font-size="15" font-weight="600" fill="#1f2426">Источник выгрузок</text>
+<text x="214" y="130" font-size="12.5" fill="#1f2426" font-weight="500">откуда приходят данные</text>
+<text x="214" y="148" font-size="12.5" fill="#5f686c">CSV валидаций от инженеров</text>
+<rect x="450" y="82" width="230" height="84" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="464" y="108" font-size="15" font-weight="600" fill="#1f2426">inbox/*.csv</text>
+<text x="464" y="130" font-size="12.5" fill="#1f2426" font-weight="500">папка приёма на томе</text>
+<text x="464" y="148" font-size="12.5" fill="#5f686c">пишется как .part, затем .csv</text>
+<rect x="1200" y="82" width="230" height="84" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1214" y="108" font-size="15" font-weight="600" fill="#1f2426">state/clock.json</text>
+<text x="1214" y="130" font-size="12.5" fill="#1f2426" font-weight="500">«сейчас» для всех сервисов</text>
+<text x="1214" y="148" font-size="12.5" fill="#5f686c">в демо с 28.10.2025 03:00</text>
+<path d="M430,124 H450" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<rect x="16" y="204" width="1448" height="140" rx="12" fill="#fbeeed"/>
+<text x="34" y="230" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">INGEST</text>
+<rect x="200" y="230" width="230" height="98" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="214" y="256" font-size="15" font-weight="600" fill="#1f2426">Разбор</text>
+<text x="214" y="278" font-size="12.5" fill="#1f2426" font-weight="500">проверить и привести типы</text>
+<text x="214" y="296" font-size="12.5" fill="#5f686c">отказы только считаются,</text>
+<text x="214" y="314" font-size="12.5" fill="#5f686c">битые строки в карантин</text>
+<rect x="450" y="230" width="230" height="98" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="464" y="256" font-size="15" font-weight="600" fill="#1f2426">Сырой слой</text>
+<text x="464" y="278" font-size="12.5" fill="#1f2426" font-weight="500">посадки по дням без дублей</text>
+<text x="464" y="296" font-size="12.5" fill="#5f686c">ключ: устройство, транзакция</text>
+<text x="464" y="314" font-size="12.5" fill="#5f686c">и время валидации</text>
+<rect x="700" y="230" width="230" height="98" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="714" y="256" font-size="15" font-weight="600" fill="#1f2426">Факты</text>
+<text x="714" y="278" font-size="12.5" fill="#1f2426" font-weight="500">посадки маршрут × час</text>
+<text x="714" y="296" font-size="12.5" fill="#5f686c">затронутые дни</text>
+<text x="714" y="314" font-size="12.5" fill="#5f686c">пересчитываются целиком</text>
+<rect x="950" y="230" width="230" height="98" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="964" y="256" font-size="15" font-weight="600" fill="#1f2426">Статусы дней</text>
+<text x="964" y="278" font-size="12.5" fill="#1f2426" font-weight="500">полные ли данные за день</text>
+<text x="964" y="296" font-size="12.5" fill="#5f686c">final, partial или missing</text>
+<text x="964" y="314" font-size="12.5" fill="#5f686c">и флаг anomaly (ремонт)</text>
+<rect x="1200" y="230" width="230" height="98" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="1214" y="256" font-size="15" font-weight="600" fill="#1f2426">Водяной знак</text>
+<text x="1214" y="278" font-size="12.5" fill="#1f2426" font-weight="500">последний полный день</text>
+<text x="1214" y="296" font-size="12.5" fill="#5f686c">state/watermark.json</text>
+<path d="M430,279 H450" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M680,279 H700" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M930,279 H950" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M1180,279 H1200" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M565.0,166 V230" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<path d="M1315.0,166 V230" fill="none" stroke="#5f686c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a-m)"/>
+<text x="1323.0" y="200" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">возраст дня</text>
+<rect x="16" y="366" width="1448" height="340" rx="12" fill="#e8f1f1"/>
+<text x="34" y="392" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">ML-WORKER</text>
+<rect x="200" y="392" width="230" height="98" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="214" y="418" font-size="15" font-weight="600" fill="#1f2426">Расписание</text>
+<text x="214" y="440" font-size="12.5" fill="#1f2426" font-weight="500">когда пересчитывать</text>
+<text x="214" y="458" font-size="12.5" fill="#5f686c">сдвиг водяного знака или 03:00</text>
+<text x="214" y="476" font-size="12.5" fill="#5f686c">не чаще MIN_RERUN_MINUTES</text>
+<rect x="450" y="392" width="230" height="98" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="464" y="418" font-size="15" font-weight="600" fill="#1f2426">Контекст</text>
+<text x="464" y="440" font-size="12.5" fill="#1f2426" font-weight="500">история для модели</text>
+<text x="464" y="458" font-size="12.5" fill="#5f686c">факт до водяного знака</text>
+<text x="464" y="476" font-size="12.5" fill="#5f686c">маршрут без посадок: cold start</text>
+<rect x="700" y="392" width="230" height="98" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="714" y="418" font-size="15" font-weight="600" fill="#1f2426">Краткосрочный</text>
+<text x="714" y="440" font-size="12.5" fill="#1f2426" font-weight="500">прогноз на 61 день по часам</text>
+<text x="714" y="458" font-size="12.5" fill="#5f686c">ансамбль RH, RHD и V2</text>
+<text x="714" y="476" font-size="12.5" fill="#5f686c">календарь, каникулы, тип дня</text>
+<rect x="950" y="392" width="230" height="98" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="964" y="418" font-size="15" font-weight="600" fill="#1f2426">Эффекты</text>
+<text x="964" y="440" font-size="12.5" fill="#1f2426" font-weight="500">сила праздников и каникул</text>
+<text x="964" y="458" font-size="12.5" fill="#5f686c">прогоны без фактора</text>
+<text x="964" y="476" font-size="12.5" fill="#5f686c">и запись в effects.parquet</text>
+<rect x="1200" y="392" width="230" height="98" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="1214" y="418" font-size="15" font-weight="600" fill="#1f2426">Проверки и публикация</text>
+<text x="1214" y="440" font-size="12.5" fill="#1f2426" font-weight="500">публикуется только хороший</text>
+<text x="1214" y="458" font-size="12.5" fill="#5f686c">сетка, пропуски, суммы недель</text>
+<text x="1214" y="476" font-size="12.5" fill="#5f686c">runs/&lt;id&gt;/, затем active.json</text>
+<path d="M430,441 H450" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<path d="M680,441 H700" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<path d="M930,441 H950" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<path d="M1180,441 H1200" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<rect x="700" y="520" width="230" height="84" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="714" y="546" font-size="15" font-weight="600" fill="#1f2426">Годовой</text>
+<text x="714" y="568" font-size="12.5" fill="#1f2426" font-weight="500">прогноз до 365 дней</text>
+<text x="714" y="586" font-size="12.5" fill="#5f686c">месяц, тип дня и каникулы</text>
+<rect x="200" y="520" width="230" height="120" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="214" y="546" font-size="14" font-weight="600" fill="#1f2426">Входы моделей</text>
+<text x="214" y="568" font-size="12.5" fill="#1f2426" font-weight="500">справочники и веса</text>
+<text x="214" y="586" font-size="12.5" fill="#5f686c">календарь 2025–26 и каникулы</text>
+<text x="214" y="604" font-size="12.5" fill="#5f686c">веса Chronos-2 в образе,</text>
+<text x="214" y="622" font-size="12.5" fill="#5f686c">сеть при работе не нужна</text>
+<rect x="1200" y="606" width="230" height="84" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="1214" y="632" font-size="15" font-weight="600" fill="#1f2426">Мониторинг</text>
+<text x="1214" y="654" font-size="12.5" fill="#1f2426" font-weight="500">точность прошлых прогонов</text>
+<text x="1214" y="672" font-size="12.5" fill="#5f686c">monitoring/accuracy.parquet</text>
+<path d="M565.0,490 V562 H700" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<path d="M930,562 H1285.0 V490" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<path d="M430,538 C 570,538 680,518 740,490" fill="none" stroke="#5f686c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a-m)"/>
+<path d="M430,598 H700" fill="none" stroke="#5f686c" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#a-m)"/>
+<path d="M1355.0,490 V606" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="1363.0" y="556" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">факты пришли</text>
+<path d="M1315.0,328 V348 H315.0 V392" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="470" y="344" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">водяной знак сдвинулся</text>
+<path d="M815.0,328 V358 H565.0 V392" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="573.0" y="374" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">факты и статусы</text>
+<rect x="16" y="724" width="1448" height="186" rx="12" fill="#f0ecf6"/>
+<text x="34" y="750" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">BACKEND</text>
+<rect x="200" y="754" width="230" height="98" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="214" y="780" font-size="15" font-weight="600" fill="#1f2426">Чтение тома</text>
+<text x="214" y="802" font-size="12.5" fill="#1f2426" font-weight="500">прогноз в памяти</text>
+<text x="214" y="820" font-size="12.5" fill="#5f686c">active.json раз в 30 с</text>
+<rect x="450" y="754" width="230" height="98" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="464" y="780" font-size="15" font-weight="600" fill="#1f2426">Склейка</text>
+<text x="464" y="802" font-size="12.5" fill="#1f2426" font-weight="500">один ряд из трёх источников</text>
+<text x="464" y="820" font-size="12.5" fill="#5f686c">факт, затем short до 61 дня,</text>
+<text x="464" y="838" font-size="12.5" fill="#5f686c">затем year</text>
+<rect x="700" y="754" width="230" height="98" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="714" y="780" font-size="15" font-weight="600" fill="#1f2426">Поправки</text>
+<text x="714" y="802" font-size="12.5" fill="#1f2426" font-weight="500">правки диспетчера</text>
+<text x="714" y="820" font-size="12.5" fill="#5f686c">слайдеры: сила эффекта k</text>
+<text x="714" y="838" font-size="12.5" fill="#5f686c">сценарии: множитель m</text>
+<rect x="950" y="754" width="230" height="98" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="964" y="780" font-size="15" font-weight="600" fill="#1f2426">API</text>
+<text x="964" y="802" font-size="12.5" fill="#1f2426" font-weight="500">ответ фронтенду</text>
+<text x="964" y="820" font-size="12.5" fill="#5f686c">маршруты, интервал и шаг,</text>
+<text x="964" y="838" font-size="12.5" fill="#5f686c">уровень загрузки</text>
+<rect x="1200" y="754" width="230" height="98" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1214" y="780" font-size="15" font-weight="600" fill="#1f2426">PostgreSQL</text>
+<text x="1214" y="802" font-size="12.5" fill="#1f2426" font-weight="500">данные пользователей</text>
+<text x="1214" y="820" font-size="12.5" fill="#5f686c">сценарии и поправки</text>
+<path d="M430,803 H450" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M680,803 H700" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M930,803 H950" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1200,803 H1180" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<path d="M1430,441 H1452 V736 H315.0 V754" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="470" y="730" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">active.json → новый прогноз (том только на чтение)</text>
+<rect x="16" y="928" width="1448" height="164" rx="12" fill="#fbf4e4"/>
+<text x="34" y="954" font-size="13" font-weight="700" letter-spacing="1" fill="#5f686c">FRONTEND</text>
+<rect x="200" y="964" width="230" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="214" y="990" font-size="15" font-weight="600" fill="#1f2426">Сутки</text>
+<text x="214" y="1012" font-size="12.5" fill="#1f2426" font-weight="500">по часам</text>
+<rect x="450" y="964" width="230" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="464" y="990" font-size="15" font-weight="600" fill="#1f2426">Неделя</text>
+<text x="464" y="1012" font-size="12.5" fill="#1f2426" font-weight="500">по дням и часам</text>
+<rect x="700" y="964" width="230" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="714" y="990" font-size="15" font-weight="600" fill="#1f2426">Месяц и год</text>
+<text x="714" y="1012" font-size="12.5" fill="#1f2426" font-weight="500">по дням, неделям, месяцам</text>
+<rect x="950" y="964" width="230" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="964" y="990" font-size="15" font-weight="600" fill="#1f2426">Поправки и события</text>
+<text x="964" y="1012" font-size="12.5" fill="#1f2426" font-weight="500">слайдеры и форма события</text>
+<rect x="1200" y="964" width="230" height="70" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="1214" y="990" font-size="15" font-weight="600" fill="#1f2426">Карта и экспорт</text>
+<text x="1214" y="1012" font-size="12.5" fill="#1f2426" font-weight="500">линии, остановки и CSV</text>
+<path d="M1065.0,852 V964" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<text x="1073.0" y="912" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">HTTP API</text>
+</svg>

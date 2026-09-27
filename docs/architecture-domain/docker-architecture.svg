@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1012" width="1440" height="1012" font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif">
+<defs>
+<marker id="a-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3302a"/></marker>
+<marker id="a-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2c6a6e"/></marker>
+<marker id="a-m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5f686c"/></marker>
+</defs>
+<rect width="1440" height="1012" fill="#f5f5f5"/>
+<text x="720.0" y="44" text-anchor="middle" font-size="22" font-weight="600" fill="#1f2426">Логика Docker: контейнеры и общий том</text>
+<rect x="40" y="84" width="340" height="80" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="110" font-size="14" font-weight="600" fill="#1f2426">Источник выгрузок</text>
+<text x="54" y="129" font-size="13" font-weight="600" fill="#1f2426">Откуда приходят данные</text>
+<text x="54" y="148" font-size="12.5" fill="#5f686c">CSV валидаций → inbox/ на томе</text>
+<rect x="40" y="190" width="340" height="99" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="216" font-size="14" font-weight="600" fill="#1f2426">./dataset</text>
+<text x="54" y="235" font-size="13" font-weight="600" fill="#1f2426">История для начальной загрузки</text>
+<text x="54" y="254" font-size="12.5" fill="#5f686c">train.csv и test.csv, только чтение</text>
+<text x="54" y="273" font-size="12.5" fill="#5f686c">нужна только для make load-history</text>
+<rect x="40" y="314" width="340" height="224" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="54" y="340" font-size="15" font-weight="600" fill="#1f2426">ingest</text>
+<text x="54" y="359" font-size="13" font-weight="600" fill="#1f2426">Приём данных: CSV → почасовой факт</text>
+<text x="54" y="381" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">КАК РАБОТАЕТ</text>
+<text x="54" y="400" font-size="12.5" fill="#5f686c">1. раз в 60 с проверяет inbox/</text>
+<text x="54" y="419" font-size="12.5" fill="#5f686c">2. разбор → сырой слой → факт маршрут × час</text>
+<text x="54" y="438" font-size="12.5" fill="#5f686c">3. статусы дней → водяной знак</text>
+<text x="54" y="457" font-size="12.5" fill="#5f686c">4. пустой том → стартовый прогноз ml/seed/</text>
+<text x="54" y="484" font-size="12.5" fill="#5f686c">образ ~0.7 ГБ</text>
+<text x="54" y="503" font-size="12.5" fill="#5f686c">лимит 1 CPU и 2 ГБ памяти</text>
+<text x="54" y="522" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">python -m mtml.ingest run</text>
+<rect x="40" y="628" width="340" height="224" rx="9" fill="#ffffff" stroke="#b3302a" stroke-width="2"/>
+<text x="54" y="654" font-size="15" font-weight="600" fill="#1f2426">ml-worker</text>
+<text x="54" y="673" font-size="13" font-weight="600" fill="#1f2426">Прогноз: факт → прогноз на 61 день и год</text>
+<text x="54" y="695" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">КАК РАБОТАЕТ</text>
+<text x="54" y="714" font-size="12.5" fill="#5f686c">1. ждёт сдвига водяного знака или ночи 03:00</text>
+<text x="54" y="733" font-size="12.5" fill="#5f686c">2. краткосрочный ансамбль Chronos-2 + эффекты</text>
+<text x="54" y="752" font-size="12.5" fill="#5f686c">3. годовая сезонная модель</text>
+<text x="54" y="771" font-size="12.5" fill="#5f686c">4. проверка качества → публикация → мониторинг</text>
+<text x="54" y="798" font-size="12.5" fill="#5f686c">образ ~2.9 ГБ с весами модели внутри</text>
+<text x="54" y="817" font-size="12.5" fill="#5f686c">лимит 2 CPU и 3 ГБ памяти</text>
+<text x="54" y="836" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">python -m mtml.worker run</text>
+<rect x="40" y="902" width="340" height="80" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="54" y="928" font-size="14" font-weight="600" fill="#1f2426">Hugging Face</text>
+<text x="54" y="947" font-size="13" font-weight="600" fill="#1f2426">Веса Chronos-2</text>
+<text x="54" y="966" font-size="12.5" fill="#5f686c">скачиваются только при сборке образа</text>
+<rect x="480" y="76" width="520" height="770" rx="9" fill="#eef4f4" stroke="#2c6a6e" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="494" y="102" font-size="17" font-weight="600" fill="#1f2426">Том tram-data (/data)</text>
+<text x="494" y="120" font-size="12.5" font-weight="400" fill="#2c6a6e" text-anchor="start">единственная связь между сервисами: ML пишет, бэкенд читает</text>
+<rect x="500" y="138" width="480" height="260" rx="9" fill="#fbeeed" stroke="#b3302a" stroke-width="2"/>
+<text x="514" y="164" font-size="14" font-weight="600" fill="#1f2426">пишет ingest</text>
+<text x="514" y="183" font-size="13" font-weight="600" fill="#1f2426">Входящие данные и факт</text>
+<text x="514" y="205" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">ПРИЁМ</text>
+<text x="514" y="224" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">inbox/ → processed/ или failed/</text>
+<text x="764" y="224" font-size="12.5" fill="#5f686c">новые CSV</text>
+<text x="514" y="243" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">ingestion/</text>
+<text x="764" y="243" font-size="12.5" fill="#5f686c">журнал загрузок, карантин</text>
+<text x="514" y="265" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">ДАННЫЕ</text>
+<text x="514" y="284" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">raw/validations/</text>
+<text x="764" y="284" font-size="12.5" fill="#5f686c">посадки по дням, без дублей</text>
+<text x="514" y="303" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">actuals/actuals_hourly.parquet</text>
+<text x="764" y="303" font-size="12.5" fill="#5f686c">факт маршрут × час</text>
+<text x="514" y="322" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">actuals/day_status.parquet</text>
+<text x="764" y="322" font-size="12.5" fill="#5f686c">final, partial или missing</text>
+<text x="514" y="341" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">state/watermark.json</text>
+<text x="764" y="341" font-size="12.5" fill="#5f686c">последний полный день</text>
+<text x="514" y="363" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">СЛУЖЕБНОЕ</text>
+<text x="514" y="382" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">tmp/duckdb/</text>
+<text x="764" y="382" font-size="12.5" fill="#5f686c">сброс памяти на больших файлах</text>
+<rect x="500" y="422" width="480" height="260" rx="9" fill="#fbeeed" stroke="#b3302a" stroke-width="2"/>
+<text x="514" y="448" font-size="14" font-weight="600" fill="#1f2426">пишет ml-worker</text>
+<text x="514" y="467" font-size="13" font-weight="600" fill="#1f2426">Прогнозы и справочники</text>
+<text x="514" y="489" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">ПРОГОН: НОВАЯ ПАПКА НА КАЖДЫЙ ПЕРЕСЧЁТ</text>
+<text x="514" y="508" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">runs/&lt;id&gt;/forecasts.parquet</text>
+<text x="764" y="508" font-size="12.5" fill="#5f686c">прогноз и интервал</text>
+<text x="514" y="527" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">runs/&lt;id&gt;/effects.parquet</text>
+<text x="764" y="527" font-size="12.5" fill="#5f686c">эффекты для слайдеров</text>
+<text x="514" y="546" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">runs/&lt;id&gt;/meta.json</text>
+<text x="764" y="546" font-size="12.5" fill="#5f686c">модель, данные, проверки</text>
+<text x="514" y="568" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">УКАЗАТЕЛИ И СОСТОЯНИЕ</text>
+<text x="514" y="587" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">active.json</text>
+<text x="764" y="587" font-size="12.5" fill="#5f686c">какие прогоны сейчас актуальны</text>
+<text x="514" y="606" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">state/worker.json</text>
+<text x="764" y="606" font-size="12.5" fill="#5f686c">последний прогон, ошибка</text>
+<text x="514" y="628" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">ДЛЯ БЭКЕНДА</text>
+<text x="514" y="647" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">monitoring/accuracy.parquet</text>
+<text x="764" y="647" font-size="12.5" fill="#5f686c">точность прошлых прогонов</text>
+<text x="514" y="666" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">reference/</text>
+<text x="764" y="666" font-size="12.5" fill="#5f686c">календарь, справочник поправок</text>
+<rect x="500" y="706" width="480" height="80" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="514" y="732" font-size="14" font-weight="600" fill="#1f2426">общее для всех сервисов</text>
+<text x="514" y="751" font-size="12" font-family="'JetBrains Mono', SFMono-Regular, Menlo, Consolas, monospace" fill="#1f2426">state/clock.json</text>
+<text x="764" y="751" font-size="12.5" fill="#5f686c">«сейчас» системы</text>
+<text x="514" y="770" font-size="12.5" fill="#5f686c">в проде реальное время, а в демо с 28.10.2025 и в 750 раз быстрее</text>
+<text x="740.0" y="822" font-size="12.5" font-weight="600" fill="#2c6a6e" text-anchor="middle">бэкенд подключает том только на чтение (:ro)</text>
+<rect x="1080" y="84" width="320" height="80" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1094" y="110" font-size="14" font-weight="600" fill="#1f2426">PostgreSQL + Redis</text>
+<text x="1094" y="129" font-size="13" font-weight="600" fill="#1f2426">Данные пользователей</text>
+<text x="1094" y="148" font-size="12.5" fill="#5f686c">учётные записи, сценарии, поправки</text>
+<rect x="1080" y="250" width="320" height="186" rx="9" fill="#ffffff" stroke="#2c6a6e" stroke-width="2"/>
+<text x="1094" y="276" font-size="15" font-weight="600" fill="#1f2426">backend</text>
+<text x="1094" y="295" font-size="13" font-weight="600" fill="#1f2426">API: отдаёт прогноз фронтенду</text>
+<text x="1094" y="317" font-size="10.5" font-weight="700" letter-spacing="0.8" fill="#5f686c">КАК РАБОТАЕТ</text>
+<text x="1094" y="336" font-size="12.5" fill="#5f686c">1. раз в 30 с проверяет active.json</text>
+<text x="1094" y="355" font-size="12.5" fill="#5f686c">2. новый прогон → в память, без простоя</text>
+<text x="1094" y="374" font-size="12.5" fill="#5f686c">3. склейка: факт → краткосрочный → годовой</text>
+<text x="1094" y="393" font-size="12.5" fill="#5f686c">4. поправки, агрегация, уровень загрузки</text>
+<text x="1094" y="420" font-size="12.5" fill="#5f686c">FastAPI, том подключён только на чтение</text>
+<rect x="1080" y="516" width="320" height="145" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2"/>
+<text x="1094" y="542" font-size="15" font-weight="600" fill="#1f2426">frontend</text>
+<text x="1094" y="561" font-size="13" font-weight="600" fill="#1f2426">Дашборд диспетчера</text>
+<text x="1094" y="580" font-size="12.5" fill="#5f686c">карта MapLibre: линии и остановки</text>
+<text x="1094" y="599" font-size="12.5" fill="#5f686c">графики: сутки, неделя, месяц, год</text>
+<text x="1094" y="618" font-size="12.5" fill="#5f686c">поправки с превью, экспорт CSV</text>
+<text x="1094" y="645" font-size="12.5" fill="#5f686c">React и nginx, к backend ходит только по HTTP</text>
+<rect x="1080" y="721" width="320" height="61" rx="9" fill="#ffffff" stroke="#737b7f" stroke-width="2" stroke-dasharray="7 5"/>
+<text x="1094" y="747" font-size="14" font-weight="600" fill="#1f2426">Диспетчер</text>
+<text x="1094" y="766" font-size="12.5" fill="#5f686c">браузер</text>
+<path d="M380,118 C 440,118 450,170 500,170" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<text x="390" y="108" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">CSV → inbox/</text>
+<path d="M210.0,278 V314" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M380,350 H500" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)" marker-start="url(#a-w)"/>
+<text x="390" y="342" font-size="12" font-weight="400" fill="#b3302a" text-anchor="start">чтение и запись</text>
+<path d="M500,384 C 440,384 420,668 380,668" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="54" y="588" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">читает факты, статусы и водяной знак</text>
+<path d="M380,778 C 440,778 440,482 500,482" fill="none" stroke="#b3302a" stroke-width="2" marker-end="url(#a-w)"/>
+<text x="390" y="808" font-size="12" font-weight="400" fill="#b3302a" text-anchor="start">пишет прогнозы</text>
+<path d="M210.0,902 V852" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)"/>
+<path d="M1000,310 H1080" fill="none" stroke="#2c6a6e" stroke-width="2" marker-end="url(#a-r)"/>
+<text x="1008" y="300" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">только</text>
+<text x="1008" y="330" font-size="12" font-weight="400" fill="#2c6a6e" text-anchor="start">чтение</text>
+<path d="M1240.0,172 V250" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<path d="M1240.0,436 V516" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+<text x="1250.0" y="480.0" font-size="12" font-weight="400" fill="#5f686c" text-anchor="start">HTTP API</text>
+<path d="M1240.0,661 V721" fill="none" stroke="#5f686c" stroke-width="2" marker-end="url(#a-m)" marker-start="url(#a-m)"/>
+</svg>

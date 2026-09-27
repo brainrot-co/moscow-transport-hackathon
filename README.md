@@ -1,114 +1,118 @@
-# Moscow Transport Hackathon
+# ИИ-прогноз загрузки трамвайных маршрутов Москвы
 
-## Запуск полного demo-стека
+## TL;DR: запустить демо
 
-```powershell
-docker compose up --build
+```bash
+make demo
 ```
 
-Backend автоматически применяет Alembic migrations при старте контейнера.
+Без `make` (Windows):
 
-После запуска:
-
-- frontend: http://localhost:3000
-- backend Swagger: http://localhost:8000/docs
-- liveness: http://localhost:8000/health/live
-
-Backend подключает `tram-data` только на чтение. ML-контур (`ingest` и `ml-worker`) публикует `active.json` и Parquet атомарно. Если прогноза ещё нет, API не падает: `/api/v1/forecast/meta` возвращает `available: false`, а `/api/v1/forecast` возвращает `503 forecast_unavailable`.
-
-## Backend API для frontend
-
-Все endpoint’ы требуют Bearer access token пользователя, кроме health/auth endpoint’ов.
-
-| Метод | URL | Назначение |
-|---|---|---|
-| GET | `/api/v1/forecast/meta` | активные runs, watermark, cutoff и stale-состояние |
-| GET | `/api/v1/forecast` | прогноз/факт; параметры `date_from`, `date_to`, `routes`, `granularity` |
-| POST | `/api/v1/forecast/preview` | draft-поправки без сохранения |
-| GET | `/api/v1/scenarios` | сохранённые сценарии; чтение доступно USER |
-| POST/PATCH/DELETE | `/api/v1/scenarios` | изменение сценариев; требуется ADMIN |
-
-Поддерживаемые `granularity`: `hour`, `day`, `week`, `month`.
-
-### Единая строка прогноза
-
-```json
-{
-	"route": 7,
-	"ts": "2026-10-01T10:00:00+03:00",
-	"source": "forecast",
-	"value": null,
-	"yhat_model": 2410,
-	"yhat": 1687,
-	"q10": 1512,
-	"q90": 1904,
-	"estimated": false,
-	"applied": []
-}
+```bash
+docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml up -d --build
 ```
 
-- `actual`: факт находится только в `value`; `yhat_model`, `yhat`, квантили равны `null`.
-- `forecast`/`forecast_seasonal`: `value` равен `null`, `yhat_model` является исходным прогнозом, `yhat` учитывает поправки.
-- `mixed`: агрегированный период пересекает факт и прогноз; `value` содержит сумму факта, `yhat*` прогнозную часть.
-- `availability: unavailable` означает отсутствие строки, это не нулевой пассажиропоток.
+Откройте http://localhost:3000. Первая сборка образов занимает 5–10 минут.
 
-Приоритет источников: `actual` (final и не позже watermark) → `short` → `year` → unavailable.
+## О решении
 
-### Preview
+Сервис прогнозирует число посадок на 10 трамвайных маршрутах Москвы по часам и показывает прогноз на карте и графиках. Диспетчер видит, какой маршрут в какой час будет загружен сильнее обычного. Можно наложить на прогноз праздник, погоду, ремонт или мероприятие и сразу увидеть, как он изменится. Результат выгружается в CSV.
 
-```json
-POST /api/v1/forecast/preview
-{
-	"date_from": "2026-10-01T00:00:00+03:00",
-	"date_to": "2026-10-01T23:00:00+03:00",
-	"routes": [7],
-	"model_factors": {"holiday": 0.7},
-	"draft": [
-		{
-			"kind": "scenario",
-			"factor": "route_shortened",
-			"value": 0.7,
-			"routes": [7],
-			"date_from": "2026-10-01",
-			"date_to": "2026-10-01",
-			"days": "all"
-		}
-	]
-}
+Краткосрочный прогноз на 61 день строит ансамбль из трёх вариантов предобученной модели [Chronos-2](https://huggingface.co/amazon/chronos-2) с производственным календарём и школьными каникулами. WAPE-score на закрытом тесте — **0.88359** при baseline организаторов 0.48. Прогноз до года строит сезонная регрессия по месяцам, типам дня и каникулам.
+
+## Документация
+
+| что | где |
+|---|---|
+| модель: устройство, эксперименты, артефакты, код | [docs/ml-artifacts/model.md](docs/ml-artifacts/model.md) |
+| внешние данные и их эффект на прогноз | [docs/external-data/external-data.md](docs/external-data/external-data.md) |
+| архитектура, область определения и адаптации модели | [docs/architecture-domain/architecture-domain.md](docs/architecture-domain/architecture-domain.md) |
+| ограничения и план развития | [docs/limitations/limitations-roadmap.md](docs/limitations/limitations-roadmap.md) |
+
+## Запуск
+
+### Что нужно
+
+- Docker с Docker Compose v2. Памяти для Docker — от 8 ГБ: у воркера лимит 3 ГБ, у ingest 2 ГБ.
+- Интернет при первой сборке.
+- Свободные порты 3000 и 8000.
+
+### Демо
+
+Демо показывает работу системы в ускоренном времени. Виртуальные часы идут с 28.10.2025 03:00 в 750 раз быстрее реального времени.
+
+На текущие дни попадают школьные каникулы, рабочая суббота 01.11 и праздник 03–04.11, поэтому слайдеры праздников и каникул дают видимый эффект.
+
+Фактических данных у нас нет дальше 01.11.2025, поэтому после этой даты водяной знак останавливается и дальше идёт только прогноз.
+
+Первый прогноз не ждёт модель. На пустом томе ingest раскладывает стартовый прогноз из `ml/seed/`, посчитанный заранее той же моделью. Воркер пересчитывает прогноз сам, когда сдвигается водяной знак: на 2 CPU прогон занимает около 4.5 минут.
+
+| команда | что делает |
+|---|---|
+| `make demo` | собрать образы, сбросить тома демо и запустить часы с начала |
+| `make demo-resume` | поднять демо, не сбрасывая часы и данные |
+| `make demo-status` | часы, водяной знак, активный прогон и состояние воркера |
+| `make demo-logs s=ml-worker` | логи сервиса (`ingest`, `ml-worker`, `backend`, `frontend`) |
+| `make demo-down` | остановить демо, тома сохраняются |
+
+То же без `make`:
+
+```bash
+# запуск; для перезапуска часов с начала сначала выполните down -v
+docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml up -d --build
+docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml logs -f ml-worker
+docker compose -p tram-demo -f docker-compose.yml -f compose.demo.yml down -v
 ```
 
-Preview ничего не сохраняет. Факт не корректируется. Поправки применяются к почасовым строкам до агрегации.
+### Прод
 
-## Инструкция для frontend-разработчиков
+В проде часы реальные, а новые CSV валидаций кладутся в папку `inbox/` на томе `tram-data`. Ingest забирает их раз в минуту, воркер пересчитывает прогноз при сдвиге водяного знака (не чаще раза в час) и каждую ночь в 03:00.
 
-В `frontend/src/api/forecast.ts` находятся типы `ForecastRow`, `ForecastMeta`, `ForecastResponse` и функции API. Базовый URL задаётся через `VITE_API_URL`; по умолчанию используется относительный `/api/v1`, который проксирует nginx.
-
-Локальный запуск frontend:
-
-```powershell
-cd frontend
-npm ci
-npm run dev
+```bash
+make prod
 ```
 
-Для API вне Docker создайте `frontend/.env.local`:
+Без `make`: `docker compose -p tram up -d --build`.
 
-```text
-VITE_API_URL=http://localhost:8000/api/v1
+В выгрузке организаторов данные кончаются 01.11.2025. Поэтому в проде с реальной датой интерфейс покажет предупреждение, что данные устарели. Для показа используйте демо.
+
+Прод и демо — разные compose-проекты (`tram` и `tram-demo`) с разными томами. Порты общие, поэтому одновременно работает только один стек: `make demo` и `make prod` сами останавливают другой.
+
+**Полная загрузка истории** нужна, только если в прод будут приходить новые CSV, а для просмотра прогноза она не нужна. Требуются `dataset/train.csv` и `dataset/test.csv` из архива организаторов; загрузка 62 млн строк занимает около 3 минут:
+
+```bash
+make load-history
 ```
 
-UI должен отдельно обрабатывать состояния `loading`, `forecast_unavailable`, `stale`, `mixed`, `cold_start` и `availability: unavailable`. Не отображайте `value` как прогноз и не применяйте сценарии к строкам `source: actual`.
+### Адреса
 
-## Backend разработка
+| что | адрес |
+|---|---|
+| дашборд | http://localhost:3000 |
+| Swagger API | http://localhost:8000/docs |
+| liveness | http://localhost:8000/health/live |
 
-```powershell
-cd backend
-poetry install
-poetry run alembic upgrade head
-poetry run pytest -q
-poetry run ruff check app tests
+Демо-пользователь `demo` / `demo-transport` создаётся при старте.
+
+### API
+
+Все эндпоинты с описанием параметров и примерами ответов есть в Swagger: http://localhost:8000/docs. Пути начинаются с `/api/v1`. Чтобы вызывать их из Swagger, войдите через `/login` под демо-пользователем и нажмите Authorize.
+
+### Сброс и очистка
+
+| команда | что делает |
+|---|---|
+| `make prod-reset` | удалить тома прода: факты, прогнозы, часы, сценарии |
+| `make nuke` | остановить прод и демо и удалить все их тома |
+| `make docker-prune` | удалить висящие образы и кэш сборки |
+
+После сброса при следующем старте снова разложится стартовый прогноз.
+
+### Проверки без Docker
+
+```bash
+make setup    # uv, poetry, npm
+make check    # линтеры, тесты ml и backend, сборка фронтенда
 ```
 
-Прогнозный snapshot читается из `DATA_DIR` и обновляется каждые `BACKEND_RELOAD_SEC`. Новый run принимается только после проверки схемы, маршрутов, шага, timezone и `data_cutoff` short/year.
-
-Подробный backlog реализации: [docs/ml-backend-implementation-plan.md](docs/ml-backend-implementation-plan.md).
+Весь список команд: `make help`.

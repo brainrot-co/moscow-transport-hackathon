@@ -1,6 +1,5 @@
 {
   "schema_version": 1,
-  "sources_doc": "docs/correction-factors-sources.md",
   "model_factors": [
     {
       "factor": "holiday",
