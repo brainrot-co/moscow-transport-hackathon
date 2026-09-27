@@ -6,11 +6,13 @@ from datetime import date, datetime, timedelta
 
 from mtml.clock import Clock, real_now
 from mtml.storage import Volume, write_json_atomic
+from mtml.worker.context import build_context
 from mtml.worker.monitor import evaluate_runs
+from mtml.worker.publish import activate, write_run
 from mtml.worker.quality import QualityError
 from mtml.worker.settings import WorkerSettings
-from mtml.worker.short import run_short
-from mtml.worker.year import run_year
+from mtml.worker.short import build_short
+from mtml.worker.year import build_year
 
 log = logging.getLogger(__name__)
 
@@ -75,16 +77,26 @@ def tick(volume: Volume, settings: WorkerSettings, virtual_now: datetime, real: 
 
     log.info("Пересчёт прогноза: %s", reason)
     state.last_error = None
-    for run in (run_short, run_year):
+    # один контекст на оба прогона: пока считается Chronos, ingest может сдвинуть водяной знак,
+    # а бэкенд принимает только пару с одинаковым data_cutoff
+    context = build_context(volume, settings.routes)
+    built = []
+    for build in (build_short, build_year):
         try:
-            run(volume, settings, virtual_now)
+            built.append(build(volume, context, settings, virtual_now))
         except QualityError as error:
-            # прогноз не прошёл проверки: бэкенд остаётся на прежнем, следующая попытка —
-            # при следующем сдвиге водяного знака или ночью
-            log.warning("%s не опубликован, остаётся прежний: %s", run.__name__, error)
-            state.last_error = f"{run.__name__}: {error}"
+            # пара публикуется целиком или никак: бэкенд остаётся на прежней, следующая
+            # попытка — при следующем сдвиге водяного знака или ночью
+            log.warning("%s не прошёл проверки, прогноз прежний: %s", build.__name__, error)
+            state.last_error = f"{build.__name__}: {error}"
+            break
+    else:
+        for run_id, tables, meta in built:
+            write_run(volume, run_id, tables, meta)
+        runs = {meta["kind"]: run_id for run_id, _, meta in built}
+        activate(volume, runs, virtual_now, settings.keep_runs)
     state.last_run_real, state.last_run_virtual = real, virtual_now
-    state.last_watermark = watermark
+    state.last_watermark = context.watermark
     write_json_atomic(volume.worker_state, asdict(state))
     evaluate_runs(volume, virtual_now)
     return reason

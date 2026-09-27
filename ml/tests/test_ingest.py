@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from mtml.ingest.pipeline import ingest_file, process_inbox
+from mtml.ingest.pipeline import ingest_file, process_inbox, refresh_status
 from mtml.ingest.reader import COLUMNS
 from mtml.ingest.settings import IngestSettings
 from mtml.ingest.status import day_status, watermark
@@ -193,3 +193,23 @@ def test_route_without_history_does_not_hold_watermark():
 
     assert status_of(status, "2025-09-09", route=5)["status"] == "missing"
     assert watermark(status) == date(2025, 9, 9)
+
+
+def test_watermark_shift_is_logged_once(
+    volume: Volume, tmp_path: Path, caplog: pytest.LogCaptureFixture
+):
+    days = pd.date_range("2025-08-01", "2025-09-09")
+    rows = [row(i, f"{day:%Y-%m-%d} 08:00:00") for i, day in enumerate(days)]
+    ingest_file(write_csv(tmp_path / "batch.csv", rows), volume, SETTINGS, NOW)
+    caplog.clear()
+
+    with caplog.at_level("INFO", logger="mtml.ingest.pipeline"):
+        refresh_status(volume, SETTINGS, datetime(2025, 9, 5, 12, 0))
+        refresh_status(volume, SETTINGS, datetime(2025, 9, 5, 12, 5))
+        refresh_status(volume, SETTINGS, NOW)
+
+    shifts = [r.getMessage() for r in caplog.records if "Водяной знак" in r.getMessage()]
+    assert shifts == [
+        "Водяной знак 2025-09-09 → 2025-09-04 (сейчас 2025-09-05 12:00:00)",
+        "Водяной знак 2025-09-04 → 2025-09-09 (сейчас 2025-09-10 12:00:00)",
+    ]

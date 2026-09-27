@@ -1,4 +1,5 @@
 import hashlib
+import json
 import logging
 import time
 from dataclasses import asdict, dataclass
@@ -69,6 +70,12 @@ def refresh_status(volume: Volume, settings: IngestSettings, now: datetime):
     status = day_status(actuals, now.date(), settings)
     write_atomic(volume.day_status, lambda tmp: status.to_parquet(tmp, index=False))
     mark = watermark(status)
+    previous = None
+    if volume.watermark.exists():
+        previous = json.loads(volume.watermark.read_text(encoding="utf-8"))["watermark"]
+    # статусы пересчитываются каждый опрос, в лог — только сдвиг знака
+    if str(mark) != str(previous):
+        log.info("Водяной знак %s → %s (сейчас %s)", previous, mark, now)
     write_json_atomic(
         volume.watermark,
         {

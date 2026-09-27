@@ -8,6 +8,7 @@ import pytest
 
 from mtml.storage import Volume
 from mtml.worker import schedule
+from mtml.worker.context import Context
 from mtml.worker.monitor import evaluate_run
 from mtml.worker.quality import QualityError
 from mtml.worker.schedule import WorkerState, load_state, rerun_reason, tick
@@ -72,25 +73,69 @@ def write_minimal_volume(volume: Volume):
     status.to_parquet(volume.day_status)
 
 
-def test_quality_error_keeps_service_running_and_is_recorded(
+def fake_context(volume: Volume, routes: tuple[int, ...]):
+    mark = date.fromisoformat(json.loads(volume.watermark.read_text())["watermark"])
+    return Context(pd.DataFrame(), mark, routes, ())
+
+
+def fake_build(kind: str, cutoffs: list[date]):
+    def build(_volume: Volume, context: Context, _settings: WorkerSettings, now: datetime):
+        cutoffs.append(context.watermark)
+        meta = {"kind": kind, "created_at": now, "data_cutoff": context.watermark}
+        return f"{kind}-{now:%Y%m%dT%H%M%S}", {"forecasts": pd.DataFrame({"x": [1]})}, meta
+
+    return build
+
+
+def test_quality_error_keeps_service_running_and_publishes_nothing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ):
     volume = Volume(tmp_path)
     write_minimal_volume(volume)
-    calls = []
+    cutoffs = []
 
     def broken_short(*args: object):
         raise QualityError(f"недельные суммы от 0.1 до 5, прогон на {args[-1]}")
 
-    monkeypatch.setattr(schedule, "run_short", broken_short)
-    monkeypatch.setattr(schedule, "run_year", lambda *args: calls.append(args[-1]))
+    monkeypatch.setattr(schedule, "build_context", fake_context)
+    monkeypatch.setattr(schedule, "build_short", broken_short)
+    monkeypatch.setattr(schedule, "build_year", fake_build("year", cutoffs))
     assert tick(volume, SETTINGS, VIRTUAL, REAL) == "первый прогон"
 
     state = load_state(volume)
-    assert calls == [VIRTUAL]
+    # годовой без короткого не публикуется: бэкенд не примет пару с разным data_cutoff
+    assert cutoffs == []
+    assert not volume.active.exists()
     assert state.last_watermark == MARK
     assert "недельные суммы" in state.last_error
     assert tick(volume, SETTINGS, VIRTUAL, REAL + timedelta(minutes=1)) is None
+
+
+def test_pair_shares_watermark_even_if_ingest_moves_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    volume = Volume(tmp_path)
+    write_minimal_volume(volume)
+    cutoffs = []
+    slow_short = fake_build("short", cutoffs)
+
+    def short_while_ingest_runs(*args: object):
+        result = slow_short(*args)
+        # пока считается Chronos, ingest сдвигает водяной знак
+        volume.watermark.write_text(json.dumps({"watermark": "2025-11-03"}))
+        return result
+
+    monkeypatch.setattr(schedule, "build_context", fake_context)
+    monkeypatch.setattr(schedule, "build_short", short_while_ingest_runs)
+    monkeypatch.setattr(schedule, "evaluate_runs", lambda *_: None)
+    monkeypatch.setattr(schedule, "build_year", fake_build("year", cutoffs))
+    tick(volume, SETTINGS, VIRTUAL, REAL)
+
+    active = json.loads(volume.active.read_text())
+    assert cutoffs == [MARK, MARK]
+    assert active["short"] == "short-20251101T120000"
+    assert active["year"] == "year-20251101T120000"
+    assert load_state(volume).last_watermark == MARK
 
 
 def test_accuracy_by_lead_ignores_cold_start_routes():

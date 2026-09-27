@@ -3,11 +3,15 @@
 services:
   ingest:
     environment:
-      CLOCK_START: "2025-11-01T03:00:00"
+      CLOCK_START: "2025-10-01T03:00:00"
+      CLOCK_END: "2025-11-04T03:00:00"
+      CLOCK_SPEED: "1500"
       INGEST_POLL_SEC: "5"
 
   ml-worker:
     environment:
-      CLOCK_START: "2025-11-01T03:00:00"
+      CLOCK_START: "2025-10-01T03:00:00"
+      CLOCK_SPEED: "1500"
+      CLOCK_END: "2025-11-04T03:00:00"
       MIN_RERUN_MINUTES: "2"
       WORKER_POLL_SEC: "10"

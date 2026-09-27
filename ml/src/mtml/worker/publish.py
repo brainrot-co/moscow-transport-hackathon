@@ -12,14 +12,10 @@ SCHEMA_VERSION = 1
 log = logging.getLogger(__name__)
 
 
-def publish_run(
-    volume: Volume,
-    run_id: str,
-    tables: dict[str, pd.DataFrame],
-    meta: dict[str, object],
-    keep_runs: int,
+def write_run(
+    volume: Volume, run_id: str, tables: dict[str, pd.DataFrame], meta: dict[str, object]
 ):
-    """Прогон пишется во временную папку, переименовывается и лишь потом попадает в active.json."""
+    """Прогон пишется во временную папку и переименовывается; в active.json он ещё не попадает."""
     staging = volume.runs / f"{run_id}.tmp"
     target = volume.runs / run_id
     if target.exists():
@@ -34,14 +30,29 @@ def publish_run(
     finally:
         shutil.rmtree(staging, ignore_errors=True)
 
+
+def activate(volume: Volume, runs: dict[str, str], published_at: object, keep_runs: int):
+    """Одна запись active.json на все переданные прогоны: бэкенд не увидит пару с разным cutoff."""
     active = {"schema_version": SCHEMA_VERSION}
     if volume.active.exists():
         active = json.loads(volume.active.read_text(encoding="utf-8"))
-    active[meta["kind"]] = run_id
-    active["published_at"] = meta["created_at"]
+    active.update(runs)
+    active["published_at"] = published_at
     write_json_atomic(volume.active, active)
-    log.info("Опубликован прогон %s", run_id)
-    prune_runs(volume, meta["kind"], keep_runs)
+    for kind, run_id in runs.items():
+        log.info("Опубликован прогон %s", run_id)
+        prune_runs(volume, kind, keep_runs)
+
+
+def publish_run(
+    volume: Volume,
+    run_id: str,
+    tables: dict[str, pd.DataFrame],
+    meta: dict[str, object],
+    keep_runs: int,
+):
+    write_run(volume, run_id, tables, meta)
+    activate(volume, {meta["kind"]: run_id}, meta["created_at"], keep_runs)
 
 
 def prune_runs(volume: Volume, kind: str, keep_runs: int):

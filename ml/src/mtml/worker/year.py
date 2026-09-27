@@ -9,7 +9,7 @@ import pandas as pd
 from mtml.covariates import load_calendar, load_day_features, load_school_holidays
 from mtml.forecasters.base import horizon_hours
 from mtml.storage import Volume
-from mtml.worker.context import build_context
+from mtml.worker.context import Context, build_context
 from mtml.worker.publish import SCHEMA_VERSION, publish_run
 from mtml.worker.quality import check_forecast
 from mtml.worker.settings import WorkerSettings
@@ -92,8 +92,8 @@ def hourly_profile(series: pd.DataFrame, days: pd.DataFrame):
     return (by_hour / by_hour.groupby(level="kind").transform("sum")).rename("share")
 
 
-def run_year(volume: Volume, settings: WorkerSettings, now: datetime):
-    context = build_context(volume, settings.routes)
+def build_year(volume: Volume, context: Context, settings: WorkerSettings, now: datetime):
+    """Считает и проверяет прогон, но не публикует: возвращает run_id, таблицы и meta."""
     start = pd.Timestamp(context.watermark) + pd.Timedelta(days=1)
     end = start + pd.Timedelta(days=settings.year_days - 1)
 
@@ -152,5 +152,13 @@ def run_year(volume: Volume, settings: WorkerSettings, now: datetime):
         },
         "quality_checks": checks,
     }
-    publish_run(volume, run_id, {"forecasts": forecasts}, meta, settings.keep_runs)
+    return run_id, {"forecasts": forecasts}, meta
+
+
+def run_year(
+    volume: Volume, settings: WorkerSettings, now: datetime, context: Context | None = None
+):
+    context = context or build_context(volume, settings.routes)
+    run_id, tables, meta = build_year(volume, context, settings, now)
+    publish_run(volume, run_id, tables, meta, settings.keep_runs)
     return run_id

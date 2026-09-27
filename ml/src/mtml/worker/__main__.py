@@ -3,6 +3,7 @@ import logging
 
 from mtml.clock import load_clock
 from mtml.storage import Volume
+from mtml.worker.context import build_context
 from mtml.worker.schedule import run_forever
 from mtml.worker.settings import WorkerSettings
 from mtml.worker.short import run_short
@@ -26,10 +27,11 @@ def main():
     if args.command == "run":
         run_forever(volume, settings, clock)
         return
+    context = build_context(volume, settings.routes)
     if args.kind in ("short", "all"):
-        run_short(volume, settings, clock.now())
+        run_short(volume, settings, clock.now(), context)
     if args.kind in ("year", "all"):
-        run_year(volume, settings, clock.now())
+        run_year(volume, settings, clock.now(), context)
 
 
 if __name__ == "__main__":

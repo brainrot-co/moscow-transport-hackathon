@@ -7,7 +7,7 @@ import pandas as pd
 from mtml.forecasters import build
 from mtml.forecasters.base import horizon_hours
 from mtml.storage import Volume
-from mtml.worker.context import build_context
+from mtml.worker.context import Context, build_context
 from mtml.worker.effects import compute_effects
 from mtml.worker.publish import SCHEMA_VERSION, publish_run
 from mtml.worker.quality import check_forecast
@@ -36,8 +36,8 @@ def to_forecasts(preds: pd.DataFrame, cold_start_routes: tuple[int, ...], hours:
     )
 
 
-def run_short(volume: Volume, settings: WorkerSettings, now: datetime):
-    context = build_context(volume, settings.routes)
+def build_short(_volume: Volume, context: Context, settings: WorkerSettings, now: datetime):
+    """Считает и проверяет прогон, но не публикует: возвращает run_id, таблицы и meta."""
     start = pd.Timestamp(context.watermark) + pd.Timedelta(days=1)
     end = start + pd.Timedelta(days=settings.horizon_days - 1)
     log.info(
@@ -74,6 +74,13 @@ def run_short(volume: Volume, settings: WorkerSettings, now: datetime):
         "quality_checks": checks,
         "effects": effects.groupby("factor")["date"].nunique().to_dict(),
     }
-    tables = {"forecasts": forecasts, "effects": effects}
+    return run_id, {"forecasts": forecasts, "effects": effects}, meta
+
+
+def run_short(
+    volume: Volume, settings: WorkerSettings, now: datetime, context: Context | None = None
+):
+    context = context or build_context(volume, settings.routes)
+    run_id, tables, meta = build_short(volume, context, settings, now)
     publish_run(volume, run_id, tables, meta, settings.keep_runs)
     return run_id
