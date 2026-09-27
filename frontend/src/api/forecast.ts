@@ -69,8 +69,53 @@ export interface RouteLoadResponse {
     meta: ForecastMeta;
 }
 
+export interface AnalyticsHour {
+    ts: string;
+    actual: number | null;
+    forecast: number | null;
+    total: number | null;
+    available_routes: number;
+    total_routes: number;
+}
+
+export interface AnalyticsRoute {
+    route: number;
+    hourly: Array<number | null>;
+    hourly_sources: Array<ForecastSource | null>;
+    actual: number;
+    forecast: number;
+    total: number | null;
+    peak_hour: number | null;
+    peak_value: number | null;
+    ratio: number | null;
+    deviation_percent: number | null;
+    load_level: LoadLevel | null;
+    norm_median: number | null;
+    norm_days: number;
+}
+
+export interface ForecastAnalyticsResponse {
+    schema_version: number;
+    date: string;
+    selected_routes: number[];
+    norm_weeks: number;
+    norm_min_days: number;
+    hours: AnalyticsHour[];
+    routes: AnalyticsRoute[];
+    meta: ForecastMeta;
+}
+
 export function getRouteLoad(date: string): Promise<RouteLoadResponse> {
     return apiRequest<RouteLoadResponse>(`/forecast/load?${new URLSearchParams({ date }).toString()}`);
+}
+
+export function getForecastAnalytics(
+    date: string,
+    routes: number[],
+): Promise<ForecastAnalyticsResponse> {
+    const params = new URLSearchParams({ date });
+    routes.forEach((route) => params.append('routes', String(route)));
+    return apiRequest<ForecastAnalyticsResponse>(`/forecast/analytics?${params.toString()}`);
 }
 
 export function getForecastMeta(): Promise<ForecastMeta> {

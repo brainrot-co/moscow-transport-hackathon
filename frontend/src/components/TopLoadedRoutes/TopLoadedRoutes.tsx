@@ -1,6 +1,7 @@
 import styles from './TopLoadedRoutes.module.scss'
 
 import type { ForecastRow } from '../../api/forecast';
+import InfoHint from '../InfoHint/InfoHint';
 import LoadedRoute from '../LoadedRoute/LoadedRoute'
 import { routeColors } from '../../data/routeColors'
 import { tramRoutes } from '../Map/routes'
@@ -36,7 +37,11 @@ export default function TopLoadedRoutes({
         <div className={styles.topLoadedRoutes}>
             <div className={styles.topLoadedTop}>
                 <h5>Топ-5 маршрутов по пассажиропотоку за день</h5>
-                <p>* длина полосы - это доля от самого загруженного маршрута в топе</p>
+                <InfoHint
+                    title="Топ-5 маршрутов за день"
+                    description="Рейтинг маршрутов по суммарному пассажиропотоку за текущий операционный день. Длина полосы — доля от самого загруженного маршрута в этой пятёрке."
+                    usage="Сравнивайте число пассажиров и длину полос. Нажмите на строку маршрута, чтобы выделить его на карте и открыть связанную оперативную информацию."
+                />
             </div>
 
             <div className={styles.loadedRoutes}>

@@ -53,6 +53,10 @@
     --popover-shadow: 0 18px 42px rgba(42, 58, 75, 0.18);
 
     color-scheme: light;
+
+    .navLink:not(.navLinkActive) img {
+        filter: brightness(0) saturate(100%);
+    }
 }
 
 .sideMenuBar {
@@ -218,10 +222,13 @@
         cursor: pointer;
         transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 
-        &:hover {
-            border-color: var(--border);
-            background: var(--surface-raised);
+        > img {
+            width: 22px;
+            height: 22px;
+            flex: 0 0 auto;
+            object-fit: contain;
         }
+
     }
 
     .navLinkActive {
@@ -232,10 +239,6 @@
         background-position: 0% 0%;
         transition: background-position 0.4s ease;
 
-        &:hover {
-            border-color: transparent;
-            background-position: 30% 30%;
-        }
     }
 }
 
@@ -478,6 +481,7 @@
     flex: 1 1 auto;
     align-items: flex-start;
     justify-content: space-between;
+    overflow: hidden;
 }
 
 .dataBanner {

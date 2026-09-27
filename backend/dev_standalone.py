@@ -1,12 +1,6 @@
-"""Run the API locally without PostgreSQL, Redis, Docker, or ML artifacts.
-
-This module is a development-only launcher. It keeps demo auth and scenarios in
-memory and publishes a small synthetic forecast for the current Moscow day.
-"""
-
 import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 os.environ.setdefault(
@@ -32,6 +26,33 @@ from app.main import app
 from app.ml import ForecastStore
 from app.ml.models import ActualRecord, ForecastRecord, ForecastSnapshot, RunMetadata
 from app.models import User
+
+HOURLY_DEMAND = (
+    0.18,
+    0.14,
+    0.11,
+    0.1,
+    0.14,
+    0.32,
+    0.72,
+    1.18,
+    1.42,
+    1.12,
+    0.86,
+    0.78,
+    0.82,
+    0.88,
+    0.92,
+    1.02,
+    1.28,
+    1.55,
+    1.48,
+    1.2,
+    0.92,
+    0.68,
+    0.46,
+    0.28,
+)
 
 
 class InMemoryRedis:
@@ -139,7 +160,7 @@ async def memory_session():
     yield None
 
 
-def build_demo_snapshot(now: datetime) -> ForecastSnapshot:
+def build_demo_snapshot(now: datetime):
     route_loads = {
         1: 71,
         5: 48,
@@ -156,16 +177,33 @@ def build_demo_snapshot(now: datetime) -> ForecastSnapshot:
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     actuals = {}
     forecasts = {}
+    daily_actuals = {}
     for hour in range(24):
         timestamp = start.replace(hour=hour)
         for route in routes:
-            base = route_loads[route] + ((hour - 12) ** 2 // 5)
+            base = round(route_loads[route] * HOURLY_DEMAND[hour])
             if hour <= now.hour:
                 actuals[(route, timestamp)] = ActualRecord(route, timestamp, base)
             else:
                 forecasts[(route, timestamp)] = ForecastRecord(
-                    route, timestamp, float(base + 8), float(base - 4), float(base + 20)
+                    route,
+                    timestamp,
+                    float(round(base * 1.05)),
+                    float(round(base * 0.9)),
+                    float(round(base * 1.18)),
                 )
+    for route, route_load in route_loads.items():
+        usual_total = sum(round(route_load * factor) for factor in HOURLY_DEMAND)
+        route_factor = 0.85 + (route % 5) * 0.04
+        daily_actuals[route] = {
+            now.date() - timedelta(days=offset): round(
+                usual_total
+                * route_factor
+                * (0.78 if (now - timedelta(days=offset)).weekday() >= 5 else 1)
+                * (0.96 + (offset % 5) * 0.02)
+            )
+            for offset in range(1, 64)
+        }
     meta = RunMetadata(
         run_id="local-demo",
         kind="short",
@@ -181,6 +219,7 @@ def build_demo_snapshot(now: datetime) -> ForecastSnapshot:
         year={},
         short_meta=meta,
         watermark=now.date(),
+        daily_actuals=daily_actuals,
     )
 
 

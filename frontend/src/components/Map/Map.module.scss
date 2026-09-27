@@ -34,9 +34,15 @@
 .routeCard,
 .mapControls,
 .mapToggles,
+.mapInfo,
 .openFiltersButton {
     position: absolute;
     z-index: 2;
+}
+
+.mapInfo {
+    top: 16px;
+    right: 68px;
 }
 
 .mapToggles {
@@ -87,6 +93,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.toggleWithInfo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
 }
 
 .filtersPanel {
@@ -194,6 +206,10 @@
     color: var(--muted, #aab7ca);
     font-size: 11px;
     font-weight: 600;
+
+    > label {
+        margin-right: auto;
+    }
 }
 
 .filterIcon {

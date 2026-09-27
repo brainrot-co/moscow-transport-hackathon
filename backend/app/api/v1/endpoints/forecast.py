@@ -15,6 +15,9 @@ from app.ml import ForecastStore
 from app.ml.corrections import Scenario as CorrectionScenario
 from app.ml.load import LoadNormSettings
 from app.schemas.forecast import (
+    AnalyticsHourRead,
+    AnalyticsRouteRead,
+    ForecastAnalyticsResponse,
     ForecastMetaRead,
     ForecastPreviewRequest,
     ForecastQueryRead,
@@ -23,6 +26,7 @@ from app.schemas.forecast import (
     RouteLoadRead,
     RouteLoadResponse,
 )
+from app.services.analytics import build_forecast_analytics
 from app.services.forecast import ForecastService, as_api_rows
 
 router = APIRouter(prefix="/forecast", tags=["Forecast"])
@@ -158,6 +162,84 @@ async def route_load(
             )
             for load in loads
         ],
+        meta=ForecastMetaRead.model_validate(
+            service.meta(
+                now=store.now(),
+                published_at=store.published_at,
+                stale_after_days=settings.stale_after_days,
+            )
+        ),
+    )
+
+
+@router.get("/analytics", response_model=ForecastAnalyticsResponse)
+async def forecast_analytics(
+    day: date | None = Query(default=None, alias="date"),
+    routes: list[int] | None = Query(default=None),
+    _current_user: CurrentUser = Depends(RequireRole(Role.USER)),
+    store: ForecastStore = Depends(get_forecast_store),
+    session: AsyncSession = Depends(get_db_session),
+    scenario_crud: ScenarioCRUD = Depends(get_scenario_crud),
+    settings: Settings = Depends(get_settings),
+):
+    if store.snapshot is None:
+        raise HTTPException(status_code=503, detail="forecast_unavailable")
+    day = day or store.now().date()
+    model_factors, scenarios = await _saved_corrections(
+        session,
+        scenario_crud,
+        datetime.combine(day, time()),
+        datetime.combine(day, time(23)),
+    )
+    service = ForecastService(store.snapshot)
+    result = build_forecast_analytics(
+        service,
+        day,
+        routes,
+        LoadNormSettings(
+            weeks=settings.load_norm_weeks,
+            min_days=settings.load_norm_min_days,
+            low_quantile=settings.load_low_quantile,
+            high_quantile=settings.load_high_quantile,
+            min_deviation=settings.load_min_deviation,
+        ),
+        model_factors=model_factors,
+        scenarios=scenarios,
+    )
+    return ForecastAnalyticsResponse(
+        date=result.day,
+        selected_routes=result.selected_routes,
+        norm_weeks=settings.load_norm_weeks,
+        norm_min_days=settings.load_norm_min_days,
+        hours=tuple(
+            AnalyticsHourRead(
+                ts=point.ts,
+                actual=point.actual,
+                forecast=point.forecast,
+                total=point.total,
+                available_routes=point.available_routes,
+                total_routes=point.total_routes,
+            )
+            for point in result.hours
+        ),
+        routes=tuple(
+            AnalyticsRouteRead(
+                route=route.route,
+                hourly=route.hourly,
+                hourly_sources=route.hourly_sources,
+                actual=route.actual,
+                forecast=route.forecast,
+                total=route.total,
+                peak_hour=route.peak_hour,
+                peak_value=route.peak_value,
+                ratio=route.ratio,
+                deviation_percent=route.deviation_percent,
+                load_level=route.load_level,
+                norm_median=route.norm_median,
+                norm_days=route.norm_days,
+            )
+            for route in result.routes
+        ),
         meta=ForecastMetaRead.model_validate(
             service.meta(
                 now=store.now(),

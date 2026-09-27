@@ -8,7 +8,8 @@ import cogwheel from '../../assets/cogwheel.svg'
 import LoadGraph from '../../components/LoadGraph/LoadGraph'
 import TopLoadedRoutes from '../../components/TopLoadedRoutes/TopLoadedRoutes'
 import Map from '../../components/Map/Map'
-import { Link, useNavigate } from 'react-router-dom'
+import GraphsWorkspace from '../../components/GraphsWorkspace/GraphsWorkspace'
+import { useNavigate } from 'react-router-dom'
 import useTheme from '../../hooks/useTheme'
 import { useForecast } from '../../hooks/useForecast'
 import { logout } from '../../api/auth'
@@ -52,6 +53,8 @@ const getCurrentDateTime = (now: Date) => {
 export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null)
+    const [activeView, setActiveView] = useState<'dashboard' | 'graphs'>('dashboard')
+    const [analyticsReloadToken, setAnalyticsReloadToken] = useState(0)
     const { isLightTheme, setIsLightTheme } = useTheme()
     const { rows, meta, load, loading, error, refresh } = useForecast(1)
     const navigate = useNavigate()
@@ -65,6 +68,11 @@ export default function Dashboard() {
     const handleLogout = async () => {
         await logout()
         navigate('/login', { replace: true })
+    }
+
+    const handleRefresh = () => {
+        refresh()
+        setAnalyticsReloadToken((token) => token + 1)
     }
 
     return (
@@ -91,20 +99,22 @@ export default function Dashboard() {
                             </div>
                             <ul className={styles.sideMenu}>
                                 <li>
-                                    <Link
-                                        to={'/dashboard'}
-                                        className={`${styles.navLink} ${styles.navLinkActive}`}
+                                    <button
+                                        type="button"
+                                        className={`${styles.navLink} ${activeView === 'dashboard' ? styles.navLinkActive : ''}`}
                                         aria-label="Дашборд"
+                                        onClick={() => setActiveView('dashboard')}
                                     >
                                         <img src={dashIcon} alt="" />
                                         <p>Дашборд</p>
-                                    </Link>
+                                    </button>
                                 </li>
                                 <li>
                                     <button
                                         type="button"
-                                        className={styles.navLink}
+                                        className={`${styles.navLink} ${activeView === 'graphs' ? styles.navLinkActive : ''}`}
                                         aria-label="Графики"
+                                        onClick={() => setActiveView('graphs')}
                                     >
                                         <span className={styles.sidebarIcon}><GraphsIcon /></span>
                                         <p>Графики</p>
@@ -124,7 +134,7 @@ export default function Dashboard() {
                                         <button
                                             type="button"
                                             className={styles.refreshDataButton}
-                                            onClick={refresh}
+                                            onClick={handleRefresh}
                                             disabled={loading}
                                         >
                                             <img src={cogwheel} alt="" />
@@ -162,7 +172,7 @@ export default function Dashboard() {
                 <section className={styles.dashboardContent}>
                     <div className={styles.dashboardTop}>
                         <div className={styles.topGreeting}>
-                            <h4>Трамвайная сеть Москвы</h4>
+                            <h4>{activeView === 'dashboard' ? 'Трамвайная сеть Москвы' : 'Графики пассажиропотока'}</h4>
                         </div>
 
                         <div className={styles.topControls}>
@@ -193,27 +203,33 @@ export default function Dashboard() {
                     )}
 
                     <div className={styles.dashboardContentContainer}>
-                        <div className={styles.dashboardColumnLeft}>
-                            <div className={styles.mapContainer}>
-                                <Map
-                                    theme={isLightTheme ? 'light' : 'dark'}
-                                    rows={rows}
-                                    meta={meta}
-                                    load={load}
-                                    focusedRouteId={focusedRouteId}
-                                    onFocusedRouteChange={setFocusedRouteId}
-                                />
+                        {activeView === 'dashboard' ? (
+                            <div className={styles.dashboardColumnLeft}>
+                                <div className={styles.mapContainer}>
+                                    <Map
+                                        theme={isLightTheme ? 'light' : 'dark'}
+                                        rows={rows}
+                                        meta={meta}
+                                        load={load}
+                                        focusedRouteId={focusedRouteId}
+                                        onFocusedRouteChange={setFocusedRouteId}
+                                    />
+                                </div>
+                                <div className={styles.columnLeftBottom}>
+                                    <LoadGraph rows={rows} />
+                                    <TopLoadedRoutes
+                                        rows={rows}
+                                        selectedRouteId={focusedRouteId}
+                                        onSelectRoute={setFocusedRouteId}
+                                    />
+                                </div>
                             </div>
-                            <div className={styles.columnLeftBottom}>
-                                <LoadGraph rows={rows} />
-                                <TopLoadedRoutes
-                                    rows={rows}
-                                    selectedRouteId={focusedRouteId}
-                                    onSelectRoute={setFocusedRouteId}
-                                />
-                            </div>
-                        </div>
-
+                        ) : (
+                            <GraphsWorkspace
+                                meta={meta}
+                                reloadToken={analyticsReloadToken}
+                            />
+                        )}
                     </div>
                                  
                 </section>

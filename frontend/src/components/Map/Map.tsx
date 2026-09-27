@@ -13,6 +13,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 
 import styles from './Map.module.scss';
 import { routeColors } from '../../data/routeColors';
+import InfoHint from '../InfoHint/InfoHint';
 import RouteDetailsModal from '../RouteDetailsModal/RouteDetailsModal';
 import type { ForecastMeta, ForecastRow, LoadLevel, RouteLoad, RouteLoadResponse } from '../../api/forecast';
 import {
@@ -751,13 +752,19 @@ export default function Map({
                     ‹
                 </button>
 
-                <label className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>
+                <div className={styles.filterGroup}>
+                    <div className={styles.filterLabel}>
                         <span className={styles.filterIcon}><TramIcon /></span>
-                        Маршрут
-                    </span>
+                        <label htmlFor="map-route-filter">Маршрут</label>
+                        <InfoHint
+                            title="Фильтр маршрута на карте"
+                            description="Оставляет в фокусе выбранный маршрут, его остановки и оперативную карточку с пассажиропотоком. Остальная сеть становится менее заметной."
+                            usage="Выберите номер или кликните по линии на карте. Значение «Все маршруты» возвращает общий обзор сети."
+                        />
+                    </div>
                     <span className={styles.selectWrap}>
                         <select
+                            id="map-route-filter"
                             value={routeFilter}
                             onChange={(event) => handleRouteChange(event.target.value)}
                         >
@@ -769,15 +776,21 @@ export default function Map({
                             ))}
                         </select>
                     </span>
-                </label>
+                </div>
 
-                <label className={styles.filterGroup}>
-                    <span className={styles.filterLabel}>
+                <div className={styles.filterGroup}>
+                    <div className={styles.filterLabel}>
                         <span className={styles.filterIcon}><PinIcon /></span>
-                        Остановка
-                    </span>
+                        <label htmlFor="map-stop-filter">Остановка</label>
+                        <InfoHint
+                            title="Фильтр остановки"
+                            description="Показывает доступные остановки выбранного маршрута или всей сети и позволяет быстро перейти к нужной точке."
+                            usage="Выберите остановку — карта приблизит её и покажет название. После выбора маршрута список автоматически сократится до его остановок."
+                        />
+                    </div>
                     <span className={styles.selectWrap}>
                         <select
+                            id="map-stop-filter"
                             value={selectedStop}
                             onChange={(event) => handleStopChange(event.target.value)}
                         >
@@ -789,7 +802,7 @@ export default function Map({
                             ))}
                         </select>
                     </span>
-                </label>
+                </div>
 
             </div>
             )}
@@ -806,6 +819,14 @@ export default function Map({
                     <b>›</b>
                 </button>
             )}
+
+            <div className={styles.mapInfo}>
+                <InfoHint
+                    title="Карта трамвайной сети"
+                    description="Показывает геометрию маршрутов и остановки. Цвет контура соответствует маршруту, а выбранная линия выделяется на фоне остальной сети."
+                    usage="Кликните по линии для выбора маршрута, по остановке — для её названия. Кнопки справа меняют масштаб и возвращают обзор всей сети; фильтры слева помогают быстро найти объект."
+                />
+            </div>
 
             <div className={styles.mapControls}>
                 <button
@@ -833,14 +854,21 @@ export default function Map({
             </div>
 
             <div className={styles.mapToggles}>
-                <label className={styles.mapToggle}>
-                    <input
-                        type="checkbox"
-                        checked={showStops}
-                        onChange={(event) => setShowStops(event.target.checked)}
+                <div className={styles.toggleWithInfo}>
+                    <label className={styles.mapToggle}>
+                        <input
+                            type="checkbox"
+                            checked={showStops}
+                            onChange={(event) => setShowStops(event.target.checked)}
+                        />
+                        <span>Остановки</span>
+                    </label>
+                    <InfoHint
+                        title="Отображение остановок"
+                        description="Управляет видимостью точек остановок на карте и не меняет расчёты пассажиропотока."
+                        usage="Отключите точки, если они мешают читать линии маршрутов. Включите обратно, чтобы выбирать остановки на карте."
                     />
-                    <span>Остановки</span>
-                </label>
+                </div>
             </div>
 
             {focusedRoute && (
@@ -853,6 +881,11 @@ export default function Map({
                         />
                         <span>Цвет загруженности</span>
                     </label>
+                    <InfoHint
+                        title="Цвет загруженности"
+                        description="Заменяет фирменный цвет выбранного маршрута на цвет его текущего уровня нагрузки: низкий, средний или высокий."
+                        usage="Сначала выберите маршрут, затем включите переключатель. Легенда рядом подскажет значение цвета; выключение вернёт цвет номера маршрута."
+                    />
                     {showLoadColors && (
                         <div className={styles.legend}>
                             <span><i className={styles.low} />Низкая</span>

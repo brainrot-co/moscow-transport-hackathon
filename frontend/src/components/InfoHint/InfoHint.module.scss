@@ -1,0 +1,83 @@
+.hint {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    font-style: normal;
+}
+
+.trigger {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--border-hover, #30445c);
+    border-radius: 50%;
+    background: var(--surface-raised, #101a28);
+    color: var(--muted, #8c9eb8);
+    font-family: "Montserrat", sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: help;
+    transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+
+    &:hover,
+    &:focus-visible {
+        outline: none;
+        border-color: rgba(241, 6, 36, 0.72);
+        background: rgba(241, 6, 36, 0.12);
+        color: #ff2944;
+    }
+}
+
+.tooltip {
+    position: fixed;
+    z-index: 3000;
+    width: min(360px, calc(100vw - 24px));
+    padding: 14px 15px;
+    box-sizing: border-box;
+    display: grid;
+    gap: 11px;
+    border: 1px solid var(--border-hover, #30445c);
+    border-radius: 12px;
+    background: var(--surface, #09111b);
+    box-shadow: var(--popover-shadow, 0 18px 42px rgba(0, 0, 0, 0.46));
+    color: var(--text, #f0f5fc);
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    pointer-events: none;
+}
+
+.title {
+    color: var(--text-strong, #fff);
+    font-size: 13px;
+    line-height: 1.35;
+}
+
+.section {
+    display: grid;
+    gap: 3px;
+
+    b {
+        color: #ff5268;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1.25;
+        text-transform: uppercase;
+    }
+
+    p {
+        margin: 0;
+        color: var(--text, #f0f5fc);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: normal;
+        line-height: 1.5;
+        text-transform: none;
+    }
+}

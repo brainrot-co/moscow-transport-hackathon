@@ -76,6 +76,44 @@ class RouteLoadResponse(BaseModel):
     meta: ForecastMetaRead
 
 
+class AnalyticsHourRead(BaseModel):
+    ts: datetime
+    actual: float | None
+    forecast: float | None
+    total: float | None
+    available_routes: int
+    total_routes: int
+
+
+class AnalyticsRouteRead(BaseModel):
+    route: int
+    hourly: tuple[float | None, ...]
+    hourly_sources: tuple[
+        Literal["actual", "forecast", "forecast_seasonal", "mixed"] | None, ...
+    ]
+    actual: float
+    forecast: float
+    total: float | None
+    peak_hour: int | None
+    peak_value: float | None
+    ratio: float | None
+    deviation_percent: float | None
+    load_level: Literal["low", "medium", "high"] | None
+    norm_median: float | None
+    norm_days: int
+
+
+class ForecastAnalyticsResponse(BaseModel):
+    schema_version: int = 1
+    date: date
+    selected_routes: tuple[int, ...]
+    norm_weeks: int
+    norm_min_days: int
+    hours: tuple[AnalyticsHourRead, ...]
+    routes: tuple[AnalyticsRouteRead, ...]
+    meta: ForecastMetaRead
+
+
 class ForecastPreviewRequest(BaseModel):
     date_from: datetime
     date_to: datetime
