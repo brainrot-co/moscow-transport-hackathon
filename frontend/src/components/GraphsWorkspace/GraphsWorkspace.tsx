@@ -14,6 +14,7 @@ import {
     type ForecastMeta,
 } from '../../api/forecast';
 import { routeColors } from '../../data/routeColors';
+import usePersistentState from '../../hooks/usePersistentState';
 import InfoHint from '../InfoHint/InfoHint';
 import { tramRoutes } from '../Map/routes';
 import styles from './GraphsWorkspace.module.scss';
@@ -26,9 +27,23 @@ interface GraphsWorkspaceProps {
 type HeatmapMode = 'relative' | 'absolute';
 
 const ALL_ROUTE_IDS = tramRoutes.map((route) => Number(route.id));
+const ALL_ROUTE_ID_SET = new Set(ALL_ROUTE_IDS);
 const CHART_WIDTH = 920;
 const CHART_HEIGHT = 380;
 const PLOT = { left: 64, right: 26, top: 26, bottom: 42 };
+
+const isStoredDate = (value: unknown): value is string | null => (
+    value === null || (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))
+);
+
+const isStoredRouteSelection = (value: unknown): value is number[] => (
+    Array.isArray(value)
+    && value.every((routeId) => typeof routeId === 'number' && ALL_ROUTE_ID_SET.has(routeId))
+);
+
+const isHeatmapMode = (value: unknown): value is HeatmapMode => (
+    value === 'relative' || value === 'absolute'
+);
 
 const formatNumber = (value: number) => new Intl.NumberFormat('ru-RU', {
     maximumFractionDigits: 0,
@@ -306,7 +321,11 @@ function IntradayDispersion({ routes }: { routes: AnalyticsRoute[] }) {
 }
 
 function PeaksHeatmap({ routes }: { routes: AnalyticsRoute[] }) {
-    const [mode, setMode] = useState<HeatmapMode>('relative');
+    const [mode, setMode] = usePersistentState<HeatmapMode>(
+        'transport-graphs.heatmap-mode',
+        'relative',
+        isHeatmapMode,
+    );
     const [activeCell, setActiveCell] = useState<{
         route: number;
         hour: number;
@@ -455,9 +474,17 @@ function PeaksHeatmap({ routes }: { routes: AnalyticsRoute[] }) {
 
 export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspaceProps) {
     // пока дату не выбрали вручную, страница идёт за «сейчас» бэкенда: в демо сутки проходят за минуты
-    const [pickedDate, setPickedDate] = useState<string | null>(null);
+    const [pickedDate, setPickedDate] = usePersistentState<string | null>(
+        'transport-graphs.picked-date',
+        null,
+        isStoredDate,
+    );
     const date = pickedDate ?? meta?.now?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
-    const [selectedRoutes, setSelectedRoutes] = useState<number[]>(ALL_ROUTE_IDS);
+    const [selectedRoutes, setSelectedRoutes] = usePersistentState<number[]>(
+        'transport-graphs.selected-routes',
+        ALL_ROUTE_IDS,
+        isStoredRouteSelection,
+    );
     const [data, setData] = useState<ForecastAnalyticsResponse | null>(null);
     const [loadedQueryKey, setLoadedQueryKey] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -478,8 +505,11 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
     const routeKey = selectedRoutes.join(',');
     // meta.now приходит с опросом дашборда раз в 30 с: вместе с ним пересчитываются факт и прогноз
     const queryKey = `${date}:${routeKey}:${reloadToken}:${meta?.now ?? ''}`;
-    const loading = loadedQueryKey !== queryKey;
+    const hasSelectedRoutes = selectedRoutes.length > 0;
+    const loading = hasSelectedRoutes && loadedQueryKey !== queryKey;
     useEffect(() => {
+        if (selectedRoutes.length === 0) return;
+
         let cancelled = false;
         void getForecastAnalytics(date, selectedRoutes)
             .then((response) => {
@@ -514,20 +544,22 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
     const toggleRoute = (routeId: number) => {
         setSelectedRoutes((current) => {
             if (current.includes(routeId)) {
-                return current.length === 1
-                    ? current
-                    : current.filter((selected) => selected !== routeId);
+                return current.filter((selected) => selected !== routeId);
             }
             return [...current, routeId].sort((left, right) => left - right);
         });
     };
 
-    const routeAnalytics = data?.routes ?? [];
+    const allRoutesSelected = selectedRoutes.length === ALL_ROUTE_IDS.length;
+
+    const visibleError = hasSelectedRoutes ? error : null;
+    const routeAnalytics = hasSelectedRoutes ? data?.routes ?? [] : [];
+    const hourAnalytics = hasSelectedRoutes ? data?.hours ?? [] : [];
     const total = routeAnalytics.reduce((sum, route) => sum + (route.total ?? 0), 0);
     const busiest = routeAnalytics.reduce<AnalyticsRoute | null>((current, route) => (
         !current || (route.total ?? -1) > (current.total ?? -1) ? route : current
     ), null);
-    const peak = (data?.hours ?? []).reduce<AnalyticsHour | null>((current, hour) => (
+    const peak = hourAnalytics.reduce<AnalyticsHour | null>((current, hour) => (
         !current || (hour.total ?? -1) > (current.total ?? -1) ? hour : current
     ), null);
     const highLoadRoutes = routeAnalytics.filter((route) => route.load_level === 'high').length;
@@ -561,7 +593,7 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
                         <InfoHint
                             title="Фильтр маршрутов"
                             description="Определяет, какие маршруты участвуют во всех показателях и графиках этой вкладки."
-                            usage="Откройте список, найдите маршрут по номеру или направлению и включите либо исключите его. Можно выбрать все маршруты; как минимум один всегда остаётся выбранным."
+                            usage="Откройте список, найдите маршрут по номеру или направлению и включите либо исключите его. «Выбрать все» включает все маршруты, повторное нажатие снимает весь выбор. Если не выбран ни один маршрут, показатели и графики остаются пустыми."
                         />
                     </div>
                     <button
@@ -582,8 +614,11 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
                                     value={routeSearch}
                                     onChange={(event) => setRouteSearch(event.target.value)}
                                 />
-                                <button type="button" onClick={() => setSelectedRoutes(ALL_ROUTE_IDS)}>
-                                    Выбрать все
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedRoutes(allRoutesSelected ? [] : ALL_ROUTE_IDS)}
+                                >
+                                    {allRoutesSelected ? 'Снять выбор' : 'Выбрать все'}
                                 </button>
                             </div>
                             <div className={styles.routeOptions}>
@@ -608,7 +643,7 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
                 </div>
             </div>
 
-            {error && <div className={styles.errorBanner}>Не удалось загрузить графики: {error}</div>}
+            {visibleError && <div className={styles.errorBanner}>Не удалось загрузить графики: {visibleError}</div>}
 
             <div className={`${styles.content} ${loading ? styles.contentLoading : ''}`}>
                 <div className={styles.metrics}>
@@ -634,16 +669,20 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
                     </div>
                 </div>
 
-                {data && routeAnalytics.length > 0 ? (
+                {hasSelectedRoutes && data && routeAnalytics.length > 0 ? (
                     <div className={styles.chartGrid}>
                         <FlowChart hours={data.hours} />
                         <IntradayDispersion routes={routeAnalytics} />
                         <PeaksHeatmap routes={routeAnalytics} />
                     </div>
-                ) : !loading && !error ? (
+                ) : !loading && !visibleError ? (
                     <div className={styles.emptyState}>
-                        <b>Для выбранного набора нет данных</b>
-                        <span>Проверьте дату или измените список маршрутов.</span>
+                        <b>{selectedRoutes.length === 0
+                            ? 'Маршруты не выбраны'
+                            : 'Для выбранного набора нет данных'}</b>
+                        <span>{selectedRoutes.length === 0
+                            ? 'Выберите маршруты в фильтре сверху, чтобы показать аналитику.'
+                            : 'Проверьте дату или измените список маршрутов.'}</span>
                     </div>
                 ) : null}
             </div>

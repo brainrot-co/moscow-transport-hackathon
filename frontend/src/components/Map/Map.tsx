@@ -742,16 +742,6 @@ export default function Map({
 
             {filtersOpen && (
             <div className={styles.filtersPanel}>
-                <button
-                    type="button"
-                    className={styles.closeFiltersButton}
-                    onClick={() => setFiltersOpen(false)}
-                    aria-label="Свернуть фильтры карты"
-                    title="Свернуть фильтры"
-                >
-                    ‹
-                </button>
-
                 <div className={styles.filterGroup}>
                     <div className={styles.filterLabel}>
                         <span className={styles.filterIcon}><TramIcon /></span>
@@ -761,6 +751,15 @@ export default function Map({
                             description="Оставляет в фокусе выбранный маршрут, его остановки и оперативную карточку с пассажиропотоком. Остальная сеть становится менее заметной."
                             usage="Выберите номер или кликните по линии на карте. Значение «Все маршруты» возвращает общий обзор сети."
                         />
+                        <button
+                            type="button"
+                            className={styles.closeFiltersButton}
+                            onClick={() => setFiltersOpen(false)}
+                            aria-label="Свернуть фильтры карты"
+                            title="Свернуть фильтры"
+                        >
+                            ×
+                        </button>
                     </div>
                     <span className={styles.selectWrap}>
                         <select
@@ -919,15 +918,22 @@ export default function Map({
                                 <p title={focusedRoute.name}>{focusedRoute.name}</p>
                             </div>
                             <div className={styles.routeCardActions}>
-                                <button
-                                    type="button"
-                                    className={styles.openRouteDetails}
-                                    onClick={() => setDetailsRouteId(focusedRoute.id)}
-                                    aria-label={`Открыть подробности маршрута ${focusedRoute.id}`}
-                                    title="Открыть подробности"
-                                >
-                                    ›
-                                </button>
+                                <div className={styles.openRouteDetailsRow}>
+                                    <InfoHint
+                                        title="Подробный прогноз маршрута"
+                                        description="Кнопка открывает модальное окно с подробным прогнозом выбранного маршрута: почасовой динамикой, диапазоном прогноза и действующими поправками."
+                                        usage="Нажмите на стрелку, чтобы открыть прогноз. Закройте модальное окно, чтобы вернуться к карте."
+                                    />
+                                    <button
+                                        type="button"
+                                        className={styles.openRouteDetails}
+                                        onClick={() => setDetailsRouteId(focusedRoute.id)}
+                                        aria-label={`Открыть подробный прогноз маршрута ${focusedRoute.id}`}
+                                        title="Открыть подробный прогноз"
+                                    >
+                                        ›
+                                    </button>
+                                </div>
                                 <button
                                     type="button"
                                     className={styles.closeRouteCard}

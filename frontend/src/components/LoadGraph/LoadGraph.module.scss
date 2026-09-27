@@ -153,24 +153,48 @@
 .routeMenuHeader {
     flex: 0 0 auto;
     padding: 11px 13px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     border-bottom: 1px solid var(--border, #20324b);
 
-    b,
-    span {
+    > div b,
+    > div span {
         display: block;
     }
 
-    b {
+    > div b {
         color: var(--text, #f0f5fc);
         font-size: 11px;
         line-height: 1.2;
     }
 
-    span {
+    > div span {
         margin-top: 3px;
         color: var(--muted, #8c9eb8);
         font-size: 9px;
         line-height: 1.2;
+    }
+
+    > button {
+        min-height: 30px;
+        padding: 0 10px;
+        flex: 0 0 auto;
+        border: 0;
+        border-radius: 8px;
+        background: rgba(241, 6, 36, 0.13);
+        color: #ff5268;
+        font-family: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+
+        &:hover,
+        &:focus-visible {
+            background: rgba(241, 6, 36, 0.21);
+            outline: none;
+        }
     }
 }
 

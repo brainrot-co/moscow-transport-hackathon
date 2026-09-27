@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import styles from './LoadGraph.module.scss';
 import type { ForecastRow } from '../../api/forecast';
 import { routeColors } from '../../data/routeColors';
+import usePersistentState from '../../hooks/usePersistentState';
 import InfoHint from '../InfoHint/InfoHint';
 import { tramRoutes, type TramRoute } from '../Map/routes';
 
@@ -31,8 +32,6 @@ interface ChartViewport {
     yMax: number;
 }
 
-const DEFAULT_SELECTED_ROUTES = 3;
-const PREFERRED_ROUTE_IDS = ['7', '17', '26'];
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
 const INITIAL_CHART_WIDTH = 680;
 const CHART_HEIGHT = 270;
@@ -41,6 +40,17 @@ const PLOT_HEIGHT = CHART_HEIGHT - PLOT.top - PLOT.bottom;
 const BASELINE_Y = PLOT.top + PLOT_HEIGHT;
 const FULL_X_MIN = 0;
 const FULL_X_MAX = 23;
+
+const ROUTE_ID_SET = new Set(tramRoutes.map((route) => route.id));
+
+const isStoredRouteIds = (value: unknown): value is string[] | null => (
+    value === null
+    || (
+        Array.isArray(value)
+        && new Set(value).size === value.length
+        && value.every((routeId) => typeof routeId === 'string' && ROUTE_ID_SET.has(routeId))
+    )
+);
 
 const rowValue = (row: ForecastRow) => (
     row.source === 'mixed'
@@ -89,7 +99,11 @@ interface LoadGraphProps {
 export default function LoadGraph({ rows }: LoadGraphProps) {
     const chartRef = useRef<SVGSVGElement>(null);
     const pickerRef = useRef<HTMLDivElement>(null);
-    const [selectedRouteIds, setSelectedRouteIds] = useState<string[]>([]);
+    const [selectedRouteIds, setSelectedRouteIds] = usePersistentState<string[] | null>(
+        'transport-dashboard.comparison-routes.v2',
+        null,
+        isStoredRouteIds,
+    );
     const [routeMenuOpen, setRouteMenuOpen] = useState(false);
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [tooltipScroll, setTooltipScroll] = useState({ top: 0, max: 1 });
@@ -109,12 +123,8 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
     ), [rows]);
 
     const effectiveSelectedRouteIds = useMemo(() => {
-        const retained = selectedRouteIds.filter((routeId) => availableRouteIds.has(routeId));
-        if (retained.length > 0) return retained;
-        const preferred = PREFERRED_ROUTE_IDS.filter((routeId) => availableRouteIds.has(routeId));
-        return [...preferred, ...availableRouteIds]
-            .filter((routeId, index, all) => all.indexOf(routeId) === index)
-            .slice(0, DEFAULT_SELECTED_ROUTES);
+        if (selectedRouteIds === null) return [...availableRouteIds];
+        return selectedRouteIds.filter((routeId) => availableRouteIds.has(routeId));
     }, [availableRouteIds, selectedRouteIds]);
 
     const selectedRoutes = useMemo(() => (
@@ -250,17 +260,19 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
 
     const toggleRoute = (routeId: string) => {
         setSelectedRouteIds((currentIds) => {
-            const retained = currentIds.filter((currentId) => availableRouteIds.has(currentId));
-            const activeIds = retained.length > 0 ? retained : effectiveSelectedRouteIds;
+            const activeIds = currentIds === null
+                ? effectiveSelectedRouteIds
+                : currentIds.filter((currentId) => availableRouteIds.has(currentId));
             if (activeIds.includes(routeId)) {
-                return activeIds.length === 1
-                    ? activeIds
-                    : activeIds.filter((currentId) => currentId !== routeId);
+                return activeIds.filter((currentId) => currentId !== routeId);
             }
 
             return [...activeIds, routeId];
         });
     };
+
+    const allAvailableRoutesSelected = availableRouteIds.size > 0
+        && effectiveSelectedRouteIds.length === availableRouteIds.size;
 
     const handlePointerMove = (event: PointerEvent<SVGSVGElement>) => {
         const drag = dragRef.current;
@@ -398,7 +410,7 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
                         <InfoHint
                             title="Маршруты для сравнения"
                             description="Определяет, какие маршруты представлены отдельными линиями на этом графике. Цвет линии совпадает с цветом номера маршрута."
-                            usage="Откройте список и добавьте или уберите маршруты. Выбранные номера показаны под заголовком; нажмите на номер там, чтобы быстро удалить линию."
+                            usage="По умолчанию выбраны все доступные маршруты. Откройте список, чтобы добавить или убрать отдельные линии. Кнопка «Снять выбор» сбрасывает список до нуля; при пустом выборе график остаётся без линий."
                         />
                         <div className={styles.routePicker} ref={pickerRef}>
                             <button
@@ -414,25 +426,33 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
 
                             {routeMenuOpen && (
                                 <div className={styles.routeMenu} role="menu" aria-label="Выбор маршрутов для сравнения">
-                                    <div className={styles.routeMenuHeader}>
+                                <div className={styles.routeMenuHeader}>
+                                    <div>
                                         <b>Выберите маршруты</b>
                                         <span>Линии показаны за сегодня</span>
                                     </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedRouteIds(
+                                            allAvailableRoutesSelected ? [] : null,
+                                        )}
+                                    >
+                                        {allAvailableRoutesSelected ? 'Снять выбор' : 'Выбрать все'}
+                                    </button>
+                                </div>
                                     <div className={styles.routeMenuList}>
                                         {tramRoutes.map((route) => {
-                                            const isSelected = effectiveSelectedRouteIds.includes(route.id);
-                                            const isUnavailable = !availableRouteIds.has(route.id);
-                                            const isDisabled = isUnavailable
-                                                || (isSelected && effectiveSelectedRouteIds.length === 1);
+                                        const isSelected = effectiveSelectedRouteIds.includes(route.id);
+                                        const isUnavailable = !availableRouteIds.has(route.id);
 
-                                            return (
+                                        return (
                                                 <button
                                                     key={route.id}
                                                     type="button"
                                                     role="menuitemcheckbox"
                                                     aria-checked={isSelected}
                                                     className={clsx(styles.routeOption, isSelected && styles.routeOptionSelected)}
-                                                    disabled={isDisabled}
+                                                disabled={isUnavailable}
                                                     onClick={() => toggleRoute(route.id)}
                                                 >
                                                     <i style={{ backgroundColor: routeColors[route.id] }} />
@@ -456,7 +476,6 @@ export default function LoadGraph({ rows }: LoadGraphProps) {
                         title={route.name}
                         aria-label={`Убрать маршрут №${route.id} из сравнения`}
                         onClick={() => toggleRoute(route.id)}
-                        disabled={selectedRoutes.length === 1}
                     >
                         <i style={{ backgroundColor: routeColors[route.id] }} />
                         <b>№{route.id}</b>

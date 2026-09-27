@@ -5,6 +5,7 @@ import {
     useState,
     type CSSProperties,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 import styles from './InfoHint.module.scss';
 
@@ -18,6 +19,14 @@ interface InfoHintProps {
 interface TooltipPosition {
     left: number;
     top: number;
+}
+
+interface TooltipTheme {
+    surface: string;
+    borderHover: string;
+    text: string;
+    textStrong: string;
+    popoverShadow: string;
 }
 
 const VIEWPORT_GAP = 12;
@@ -34,13 +43,28 @@ export default function InfoHint({
     const tooltipRef = useRef<HTMLDivElement>(null);
     const [visible, setVisible] = useState(false);
     const [position, setPosition] = useState<TooltipPosition>({ left: VIEWPORT_GAP, top: VIEWPORT_GAP });
+    const [theme, setTheme] = useState<TooltipTheme>({
+        surface: '',
+        borderHover: '',
+        text: '',
+        textStrong: '',
+        popoverShadow: '',
+    });
 
     const positionTooltip = () => {
         const trigger = triggerRef.current;
         if (!trigger) return;
 
         const bounds = trigger.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(trigger);
         const expectedWidth = Math.min(360, window.innerWidth - VIEWPORT_GAP * 2);
+        setTheme({
+            surface: computedStyle.getPropertyValue('--surface'),
+            borderHover: computedStyle.getPropertyValue('--border-hover'),
+            text: computedStyle.getPropertyValue('--text'),
+            textStrong: computedStyle.getPropertyValue('--text-strong'),
+            popoverShadow: computedStyle.getPropertyValue('--popover-shadow'),
+        });
         setPosition({
             left: Math.min(
                 window.innerWidth - expectedWidth - VIEWPORT_GAP,
@@ -72,7 +96,12 @@ export default function InfoHint({
     const tooltipStyle = {
         left: position.left,
         top: position.top,
-    } satisfies CSSProperties;
+        '--surface': theme.surface,
+        '--border-hover': theme.borderHover,
+        '--text': theme.text,
+        '--text-strong': theme.textStrong,
+        '--popover-shadow': theme.popoverShadow,
+    } as CSSProperties;
 
     return (
         <span
@@ -91,7 +120,7 @@ export default function InfoHint({
             >
                 i
             </button>
-            {visible && (
+            {visible && createPortal(
                 <div
                     ref={tooltipRef}
                     id={tooltipId}
@@ -108,7 +137,8 @@ export default function InfoHint({
                         <b>Как пользоваться</b>
                         <p>{usage}</p>
                     </div>
-                </div>
+                </div>,
+                document.body,
             )}
         </span>
     );

@@ -104,7 +104,7 @@
 .filtersPanel {
     top: 16px;
     left: 16px;
-    width: 250px;
+    width: 235px;
     box-sizing: border-box;
     padding: 18px 16px 20px;
     display: flex;
@@ -118,12 +118,10 @@
 }
 
 .closeFiltersButton {
-    position: absolute;
-    top: 12px;
-    right: 12px;
     width: 28px;
     height: 28px;
     display: grid;
+    flex: 0 0 auto;
     place-items: center;
     border: 1px solid var(--border, rgba(42, 63, 88, 0.9));
     border-radius: 7px;
@@ -325,9 +323,10 @@
 
 .routeCard {
     left: 16px;
-    width: 250px;
+    width: 235px;
+    min-height: 175px;
     box-sizing: border-box;
-    padding: 14px;
+    padding: 16px 14px;
     display: flex;
     gap: 12px;
     border: 1px solid var(--border, #26384e);
@@ -339,7 +338,7 @@
 }
 
 .routeCardBelowPanel {
-    top: 203px;
+    top: 219px;
 }
 
 .routeCardBelowButton {
@@ -368,11 +367,11 @@
 .routeCardBody {
     min-width: 0;
     flex: 1;
-    padding-right: 38px;
+    padding-right: 42px;
 
     strong {
         display: block;
-        margin-top: 5px;
+        margin-top: 11px;
         color: var(--text, #f2f6fc);
         font-size: 14px;
     }
@@ -422,10 +421,19 @@
     pointer-events: none;
 }
 
-.openRouteDetails {
+.openRouteDetailsRow {
     position: absolute;
     top: 50%;
     right: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    pointer-events: auto;
+    transform: translateY(-50%);
+}
+
+.openRouteDetails {
     width: 31px;
     height: 31px;
     display: grid;
@@ -438,8 +446,6 @@
     font-size: 28px;
     font-weight: 300;
     line-height: 1;
-    pointer-events: auto;
-    transform: translateY(-50%);
     cursor: pointer;
     transition: color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease;
 
@@ -448,7 +454,7 @@
         border-color: rgba(241, 6, 36, 0.75);
         background: rgba(241, 6, 36, 0.12);
         color: #f10624;
-        transform: translate(2px, -50%);
+        transform: translateX(2px);
     }
 }
 
@@ -582,12 +588,12 @@
 
 @media (max-width: 1280px) {
     .filtersPanel {
-        width: 225px;
+        width: 220px;
         padding: 14px;
         gap: 12px;
     }
 
     .routeCard {
-        width: 225px;
+        width: 220px;
     }
 }

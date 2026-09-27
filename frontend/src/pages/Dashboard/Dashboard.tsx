@@ -11,8 +11,21 @@ import Map from '../../components/Map/Map'
 import GraphsWorkspace from '../../components/GraphsWorkspace/GraphsWorkspace'
 import { useNavigate } from 'react-router-dom'
 import useTheme from '../../hooks/useTheme'
+import usePersistentState from '../../hooks/usePersistentState'
 import { useForecast } from '../../hooks/useForecast'
 import { logout } from '../../api/auth'
+
+type DashboardView = 'dashboard' | 'graphs'
+
+const isDashboardView = (value: unknown): value is DashboardView => (
+    value === 'dashboard' || value === 'graphs'
+)
+
+const isBoolean = (value: unknown): value is boolean => typeof value === 'boolean'
+
+const isRouteId = (value: unknown): value is string | null => (
+    value === null || typeof value === 'string'
+)
 
 const GraphsIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -51,9 +64,21 @@ const getCurrentDateTime = (now: Date) => {
 }
 
 export default function Dashboard() {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-    const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null)
-    const [activeView, setActiveView] = useState<'dashboard' | 'graphs'>('dashboard')
+    const [isSidebarOpen, setIsSidebarOpen] = usePersistentState(
+        'transport-dashboard.sidebar-open',
+        true,
+        isBoolean,
+    )
+    const [focusedRouteId, setFocusedRouteId] = usePersistentState<string | null>(
+        'transport-dashboard.focused-route',
+        null,
+        isRouteId,
+    )
+    const [activeView, setActiveView] = usePersistentState<DashboardView>(
+        'transport-dashboard.active-view',
+        'dashboard',
+        isDashboardView,
+    )
     const [analyticsReloadToken, setAnalyticsReloadToken] = useState(0)
     const { isLightTheme, setIsLightTheme } = useTheme()
     const { rows, meta, load, loading, error, refresh } = useForecast(1)
