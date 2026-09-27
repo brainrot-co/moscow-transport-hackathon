@@ -1,0 +1,269 @@
+{
+    "metrics": {
+        "iterations": {
+            "rate": 99.84189454710075,
+            "count": 6003
+        },
+        "vus": {
+            "value": 0,
+            "min": 0,
+            "max": 27
+        },
+        "http_req_sending": {
+            "p(90)": 0.029,
+            "p(95)": 0.034,
+            "avg": 0.02093455453788559,
+            "min": 0.001,
+            "med": 0.02,
+            "max": 1.418
+        },
+        "data_received": {
+            "count": 317875393,
+            "rate": 5286903.459440981
+        },
+        "checks": {
+            "passes": 12009,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_req_duration{endpoint:forecast}": {
+            "avg": 13.327776719828638,
+            "min": 1.114,
+            "med": 2.301,
+            "max": 618.444,
+            "p(90)": 19.497,
+            "p(95)": 36.831,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0
+        },
+        "data_sent": {
+            "count": 2616063,
+            "rate": 43510.35918283725
+        },
+        "http_req_receiving": {
+            "p(95)": 0.196,
+            "avg": 0.08426211490424615,
+            "min": 0.008,
+            "med": 0.052,
+            "max": 14.44,
+            "p(90)": 0.135
+        },
+        "http_req_blocked": {
+            "med": 0.005,
+            "max": 1.839,
+            "p(90)": 0.008,
+            "p(95)": 0.01,
+            "avg": 0.010823980016653006,
+            "min": 0
+        },
+        "http_req_duration{endpoint:forecast-preview}": {
+            "p(90)": 38.201,
+            "p(95)": 49.055,
+            "avg": 19.119514950166103,
+            "min": 1.264,
+            "med": 4.594,
+            "max": 477.278,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "iteration_duration": {
+            "p(90)": 27.055133400000003,
+            "p(95)": 42.76638269999995,
+            "avg": 15.451267221222757,
+            "min": 0.910875,
+            "med": 3.862875,
+            "max": 619.518959
+        },
+        "http_req_failed": {
+            "passes": 0,
+            "fails": 6005,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 0
+        },
+        "http_reqs": {
+            "count": 6005,
+            "rate": 99.87515854661669
+        },
+        "vus_max": {
+            "min": 110,
+            "max": 110,
+            "value": 110
+        },
+        "http_req_connecting": {
+            "max": 1.705,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0.004057785179017484,
+            "min": 0,
+            "med": 0
+        },
+        "http_req_duration": {
+            "p(95)": 41.76559999999997,
+            "avg": 14.339635970024961,
+            "min": 0.846,
+            "med": 2.515,
+            "max": 618.444,
+            "p(90)": 26.472600000000003
+        },
+        "http_req_duration{expected_response:true}": {
+            "avg": 14.339635970024961,
+            "min": 0.846,
+            "med": 2.515,
+            "max": 618.444,
+            "p(90)": 26.472600000000003,
+            "p(95)": 41.76559999999997
+        },
+        "http_req_duration{endpoint:forecast-analytics}": {
+            "avg": 18.001295,
+            "min": 0.979,
+            "med": 4.0575,
+            "max": 577.491,
+            "p(90)": 35.8265,
+            "p(95)": 50.57514999999998,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "http_req_duration{endpoint:forecast-load}": {
+            "med": 2.361,
+            "max": 594.095,
+            "p(90)": 28.976,
+            "p(95)": 43.884,
+            "avg": 14.953345172031089,
+            "min": 0.846,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "dropped_iterations": {
+            "rate": 0,
+            "count": 0,
+            "thresholds": {
+                "count<10": false
+            }
+        },
+        "http_req_waiting": {
+            "avg": 14.23443930058288,
+            "min": 0.789,
+            "med": 2.404,
+            "max": 618.395,
+            "p(90)": 26.2938,
+            "p(95)": 41.69559999999998
+        }
+    },
+    "setup_data": {
+        "date": "2025-11-04",
+        "dateFrom": "2025-11-04T00:00:00+03:00",
+        "dateTo": "2025-11-04T23:00:00+03:00",
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwicm9sZSI6ImFkbWluIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc5MDUyNTg4MywiaWF0IjoxNzkwNTI0OTgzLCJqdGkiOiJlNDhlNDA3ZjE4ZDc0NjhkOTBiZWYwZmMzZjhlMTAwNyJ9.jgNKrLgdo6fM1zJOJmfprTiWhVJdDTmRamGHP0noYE4"
+    },
+    "root_group": {
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e",
+        "groups": {
+            "setup": {
+                "checks": {
+                    "login succeeded": {
+                        "name": "login succeeded",
+                        "path": "::setup::login succeeded",
+                        "id": "a7d4e67a461e12e148d0e432e39a2c96",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "forecast meta succeeded": {
+                        "name": "forecast meta succeeded",
+                        "path": "::setup::forecast meta succeeded",
+                        "id": "ab308c90139fccfa6f96eb0682409645",
+                        "passes": 1,
+                        "fails": 0
+                    },
+                    "forecast is available": {
+                        "name": "forecast is available",
+                        "path": "::setup::forecast is available",
+                        "id": "52b0f5c3c4bb150510f2b3366202d6b0",
+                        "passes": 1,
+                        "fails": 0
+                    }
+                },
+                "name": "setup",
+                "path": "::setup",
+                "id": "5c0f8025f7e0b6654089e5b00e950f1a",
+                "groups": {}
+            }
+        },
+        "checks": {
+            "analytics status is 200": {
+                "name": "analytics status is 200",
+                "path": "::analytics status is 200",
+                "id": "87dbeded804ce9a5117f1f7e68667b1a",
+                "passes": 600,
+                "fails": 0
+            },
+            "analytics response is valid": {
+                "path": "::analytics response is valid",
+                "id": "6055e0a2ffb905055439aac5a4bf3dd3",
+                "passes": 600,
+                "fails": 0,
+                "name": "analytics response is valid"
+            },
+            "preview status is 200": {
+                "id": "3e4b476be56f0e9882cfcd523a4abbae",
+                "passes": 301,
+                "fails": 0,
+                "name": "preview status is 200",
+                "path": "::preview status is 200"
+            },
+            "preview response is valid": {
+                "name": "preview response is valid",
+                "path": "::preview response is valid",
+                "id": "8500308fa9629784a52338f10080a3b8",
+                "passes": 301,
+                "fails": 0
+            },
+            "forecast status is 200": {
+                "name": "forecast status is 200",
+                "path": "::forecast status is 200",
+                "id": "ffb0b2543f16993d1eefc5bf3136dcce",
+                "passes": 4201,
+                "fails": 0
+            },
+            "forecast response is valid": {
+                "id": "5f229f3e59f49878f25402308cf22bb5",
+                "passes": 4201,
+                "fails": 0,
+                "name": "forecast response is valid",
+                "path": "::forecast response is valid"
+            },
+            "load status is 200": {
+                "name": "load status is 200",
+                "path": "::load status is 200",
+                "id": "907c376d48869feb46ece55d2e3d4aa6",
+                "passes": 901,
+                "fails": 0
+            },
+            "load response is valid": {
+                "name": "load response is valid",
+                "path": "::load response is valid",
+                "id": "5ca91230e11da0bba640636aa2803d02",
+                "passes": 901,
+                "fails": 0
+            }
+        }
+    }
+}

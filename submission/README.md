@@ -6,5 +6,5 @@
 | 2. Внешние данные | [02-external-data.md](02-external-data.md) |
 | 3. Веб-сервис: запуск, API, инструкция для жюри | в работе |
 | 4. Архитектура, область определения и адаптации, зависимости от внешних данных | [04-architecture-domain.md](04-architecture-domain.md) |
-| 5. Производительность и дополнительные возможности | в работе |
+| 5. Производительность | [05-performance.md](05-performance.md) |
 | 6. Ограничения и план развития | [06-limitations-roadmap.md](06-limitations-roadmap.md) |
