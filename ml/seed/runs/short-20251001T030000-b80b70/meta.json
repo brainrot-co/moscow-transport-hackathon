@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "run_id": "short-20251001T030000-b80b70",
+  "kind": "short",
+  "created_at": "2025-10-01 03:00:00",
+  "data_cutoff": "2025-09-30",
+  "horizon": {
+    "start": "2025-10-01 00:00:00",
+    "end": "2025-11-30 23:00:00",
+    "step": "hour"
+  },
+  "routes": [
+    1,
+    5,
+    7,
+    11,
+    12,
+    17,
+    25,
+    26,
+    28,
+    50
+  ],
+  "cold_start_routes": [
+    5
+  ],
+  "model": {
+    "name": "ensemble_cal_school_daytype_profile",
+    "covariates": [
+      "is_non_working",
+      "is_holiday_weekday",
+      "is_shortened",
+      "school_holiday_modular",
+      "school_holiday_quarter",
+      "day_type"
+    ],
+    "quantiles": [
+      0.1,
+      0.5,
+      0.9
+    ]
+  },
+  "quality_checks": {
+    "grid": "ok",
+    "no_nan": "ok",
+    "non_negative": "ok",
+    "weekly_totals": "ok",
+    "daily_max": "ok"
+  },
+  "effects": {
+    "holiday": 5,
+    "school_holiday": 27
+  }
+}

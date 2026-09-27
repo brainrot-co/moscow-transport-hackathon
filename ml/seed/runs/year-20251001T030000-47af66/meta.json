@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "run_id": "year-20251001T030000-47af66",
+  "kind": "year",
+  "created_at": "2025-10-01 03:00:00",
+  "data_cutoff": "2025-09-30",
+  "horizon": {
+    "start": "2025-10-01 00:00:00",
+    "end": "2026-09-30 23:00:00",
+    "step": "hour"
+  },
+  "routes": [
+    1,
+    5,
+    7,
+    11,
+    12,
+    17,
+    25,
+    26,
+    28,
+    50
+  ],
+  "cold_start_routes": [
+    5
+  ],
+  "model": {
+    "name": "seasonal",
+    "method": "log1p(дневная сумма) ~ месяц + тип дня + каникулы по маршруту; уровень по последним 8 неделям; часы по профилю вида дня",
+    "months_without_history": [
+      10,
+      11,
+      12
+    ],
+    "quantiles": [
+      0.1,
+      0.9
+    ]
+  },
+  "quality_checks": {
+    "grid": "ok",
+    "no_nan": "ok",
+    "non_negative": "ok",
+    "weekly_totals": "ok",
+    "daily_max": "ok"
+  }
+}

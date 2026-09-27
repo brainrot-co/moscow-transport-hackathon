@@ -247,3 +247,12 @@ temp/
 *.rej
 ml/mlflow/
 /data/
+
+# стартовый прогноз запечён в образ ingest: без него на чистом клоне ingest падает при старте
+!ml/seed/
+!ml/seed/**
+
+# справочники: calendar и school_holidays копируются в образ ml-worker, без них сборка падает;
+# kudago_events (21 МБ) не нужен лучшей модели и в репо не идёт
+!dataset/external/*.csv
+dataset/external/kudago_events.csv
