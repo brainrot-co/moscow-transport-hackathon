@@ -14,7 +14,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import styles from './Map.module.scss';
 import { routeColors } from '../../data/routeColors';
 import RouteDetailsModal from '../RouteDetailsModal/RouteDetailsModal';
-import type { ForecastMeta, ForecastRow } from '../../api/forecast';
+import type { ForecastMeta, ForecastRow, LoadLevel, RouteLoad, RouteLoadResponse } from '../../api/forecast';
 import {
     findRoute,
     tramRoutes,
@@ -54,6 +54,7 @@ interface MapProps {
     theme?: MapTheme;
     rows?: ForecastRow[];
     meta?: ForecastMeta | null;
+    load?: RouteLoadResponse | null;
     focusedRouteId: string | null;
     onFocusedRouteChange: (routeId: string | null) => void;
 }
@@ -154,6 +155,33 @@ const applyMapTheme = (map: MapLibreMap, theme: MapTheme) => {
     });
 };
 
+const LOAD_LEVEL_COLORS: Record<LoadLevel, string> = {
+    low: '#38d1a3',
+    medium: '#ffb74d',
+    high: '#f10624',
+};
+const NO_LOAD_LEVEL_COLOR = '#8c9eb8';
+
+const formatPassengers = (routeLoad: RouteLoad | null) => (
+    routeLoad?.value == null ? '—' : `${Math.round(routeLoad.value).toLocaleString('ru-RU')} пасс.`
+);
+
+const formatDeviation = (routeLoad: RouteLoad | null) => {
+    if (routeLoad?.value == null || routeLoad.ratio === null) {
+        return null;
+    }
+    const deviation = Math.round((routeLoad.ratio - 1) * 100);
+    return `${deviation > 0 ? '+' : ''}${deviation}% к норме`;
+};
+
+const describeNorm = (routeLoad: RouteLoad | null, dayKind: RouteLoadResponse['day_kind'] | undefined) => {
+    if (!routeLoad?.norm_from || !routeLoad.norm_to) {
+        return 'Недостаточно истории для нормы маршрута';
+    }
+    const days = dayKind === 'day_off' ? 'выходных и праздников' : 'рабочих дней';
+    return `Норма маршрута: ${routeLoad.norm_days} ${days} с ${routeLoad.norm_from} по ${routeLoad.norm_to}`;
+};
+
 const TramIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M7 3h10M9 3V1m6 2V1M6 6.5h12v10H6zM8.5 19 7 21m8.5-2 1.5 2M8.5 13h.01m7-.01h.01M8 8h8v3H8z" />
@@ -177,6 +205,7 @@ export default function Map({
     theme = 'dark',
     rows = [],
     meta = null,
+    load = null,
     focusedRouteId,
     onFocusedRouteChange,
 }: MapProps) {
@@ -217,28 +246,11 @@ export default function Map({
         });
         stopPopupRef.current = popup;
     };
-    const routeLoads = useMemo(() => {
-        const totals = new globalThis.Map<string, number>();
-        rows.forEach((row) => {
-            if (row.availability === 'cold_start' || row.availability === 'unavailable') return;
-            const amount = row.source === 'mixed'
-                ? (row.value ?? 0) + (row.yhat ?? 0)
-                : row.value ?? row.yhat;
-            if (amount !== null) {
-                const routeId = String(row.route);
-                totals.set(routeId, (totals.get(routeId) ?? 0) + amount);
-            }
-        });
-        const maximum = Math.max(0, ...totals.values());
-        return new globalThis.Map([...totals].map(([routeId, amount]) => [
-            routeId,
-            maximum > 0 ? Math.max(1, Math.round((amount / maximum) * 100)) : 0,
-        ]));
-    }, [rows]);
-
     const focusedRoute = focusedRouteId ? findRoute(focusedRouteId) : null;
     const detailsRoute = detailsRouteId ? findRoute(detailsRouteId) : null;
-    const focusedLoad = focusedRoute ? routeLoads.get(focusedRoute.id) ?? null : null;
+    const focusedLoad = focusedRoute
+        ? load?.data.find((item) => String(item.route) === focusedRoute.id) ?? null
+        : null;
     const stopOptions = useMemo(() => {
         const matchingStops = routeFilter === ALL_ROUTES
             ? routeStops
@@ -628,15 +640,9 @@ export default function Map({
         setShowLoadColors(false);
     };
 
-    const loadStatusColor = !focusedRoute
-        ? '#38d1a3'
-        : focusedLoad === null
-            ? '#8c9eb8'
-        : focusedLoad >= 75
-            ? '#f10624'
-            : focusedLoad >= 55
-                ? '#ffb74d'
-                : '#38d1a3';
+    const loadStatusColor = focusedLoad?.load_level
+        ? LOAD_LEVEL_COLORS[focusedLoad.load_level]
+        : NO_LOAD_LEVEL_COLOR;
 
     useEffect(() => {
         const map = mapRef.current;
@@ -900,11 +906,22 @@ export default function Map({
                                 </button>
                             </div>
                         </div>
-                        <strong>{focusedLoad === null ? '—' : `${focusedLoad}%`}</strong>
+                        <strong title={describeNorm(focusedLoad, load?.day_kind)}>
+                            {formatPassengers(focusedLoad)}
+                        </strong>
+                        {formatDeviation(focusedLoad) && (
+                            <span
+                                className={styles.loadDeviation}
+                                title={describeNorm(focusedLoad, load?.day_kind)}
+                            >
+                                {formatDeviation(focusedLoad)}
+                            </span>
+                        )}
                         <span className={styles.progressTrack}>
                             <span
                                 style={{
-                                    width: `${focusedLoad ?? 0}%`,
+                                    // медиана нормы — середина полосы, вдвое больше нормы — полная полоса
+                                    width: `${Math.min(100, (focusedLoad?.ratio ?? 0) * 50)}%`,
                                     backgroundColor: routeColors[focusedRoute.id],
                                 }}
                             />
@@ -915,7 +932,7 @@ export default function Map({
 
             {detailsRoute && (
                 <RouteDetailsModal
-                    route={{ ...detailsRoute, load: routeLoads.get(detailsRoute.id) ?? 0 }}
+                    route={detailsRoute}
                     stops={routeStops.filter((tramStop) => tramStop.routeId === detailsRoute.id)}
                     theme={theme}
                     rows={rows.filter((row) => row.route === Number(detailsRoute.id))}

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
@@ -93,6 +94,8 @@ class ForecastStore:
             short_meta=short_meta,
             year_meta=year_meta,
             watermark=watermark,
+            day_types=self._read_day_types(),
+            daily_actuals=_daily_totals(actuals, watermark),
         )
         self._active = active
         self._clock = clock
@@ -181,10 +184,31 @@ class ForecastStore:
             for row in rows
         }
 
+    def _read_day_types(self) -> dict[date, str]:
+        path = self.data_dir / "reference/calendar.parquet"
+        if not path.exists():
+            return {}
+        return {
+            _parse_date(row["date"]): str(row["day_type"])
+            for row in self._read_parquet("reference/calendar.parquet")
+        }
+
     def _read_parquet(self, path: str) -> list[dict[str, Any]]:
         import pyarrow.parquet as parquet
 
         return parquet.read_table(self.data_dir / path).to_pylist()
+
+
+def _daily_totals(
+    actuals: dict[tuple[int, datetime], ActualRecord], watermark: date
+) -> dict[int, dict[date, int]]:
+    # незавершённые дни (partial, missing) дают заниженную сумму и испортили бы норму
+    totals: dict[int, dict[date, int]] = defaultdict(lambda: defaultdict(int))
+    for record in actuals.values():
+        day = record.ts.date()
+        if record.status == "final" and day <= watermark:
+            totals[record.route][day] += record.value
+    return {route: dict(days) for route, days in totals.items()}
 
 
 def _parse_timestamp(value: Any) -> datetime:

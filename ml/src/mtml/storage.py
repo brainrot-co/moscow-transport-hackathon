@@ -82,6 +82,11 @@ class Volume:
         return self.root / "monitoring" / "accuracy.parquet"
 
     @property
+    def calendar(self):
+        """Производственный календарь с видом дня (day_type); по нему бэкенд выбирает норму."""
+        return self.root / "reference" / "calendar.parquet"
+
+    @property
     def runs(self):
         """Опубликованные прогоны: runs/<run_id>/ с прогнозом и meta.json."""
         return self.root / "runs"

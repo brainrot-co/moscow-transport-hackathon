@@ -41,6 +41,38 @@ export interface ForecastResponse {
     meta: ForecastMeta;
 }
 
+export type LoadLevel = 'low' | 'medium' | 'high';
+
+export interface RouteLoad {
+    route: number;
+    value: number | null;
+    load_level: LoadLevel | null;
+    ratio: number | null;
+    norm_low: number | null;
+    norm_median: number | null;
+    norm_high: number | null;
+    norm_days: number;
+    norm_from: string | null;
+    norm_to: string | null;
+}
+
+export interface RouteLoadResponse {
+    schema_version: number;
+    date: string;
+    day_kind: 'workday' | 'day_off';
+    day_type: string | null;
+    norm_weeks: number;
+    low_quantile: number;
+    high_quantile: number;
+    min_deviation: number;
+    data: RouteLoad[];
+    meta: ForecastMeta;
+}
+
+export function getRouteLoad(date: string): Promise<RouteLoadResponse> {
+    return apiRequest<RouteLoadResponse>(`/forecast/load?${new URLSearchParams({ date }).toString()}`);
+}
+
 export function getForecastMeta(): Promise<ForecastMeta> {
     return apiRequest<ForecastMeta>('/forecast/meta');
 }

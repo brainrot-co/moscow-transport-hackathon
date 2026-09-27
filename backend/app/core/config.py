@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     data_dir: str = "/data"
     backend_reload_sec: int = 30
     stale_after_days: int = 3
+    # уровень загрузки маршрута: сумма дня против перцентилей его же дней того же вида
+    load_norm_weeks: int = 8
+    load_norm_min_days: int = 10
+    load_low_quantile: float = 0.25
+    load_high_quantile: float = 0.75
+    load_min_deviation: float = 0.1
     cors_origins: list[str] = [
         "http://localhost",
         "http://localhost:8000",
@@ -57,6 +63,17 @@ class Settings(BaseSettings):
         if value.upper().startswith("CHANGE_ME"):
             raise ValueError("JWT secret must be changed from the default value")
         return value
+
+    @model_validator(mode="after")
+    def validate_load_thresholds(self) -> "Settings":
+        if not 0 < self.load_low_quantile < self.load_high_quantile < 1:
+            raise ValueError(
+                "LOAD_LOW_QUANTILE и LOAD_HIGH_QUANTILE должны быть в (0, 1), "
+                "нижний меньше верхнего"
+            )
+        if not 0 <= self.load_min_deviation < 1:
+            raise ValueError("LOAD_MIN_DEVIATION должен быть в [0, 1)")
+        return self
 
     model_config = SettingsConfigDict(env_file=".env", frozen=True, extra="ignore")
 

@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from mtml.storage import Volume
-from mtml.worker.publish import publish_run
+from mtml.worker.publish import publish_calendar, publish_run
 from mtml.worker.quality import QualityError, check_forecast
 
 START, END = pd.Timestamp("2025-11-01"), pd.Timestamp("2025-11-14")
@@ -68,3 +68,13 @@ def test_failed_publish_leaves_no_staging_and_keeps_pointer(tmp_path: Path):
         publish_run(volume, "short-20251102T030000-b", broken, {"kind": "short"}, 2)
     assert json.loads(volume.active.read_text())["short"] == "short-20251101T030000-a"
     assert [p.name for p in volume.runs.iterdir()] == ["short-20251101T030000-a"]
+
+
+def test_calendar_marks_november_holidays(tmp_path: Path):
+    volume = Volume(tmp_path)
+    publish_calendar(volume)
+
+    calendar = pd.read_parquet(volume.calendar).set_index("date")["day_type"]
+    assert calendar[pd.Timestamp("2025-11-04")] == "holiday"
+    assert calendar[pd.Timestamp("2025-11-05")] == "post_holiday"
+    assert calendar[pd.Timestamp("2025-11-08")] == "saturday"

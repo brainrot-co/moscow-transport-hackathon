@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getForecast, getForecastMeta, type ForecastMeta, type ForecastRow } from '../api/forecast';
+import {
+    getForecast,
+    getForecastMeta,
+    getRouteLoad,
+    type ForecastMeta,
+    type ForecastRow,
+    type RouteLoadResponse,
+} from '../api/forecast';
 
 interface ForecastState {
     rows: ForecastRow[];
     meta: ForecastMeta | null;
+    load: RouteLoadResponse | null;
     loading: boolean;
     error: string | null;
     refresh: () => void;
@@ -15,6 +23,7 @@ export function useForecast(days = 1): ForecastState {
     const [state, setState] = useState<ForecastState>({
         rows: [],
         meta: null,
+        load: null,
         loading: true,
         error: null,
         refresh: () => undefined,
@@ -29,22 +38,33 @@ export function useForecast(days = 1): ForecastState {
                 const meta = await getForecastMeta();
                 if (!meta.available || !meta.now) {
                     if (!cancelled) {
-                        setState({ rows: [], meta, loading: false, error: null, refresh });
+                        setState({ rows: [], meta, load: null, loading: false, error: null, refresh });
                     }
                     return;
                 }
                 const date = meta.now.slice(0, 10);
                 const start = new Date(`${date}T00:00:00+03:00`);
                 const end = new Date(start.getTime() + days * 24 * 60 * 60 * 1000 - 60 * 60 * 1000);
-                const forecast = await getForecast(start.toISOString(), end.toISOString(), 'hour');
+                const [forecast, load] = await Promise.all([
+                    getForecast(start.toISOString(), end.toISOString(), 'hour'),
+                    getRouteLoad(date),
+                ]);
                 if (!cancelled) {
-                    setState({ rows: forecast.data, meta: forecast.meta, loading: false, error: null, refresh });
+                    setState({
+                        rows: forecast.data,
+                        meta: forecast.meta,
+                        load,
+                        loading: false,
+                        error: null,
+                        refresh,
+                    });
                 }
             } catch (error) {
                 if (!cancelled) {
                     setState({
                         rows: [],
                         meta: null,
+                        load: null,
                         loading: false,
                         error: error instanceof Error ? error.message : 'Не удалось загрузить прогноз',
                         refresh,

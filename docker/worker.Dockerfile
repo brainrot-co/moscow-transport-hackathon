@@ -7,6 +7,13 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --group worker --no-install-project
 
+# веса Chronos запечены в образ (~0.5 ГБ): первый пересчёт не ждёт скачивания и не зависит
+# от сети и лимитов Hugging Face; на RAM это не влияет;
+# слой выше кода, чтобы правки кода не скачивали веса заново
+ENV PATH=/app/.venv/bin:$PATH DATA_DIR=/data HF_HOME=/opt/hf
+RUN python -c "from huggingface_hub import snapshot_download; snapshot_download('amazon/chronos-2')"
+ENV HF_HUB_OFFLINE=1
+
 COPY ml/src ml/src
 
 # Справочники пока зашиты в образ
@@ -14,6 +21,4 @@ COPY ml/src ml/src
 COPY dataset/external/calendar.csv dataset/external/school_holidays_moscow.csv dataset/external/
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --group worker
 
-# веса Chronos скачиваются при первом запуске и кэшируются на общем томе
-ENV PATH=/app/.venv/bin:$PATH DATA_DIR=/data HF_HOME=/data/hf
 CMD ["python", "-m", "mtml.worker", "run"]

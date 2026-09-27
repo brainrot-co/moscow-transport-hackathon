@@ -50,6 +50,32 @@ class ForecastResponse(BaseModel):
     meta: ForecastMetaRead
 
 
+class RouteLoadRead(BaseModel):
+    route: int
+    value: float | None
+    load_level: Literal["low", "medium", "high"] | None
+    ratio: float | None
+    norm_low: float | None
+    norm_median: float | None
+    norm_high: float | None
+    norm_days: int = 0
+    norm_from: date | None = None
+    norm_to: date | None = None
+
+
+class RouteLoadResponse(BaseModel):
+    schema_version: int = 1
+    date: date
+    day_kind: Literal["workday", "day_off"]
+    day_type: str | None
+    norm_weeks: int
+    low_quantile: float
+    high_quantile: float
+    min_deviation: float
+    data: list[RouteLoadRead]
+    meta: ForecastMetaRead
+
+
 class ForecastPreviewRequest(BaseModel):
     date_from: datetime
     date_to: datetime

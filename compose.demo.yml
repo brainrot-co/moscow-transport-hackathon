@@ -1,17 +1,20 @@
-# Демо для утро 1 ноября 2025, прогназируем модель на 2 месяца
+# Демо: виртуальные часы идут с 01.10.2025 03:00 до 04.11.2025 03:00, данные есть до 01.11.
+# CLOCK_SPEED=300: прогон ансамбля (~4.5 мин, 2 CPU) занимает меньше виртуальных суток,
+# поэтому прогноз отстаёт от «сейчас» не больше чем на день; весь путь до 04.11 — около 2.7 ч.
+# При смене CLOCK_* удалить state/clock.json и state/worker.json (см. docs/docker-status.md).
 
 services:
   ingest:
     environment:
       CLOCK_START: "2025-10-01T03:00:00"
       CLOCK_END: "2025-11-04T03:00:00"
-      CLOCK_SPEED: "1500"
+      CLOCK_SPEED: "750"
       INGEST_POLL_SEC: "5"
 
   ml-worker:
     environment:
       CLOCK_START: "2025-10-01T03:00:00"
-      CLOCK_SPEED: "1500"
+      CLOCK_SPEED: "750"
       CLOCK_END: "2025-11-04T03:00:00"
       MIN_RERUN_MINUTES: "2"
       WORKER_POLL_SEC: "10"

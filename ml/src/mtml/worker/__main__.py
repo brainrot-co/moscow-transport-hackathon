@@ -4,6 +4,7 @@ import logging
 from mtml.clock import load_clock
 from mtml.storage import Volume
 from mtml.worker.context import build_context
+from mtml.worker.publish import publish_calendar
 from mtml.worker.schedule import run_forever
 from mtml.worker.settings import WorkerSettings
 from mtml.worker.short import run_short
@@ -24,6 +25,8 @@ def main():
     volume, settings = Volume.from_env(), WorkerSettings.from_env()
     clock = load_clock(volume.clock)
     log.info("Том %s, сейчас по часам системы %s", volume.root, clock.now())
+    # календарь статичен до пересборки образа, поэтому публикуется один раз при старте
+    publish_calendar(volume)
     if args.command == "run":
         run_forever(volume, settings, clock)
         return

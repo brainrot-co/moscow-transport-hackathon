@@ -360,6 +360,14 @@
         color: var(--text, #f2f6fc);
         font-size: 14px;
     }
+
+    .loadDeviation {
+        display: block;
+        margin-top: 2px;
+        color: var(--muted, #8192a8);
+        font-size: 11px;
+        font-weight: 500;
+    }
 }
 
 .routeCardTop {

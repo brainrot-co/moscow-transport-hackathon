@@ -10,5 +10,8 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 COPY ml/src ml/src
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
 
+# стартовый прогноз: на пустом томе ingest раскладывает его вместо загрузки истории и расчёта
+COPY ml/seed ml/seed
+
 ENV PATH=/app/.venv/bin:$PATH DATA_DIR=/data
 CMD ["python", "-m", "mtml.ingest", "run"]

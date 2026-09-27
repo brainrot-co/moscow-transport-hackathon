@@ -36,6 +36,7 @@ export default function TopLoadedRoutes({
         <div className={styles.topLoadedRoutes}>
             <div className={styles.topLoadedTop}>
                 <h5>Топ-5 маршрутов по пассажиропотоку за день</h5>
+                <p>* длина полосы - это доля от самого загруженного маршрута в топе</p>
             </div>
 
             <div className={styles.loadedRoutes}>

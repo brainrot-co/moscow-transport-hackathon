@@ -82,6 +82,8 @@ class ForecastSnapshot:
     short_meta: RunMetadata | None = None
     year_meta: RunMetadata | None = None
     watermark: date | None = None
+    day_types: dict[date, str] = field(default_factory=dict)
+    daily_actuals: dict[int, dict[date, int]] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self._validate_runs()

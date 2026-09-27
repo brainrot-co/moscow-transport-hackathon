@@ -5,7 +5,7 @@ import type {
 } from 'geojson';
 
 import { routeColors } from '../../data/routeColors';
-import { findRoute, tramRoutes, type Coordinate } from './routes';
+import { tramRoutes, type Coordinate } from './routes';
 
 export interface RouteStop {
     id: string;
@@ -35,7 +35,6 @@ interface RouteFeatureProperties {
     id: string;
     name: string;
     color: string;
-    load: number;
     directionId?: number;
 }
 
@@ -132,15 +131,12 @@ export const routesFromStops = (stops: RouteStop[]): RoutesMapGeoJson => {
             .map((directionStops) => {
                 const orderedStops = [...directionStops].sort((first, second) => first.sequence - second.sequence);
                 const firstStop = orderedStops[0];
-                const route = findRoute(firstStop.routeId);
-
                 return {
                     type: 'Feature',
                     properties: {
                         id: firstStop.routeId,
                         name: firstStop.directionName,
                         color: routeColors[firstStop.routeId],
-                        load: route.load,
                         directionId: firstStop.directionId,
                     },
                     geometry: {

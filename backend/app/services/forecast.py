@@ -1,11 +1,28 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from app.ml.aggregation import Granularity, aggregate_rows
 from app.ml.corrections import Scenario, apply_corrections
+from app.ml.load import (
+    DayKind,
+    LoadLevel,
+    LoadNorm,
+    LoadNormSettings,
+    day_kind,
+    route_norm,
+)
 from app.ml.models import ForecastSnapshot, ResponseRow
+
+
+@dataclass(frozen=True, slots=True)
+class RouteLoad:
+    route: int
+    value: float | None
+    level: LoadLevel | None
+    norm: LoadNorm | None
 
 
 class ForecastService:
@@ -82,6 +99,52 @@ class ForecastService:
             scenarios=scenarios,
         )
         return aggregate_rows(corrected, granularity)
+
+    def day_kind(self, day: date) -> DayKind:
+        return day_kind(day, self.snapshot.day_types if self.snapshot else {})
+
+    def route_loads(
+        self,
+        day: date,
+        routes: list[int] | None,
+        settings: LoadNormSettings,
+        model_factors: dict[str, float] | None = None,
+        scenarios: list[Scenario] | None = None,
+    ) -> list[RouteLoad]:
+        snapshot = self.snapshot
+        if snapshot is None:
+            return []
+        # сумма дня: факт за прошедшие часы плюс скорректированный прогноз за остальные
+        rows = self.hourly(
+            datetime.combine(day, time()),
+            datetime.combine(day, time(23)),
+            routes,
+            model_factors=model_factors,
+            scenarios=scenarios,
+            granularity="day",
+        )
+        kind = self.day_kind(day)
+        result: list[RouteLoad] = []
+        for row in rows:
+            value = (
+                (row.value or 0) + (row.yhat or 0) if row.source is not None else None
+            )
+            norm = (
+                route_norm(
+                    snapshot.daily_actuals.get(row.route, {}),
+                    kind,
+                    snapshot.day_types,
+                    snapshot.watermark,
+                    settings,
+                )
+                if snapshot.watermark is not None
+                else None
+            )
+            level = (
+                norm.level(value) if norm is not None and value is not None else None
+            )
+            result.append(RouteLoad(row.route, value, level, norm))
+        return result
 
 
 def as_api_rows(rows: list[ResponseRow]) -> list[dict[str, object]]:

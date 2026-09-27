@@ -13,7 +13,6 @@ export interface TramStop {
 export interface TramRoute {
     id: string;
     name: string;
-    load: number;
     coordinates: Coordinate[];
     stops: TramStop[];
 }
@@ -22,7 +21,6 @@ interface RouteProperties {
     id: string;
     name: string;
     color: string;
-    load: number;
 }
 
 interface StopProperties {
@@ -49,7 +47,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '1',
         name: 'Чертаново Южное — Москворецкий рынок',
-        load: 71,
         coordinates: [
             [37.603, 55.59], [37.601, 55.602], [37.6, 55.614],
             [37.606, 55.625], [37.614, 55.636], [37.625, 55.642],
@@ -64,7 +61,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '5',
         name: 'Метро «Рижская» — Белорусский вокзал',
-        load: 48,
         coordinates: [
             [37.635, 55.792], [37.625, 55.795], [37.614, 55.797],
             [37.604, 55.795], [37.596, 55.789], [37.586, 55.776],
@@ -78,7 +74,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '7',
         name: 'Метро «Бульвар Рокоссовского» — Белорусский вокзал',
-        load: 58,
         coordinates: [
             [37.734, 55.815], [37.716, 55.811], [37.698, 55.805],
             [37.68, 55.799], [37.661, 55.793], [37.641, 55.786],
@@ -94,7 +89,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '11',
         name: 'Усадьба Останкино — Восточное Измайлово',
-        load: 64,
         coordinates: [
             [37.638, 55.824], [37.651, 55.818], [37.665, 55.813],
             [37.681, 55.807], [37.699, 55.803], [37.718, 55.802],
@@ -111,7 +105,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '12',
         name: 'Восточное Измайлово — МЦК Дубровка',
-        load: 73,
         coordinates: [
             [37.827, 55.787], [37.806, 55.782], [37.786, 55.776],
             [37.765, 55.768], [37.748, 55.759], [37.733, 55.749],
@@ -128,7 +121,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '17',
         name: 'Останкино — Медведково',
-        load: 82,
         coordinates: [
             [37.638, 55.824], [37.635, 55.835], [37.638, 55.846],
             [37.645, 55.855], [37.649, 55.865], [37.654, 55.875],
@@ -144,7 +136,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '25',
         name: 'Останкино — Метро «Сокольники»',
-        load: 61,
         coordinates: [
             [37.638, 55.824], [37.646, 55.817], [37.654, 55.81],
             [37.662, 55.803], [37.671, 55.797], [37.68, 55.79],
@@ -159,7 +150,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '26',
         name: 'Метро «Университет» — Метро «Октябрьская»',
-        load: 42,
         coordinates: [
             [37.535, 55.692], [37.546, 55.698], [37.558, 55.704],
             [37.571, 55.709], [37.584, 55.716], [37.597, 55.723],
@@ -174,7 +164,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '28',
         name: 'Метро «Сокол» — Проспект Маршала Жукова',
-        load: 52,
         coordinates: [
             [37.515, 55.805], [37.506, 55.8], [37.497, 55.795],
             [37.487, 55.79], [37.479, 55.783], [37.47, 55.775],
@@ -188,7 +177,6 @@ export const tramRoutes: TramRoute[] = [
     {
         id: '50',
         name: 'Дом культуры «Компрессор» — Метро «Новослободская»',
-        load: 69,
         coordinates: [
             [37.699, 55.758], [37.687, 55.762], [37.674, 55.766],
             [37.659, 55.77], [37.644, 55.774], [37.628, 55.779],
@@ -211,7 +199,6 @@ export const routesGeoJson: FeatureCollection<LineString, RouteProperties> = {
             id: route.id,
             name: route.name,
             color: routeColors[route.id],
-            load: route.load,
         },
         geometry: {
             type: 'LineString',

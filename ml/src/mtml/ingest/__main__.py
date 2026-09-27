@@ -4,8 +4,9 @@ import sys
 import time
 from pathlib import Path
 
-from mtml.clock import load_clock
+from mtml.clock import load_clock, real_now
 from mtml.ingest.pipeline import ingest_file, process_inbox, refresh_status
+from mtml.ingest.seed import apply_seed, seed_dir
 from mtml.ingest.settings import IngestSettings
 from mtml.storage import Volume
 
@@ -35,6 +36,7 @@ def main():
     if args.command == "once":
         process_inbox(volume, settings, clock.now())
         return
+    apply_seed(volume, seed_dir(), settings, clock.now(), real_now())
     while True:
         process_inbox(volume, settings, clock.now())
         time.sleep(settings.poll_sec)

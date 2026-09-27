@@ -53,7 +53,7 @@ export default function Dashboard() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const [focusedRouteId, setFocusedRouteId] = useState<string | null>(null)
     const { isLightTheme, setIsLightTheme } = useTheme()
-    const { rows, meta, loading, error, refresh } = useForecast(1)
+    const { rows, meta, load, loading, error, refresh } = useForecast(1)
     const navigate = useNavigate()
     const nowValue = meta?.now
         ? /(?:Z|[+-]\d{2}:?\d{2})$/.test(meta.now) ? meta.now : `${meta.now}+03:00`
@@ -199,6 +199,7 @@ export default function Dashboard() {
                                     theme={isLightTheme ? 'light' : 'dark'}
                                     rows={rows}
                                     meta={meta}
+                                    load={load}
                                     focusedRouteId={focusedRouteId}
                                     onFocusedRouteChange={setFocusedRouteId}
                                 />
