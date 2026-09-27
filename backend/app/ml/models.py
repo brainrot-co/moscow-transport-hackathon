@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Literal
 
 Source = Literal["actual", "forecast", "forecast_seasonal", "mixed"]
@@ -101,14 +101,22 @@ class ForecastSnapshot:
         if not fields_match:
             raise SnapshotError("short and year runs are incompatible")
 
-    def resolve(self, route: int, ts: datetime) -> ResponseRow:
+    def resolve(
+        self, route: int, ts: datetime, now: datetime | None = None
+    ) -> ResponseRow:
         key = (route, ts)
         actual = self.actuals.get(key)
-        if (
+        final = (
             actual is not None
             and actual.status == "final"
             and (self.watermark is None or ts.date() <= self.watermark)
-        ):
+        )
+        # час уже прошёл: факт есть, хотя день ещё может догружаться;
+        # граница по now, потому что в демо данные за сегодня лежат на все 24 часа
+        passed = (
+            actual is not None and now is not None and ts + timedelta(hours=1) <= now
+        )
+        if actual is not None and (final or passed):
             return ResponseRow(
                 route=route,
                 ts=ts,
@@ -118,6 +126,7 @@ class ForecastSnapshot:
                 yhat=None,
                 q10=None,
                 q90=None,
+                estimated=not final,
             )
 
         cold_start_routes = (

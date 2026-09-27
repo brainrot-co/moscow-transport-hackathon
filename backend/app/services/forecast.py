@@ -73,6 +73,7 @@ class ForecastService:
         model_factors: dict[str, float] | None = None,
         scenarios: list[Scenario] | None = None,
         granularity: Granularity = "hour",
+        now: datetime | None = None,
     ) -> list[ResponseRow]:
         if self.snapshot is None:
             return []
@@ -90,7 +91,7 @@ class ForecastService:
         date_to = _moscow_naive(date_to)
         while timestamp <= date_to:
             for route in sorted(selected_routes):
-                result.append(self.snapshot.resolve(route, timestamp))
+                result.append(self.snapshot.resolve(route, timestamp, now))
             timestamp += timedelta(hours=1)
         corrected = apply_corrections(
             result,
@@ -110,6 +111,7 @@ class ForecastService:
         settings: LoadNormSettings,
         model_factors: dict[str, float] | None = None,
         scenarios: list[Scenario] | None = None,
+        now: datetime | None = None,
     ) -> list[RouteLoad]:
         snapshot = self.snapshot
         if snapshot is None:
@@ -122,6 +124,7 @@ class ForecastService:
             model_factors=model_factors,
             scenarios=scenarios,
             granularity="day",
+            now=now,
         )
         kind = self.day_kind(day)
         result: list[RouteLoad] = []
@@ -160,7 +163,6 @@ def as_api_rows(rows: list[ResponseRow]) -> list[dict[str, object]]:
 def _moscow_naive(value: datetime) -> datetime:
     if value.tzinfo is None:
         return value.replace(minute=0, second=0, microsecond=0)
-    return (
-        value.astimezone(ZoneInfo("Europe/Moscow"))
-        .replace(tzinfo=None, minute=0, second=0, microsecond=0)
+    return value.astimezone(ZoneInfo("Europe/Moscow")).replace(
+        tzinfo=None, minute=0, second=0, microsecond=0
     )

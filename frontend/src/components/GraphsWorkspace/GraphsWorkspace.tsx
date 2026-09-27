@@ -454,8 +454,9 @@ function PeaksHeatmap({ routes }: { routes: AnalyticsRoute[] }) {
 }
 
 export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspaceProps) {
-    const initialDate = meta?.now?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
-    const [date, setDate] = useState(initialDate);
+    // пока дату не выбрали вручную, страница идёт за «сейчас» бэкенда: в демо сутки проходят за минуты
+    const [pickedDate, setPickedDate] = useState<string | null>(null);
+    const date = pickedDate ?? meta?.now?.slice(0, 10) ?? new Date().toISOString().slice(0, 10);
     const [selectedRoutes, setSelectedRoutes] = useState<number[]>(ALL_ROUTE_IDS);
     const [data, setData] = useState<ForecastAnalyticsResponse | null>(null);
     const [loadedQueryKey, setLoadedQueryKey] = useState('');
@@ -463,15 +464,6 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
     const [routeMenuOpen, setRouteMenuOpen] = useState(false);
     const [routeSearch, setRouteSearch] = useState('');
     const routePickerRef = useRef<HTMLDivElement>(null);
-    const syncedDateRef = useRef(false);
-
-    useEffect(() => {
-        if (!syncedDateRef.current && meta?.now) {
-            setDate(meta.now.slice(0, 10));
-            syncedDateRef.current = true;
-        }
-    }, [meta?.now]);
-
     useEffect(() => {
         if (!routeMenuOpen) return;
         const handleOutsideClick = (event: globalThis.PointerEvent) => {
@@ -484,7 +476,8 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
     }, [routeMenuOpen]);
 
     const routeKey = selectedRoutes.join(',');
-    const queryKey = `${date}:${routeKey}:${reloadToken}`;
+    // meta.now приходит с опросом дашборда раз в 30 с: вместе с ним пересчитываются факт и прогноз
+    const queryKey = `${date}:${routeKey}:${reloadToken}:${meta?.now ?? ''}`;
     const loading = loadedQueryKey !== queryKey;
     useEffect(() => {
         let cancelled = false;
@@ -559,7 +552,7 @@ export default function GraphsWorkspace({ meta, reloadToken }: GraphsWorkspacePr
                         id="analytics-date"
                         type="date"
                         value={date}
-                        onChange={(event) => setDate(event.target.value)}
+                        onChange={(event) => setPickedDate(event.target.value || null)}
                     />
                 </div>
                 <div className={styles.routePicker} ref={routePickerRef}>

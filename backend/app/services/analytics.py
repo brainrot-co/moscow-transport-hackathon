@@ -50,6 +50,7 @@ def build_forecast_analytics(
     settings: LoadNormSettings,
     model_factors: dict[str, float] | None = None,
     scenarios: list[Scenario] | None = None,
+    now: datetime | None = None,
 ):
     rows = service.hourly(
         datetime.combine(day, time()),
@@ -57,6 +58,7 @@ def build_forecast_analytics(
         routes,
         model_factors=model_factors,
         scenarios=scenarios,
+        now=now,
     )
     selected_routes = tuple(sorted({row.route for row in rows}))
     rows_by_hour: dict[int, list[ResponseRow]] = defaultdict(list)
@@ -77,6 +79,7 @@ def build_forecast_analytics(
             settings,
             model_factors=model_factors,
             scenarios=scenarios,
+            now=now,
         )
     }
     route_analytics = tuple(

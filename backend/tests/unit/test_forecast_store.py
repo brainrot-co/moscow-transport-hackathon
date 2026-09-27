@@ -176,3 +176,33 @@ def test_store_loads_published_parquet_snapshot(tmp_path: Path):
     snapshot = ForecastStore(tmp_path)._load_from_disk()
 
     assert snapshot.resolve(7, datetime(2026, 10, 1, 10)).value == 120
+
+
+def partial_day_snapshot() -> ForecastSnapshot:
+    hours = [datetime(2026, 10, 2, hour) for hour in range(24)]
+    return ForecastSnapshot(
+        # в демо данные за сегодня лежат на все 24 часа, день ещё partial
+        actuals={(7, ts): ActualRecord(7, ts, 100, status="partial") for ts in hours},
+        short={(7, ts): ForecastRecord(7, ts, 150) for ts in hours},
+        year={},
+        short_meta=metadata("short", date(2026, 10, 1)),
+        year_meta=metadata("year", date(2026, 10, 1)),
+        watermark=date(2026, 10, 1),
+    )
+
+
+def test_passed_hour_of_partial_day_is_estimated_actual():
+    now = datetime(2026, 10, 2, 15, 25)
+    snapshot = partial_day_snapshot()
+
+    passed = snapshot.resolve(7, datetime(2026, 10, 2, 14), now)
+    current = snapshot.resolve(7, datetime(2026, 10, 2, 15), now)
+
+    assert (passed.source, passed.value, passed.estimated) == ("actual", 100, True)
+    assert (current.source, current.yhat) == ("forecast", 150)
+
+
+def test_without_now_partial_day_stays_forecast():
+    row = partial_day_snapshot().resolve(7, datetime(2026, 10, 2, 8))
+
+    assert row.source == "forecast"

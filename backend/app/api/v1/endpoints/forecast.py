@@ -83,6 +83,7 @@ async def forecast(
         model_factors=model_factors,
         scenarios=scenarios,
         granularity=granularity,  # type: ignore[arg-type]
+        now=store.now(),
     )
     meta = ForecastMetaRead.model_validate(
         service.meta(
@@ -134,6 +135,7 @@ async def route_load(
         ),
         model_factors=model_factors,
         scenarios=scenarios,
+        now=store.now(),
     )
     return RouteLoadResponse(
         date=day,
@@ -205,6 +207,7 @@ async def forecast_analytics(
         ),
         model_factors=model_factors,
         scenarios=scenarios,
+        now=store.now(),
     )
     return ForecastAnalyticsResponse(
         date=result.day,
@@ -288,6 +291,7 @@ async def forecast_preview(
         model_factors=payload.model_factors,
         scenarios=scenarios,
         granularity=payload.granularity,
+        now=store.now(),
     )
     return ForecastResponse(
         query=ForecastQueryRead(
